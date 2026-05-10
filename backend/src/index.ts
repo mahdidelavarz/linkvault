@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { AppDataSource } from './config/data-source';
 
 dotenv.config();
 
@@ -16,6 +17,14 @@ app.get('/health', (_req, res) => {
 
 const PORT = process.env.PORT || 4000;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+AppDataSource.initialize()
+  .then(() => {
+    console.log('✅ Database connected');
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('❌ Database connection error', err);
+  });

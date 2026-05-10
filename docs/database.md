@@ -12,7 +12,7 @@
 
 Example:
 
-                                                                    md
+
 User 1─* Link
 User 1─* Note
 User 1─* Category
