@@ -1,20 +1,40 @@
-import express from "express";
-import cors from "cors";
-import authRoutes from "./modules/auth/auth.routes";
-import { authMiddleware } from "./middlewares/auth.middleware";
+import 'reflect-metadata';
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import dotenv from 'dotenv';
+import { AppDataSource } from './config/database';
+import authRoutes from './routes/auth.route';
+import { errorHandler } from './middleware/errorHandler';
+
+dotenv.config();
 
 const app = express();
 
+// Middleware
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-app.use("/auth", authRoutes);
+// Routes
+app.use('/api/auth', authRoutes);
 
-app.get("/protected", authMiddleware, (req, res) => {
-  res.json({
-    message: "Access granted ✅",
-    user: (req as any).user,
-  });
+// Health check
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
+
+// Error handling
+app.use(errorHandler);
+
+// Database connection
+AppDataSource.initialize()
+    .then(() => {
+        console.log('Database connected successfully');
+    })
+    .catch((error) => {
+        console.error('Error connecting to database:', error);
+    });
 
 export default app;
