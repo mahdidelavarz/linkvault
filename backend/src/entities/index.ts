@@ -3,3 +3,4 @@ export { Link } from './Link';
 export { Note } from './Note';
 export { Category } from './Category';
 export { Tag } from './Tag';
+export { Taggable } from './Taggable';

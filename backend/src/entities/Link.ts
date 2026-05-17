@@ -2,7 +2,6 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { User } from './User';
 import { Category } from './Category';
 
-
 @Entity('links')
 export class Link {
     @PrimaryGeneratedColumn()
@@ -32,14 +31,14 @@ export class Link {
     @Column({ type: 'bit', default: false, name: 'is_favorite' })
     isFavorite!: boolean;
 
-    @ManyToOne(() => Category, category => category.links, { nullable: true })
+    @ManyToOne(() => Category, { nullable: true })
     @JoinColumn({ name: 'category_id' })
     category!: Category;
 
     @Column({ type: 'int', nullable: true, name: 'category_id' })
     categoryId!: number;
 
-    @ManyToOne(() => User, user => user.links)
+    @ManyToOne(() => User)
     @JoinColumn({ name: 'user_id' })
     user!: User;
 
