@@ -29,7 +29,7 @@ export class Link {
     @Column({ type: 'varchar', length: 20, nullable: true })
     phone!: string;
 
-    @Column({ type: 'boolean', default: false, name: 'is_favorite' })
+    @Column({ type: 'bit', default: false, name: 'is_favorite' })
     isFavorite!: boolean;
 
     @ManyToOne(() => Category, category => category.links, { nullable: true })
