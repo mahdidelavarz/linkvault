@@ -1,12 +1,10 @@
 import { AppDataSource } from '../config/database';
 import { Link } from '../entities/Link';
 import { Taggable } from '../entities/Taggable';
-import { Tag } from '../entities/Tag';
 
 export class LinkService {
     private linkRepository = AppDataSource.getRepository(Link);
     private taggableRepository = AppDataSource.getRepository(Taggable);
-    private tagRepository = AppDataSource.getRepository(Tag);
 
     async findAll(userId: number, filters?: {
         search?: string;
@@ -34,7 +32,6 @@ export class LinkService {
 
         const links = await queryBuilder.orderBy('link.updatedAt', 'DESC').getMany();
         
-        // Load tags manually for each link
         return await this.loadTagsForLinks(links);
     }
 
@@ -46,9 +43,8 @@ export class LinkService {
         
         if (!link) return null;
         
-        // Load tags manually
         const linksWithTags = await this.loadTagsForLinks([link]);
-        return linksWithTags[0];
+        return linksWithTags[0] || null;
     }
 
     async create(userId: number, data: {
@@ -60,32 +56,33 @@ export class LinkService {
         email?: string;
         phone?: string;
         isFavorite?: boolean;
-        categoryId?: number;
+        categoryId?: number | null;
         tagIds?: number[];
     }) {
-        // Create link without tags first
-        const link = this.linkRepository.create({
-            url: data.url,
-            title: data.title,
-            description: data.description,
-            username: data.username,
-            passwordEncrypted: data.password,
-            email: data.email,
-            phone: data.phone,
-            isFavorite: data.isFavorite || false,
-            categoryId: data.categoryId,
-            userId
-        });
-
-        await this.linkRepository.save(link);
-
-        // Handle tags separately
-        if (data.tagIds && data.tagIds.length > 0) {
-            await this.syncTags(link.id, data.tagIds);
+        // Create new link instance
+        const link = new Link();
+        link.url = data.url;
+        link.title = data.title;
+        link.description = data.description || '';
+        link.username = data.username || '';
+        link.passwordEncrypted = data.password || '';
+        link.email = data.email || '';
+        link.phone = data.phone || '';
+        link.isFavorite = data.isFavorite || false;
+        link.userId = userId;
+        
+        if (data.categoryId) {
+            link.categoryId = data.categoryId;
         }
 
-        // Return the link with relations loaded
-        return await this.findOne(link.id, userId);
+        const savedLink = await this.linkRepository.save(link);
+
+        // Handle tags
+        if (data.tagIds && data.tagIds.length > 0) {
+            await this.syncTags(savedLink.id, data.tagIds);
+        }
+
+        return await this.findOne(savedLink.id, userId);
     }
 
     async update(id: number, userId: number, data: {
@@ -97,7 +94,7 @@ export class LinkService {
         email?: string;
         phone?: string;
         isFavorite?: boolean;
-        categoryId?: number;
+        categoryId?: number | null;
         tagIds?: number[];
     }) {
         const link = await this.linkRepository.findOne({ where: { id, userId } });
@@ -106,7 +103,7 @@ export class LinkService {
             throw new Error('Link not found');
         }
 
-        // Update only provided fields
+        // Update fields
         if (data.url !== undefined) link.url = data.url;
         if (data.title !== undefined) link.title = data.title;
         if (data.description !== undefined) link.description = data.description;
@@ -115,7 +112,9 @@ export class LinkService {
         if (data.email !== undefined) link.email = data.email;
         if (data.phone !== undefined) link.phone = data.phone;
         if (data.isFavorite !== undefined) link.isFavorite = data.isFavorite;
-        if (data.categoryId !== undefined) link.categoryId = data.categoryId;
+        if (data.categoryId !== undefined && data.categoryId !== null) {
+            link.categoryId = data.categoryId;
+        }
 
         await this.linkRepository.save(link);
 
@@ -168,15 +167,17 @@ export class LinkService {
         
         // Add new tags
         if (tagIds.length > 0) {
-            const taggables = tagIds.map(tagId => 
-                this.taggableRepository.create({
-                    tagId,
-                    taggableId: linkId,
-                    taggableType: 'link'
-                })
-            );
+            const taggablesToSave: Taggable[] = [];
             
-            await this.taggableRepository.save(taggables);
+            for (const tagId of tagIds) {
+                const taggable = new Taggable();
+                taggable.tagId = tagId;
+                taggable.taggableId = linkId;
+                taggable.taggableType = 'link';
+                taggablesToSave.push(taggable);
+            }
+            
+            await this.taggableRepository.save(taggablesToSave);
         }
     }
 

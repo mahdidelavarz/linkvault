@@ -44,10 +44,15 @@ export class LinkController {
         }
     }
 
+    // In LinkController.ts create and update methods:
     async create(req: AuthRequest, res: Response, next: NextFunction) {
         try {
             const userId = req.userId!;
-            const link = await linkService.create(userId, req.body);
+            const linkData = {
+                ...req.body,
+                categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : undefined
+            };
+            const link = await linkService.create(userId, linkData);
             res.status(201).json({ link });
         } catch (error) {
             next(error);
@@ -58,10 +63,15 @@ export class LinkController {
         try {
             const userId = req.userId!;
             const id = parseParamId(req.params.id);
+            const linkData = {
+                ...req.body,
+                categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : undefined
+            };
             if (id) {
-                const link = await linkService.update(id, userId, req.body);
+                const link = await linkService.update(id, userId, linkData);
                 res.json({ link });
             }
+
         } catch (error) {
             if (error instanceof Error && error.message === 'Link not found') {
                 return res.status(404).json({ message: error.message });

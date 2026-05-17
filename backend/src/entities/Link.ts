@@ -14,29 +14,29 @@ export class Link {
     title!: string;
 
     @Column({ type: 'text', nullable: true })
-    description!: string;
+    description?: string;
 
     @Column({ type: 'varchar', length: 100, nullable: true })
-    username!: string;
+    username?: string;
 
     @Column({ type: 'varchar', length: 255, nullable: true, name: 'password_encrypted' })
-    passwordEncrypted!: string;
+    passwordEncrypted?: string;
 
     @Column({ type: 'varchar', length: 255, nullable: true })
-    email!: string;
+    email?: string;
 
     @Column({ type: 'varchar', length: 20, nullable: true })
-    phone!: string;
+    phone?: string;
 
     @Column({ type: 'bit', default: false, name: 'is_favorite' })
     isFavorite!: boolean;
 
     @ManyToOne(() => Category, { nullable: true })
     @JoinColumn({ name: 'category_id' })
-    category!: Category;
+    category?: Category;
 
     @Column({ type: 'int', nullable: true, name: 'category_id' })
-    categoryId!: number;
+    categoryId?: number;
 
     @ManyToOne(() => User)
     @JoinColumn({ name: 'user_id' })
