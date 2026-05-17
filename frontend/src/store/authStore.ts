@@ -1,0 +1,64 @@
+import { create } from 'zustand';
+import { User } from '@/types/user';
+
+interface AuthState {
+  user: User | null;
+  token: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  setAuth: (user: User, token: string) => void;
+  logout: () => void;
+  setLoading: (loading: boolean) => void;
+}
+
+export const useAuthStore = create<AuthState>((set) => ({
+  user: null,
+  token: null,
+  isAuthenticated: false,
+  isLoading: true,
+
+  setAuth: (user: User, token: string) => {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+    set({
+      user,
+      token,
+      isAuthenticated: true,
+      isLoading: false,
+    });
+  },
+
+  logout: () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    set({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      isLoading: false,
+    });
+  },
+
+  setLoading: (loading: boolean) => {
+    set({ isLoading: loading });
+  },
+}));
+
+// Initialize store from localStorage
+if (typeof window !== 'undefined') {
+  const token = localStorage.getItem('token');
+  const user = localStorage.getItem('user');
+  
+  if (token && user) {
+    useAuthStore.setState({
+      user: JSON.parse(user),
+      token,
+      isAuthenticated: true,
+      isLoading: false,
+    });
+  } else {
+    useAuthStore.setState({
+      isLoading: false,
+    });
+  }
+}
