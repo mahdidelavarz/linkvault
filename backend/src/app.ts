@@ -9,6 +9,7 @@ import { errorHandler } from './middleware/errorHandler';
 import linkRoutes from './routes/links.route';
 import categoryRoutes from './routes/category.route';
 import tagRoutes from './routes/tag.route';
+import noteRoutes from './routes/note.route';
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/links', linkRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/tags', tagRoutes);
+app.use('/api/notes', noteRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
