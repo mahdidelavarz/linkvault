@@ -6,9 +6,9 @@ import { usePathname } from 'next/navigation';
 const navigation = [
   { name: 'Links', href: '/links', icon: '🔗' },
   { name: 'Notes', href: '/notes', icon: '📝' },
+  { name: 'Snippets', href: '/snippets', icon: '💻' },
   { name: 'Categories', href: '/categories', icon: '📁' },
   { name: 'Tags', href: '/tags', icon: '🏷️' },
-  { name: 'Search', href: '/search', icon: '🔍' },
 ];
 
 export default function Sidebar() {

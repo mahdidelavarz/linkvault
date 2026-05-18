@@ -1,27 +1,28 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  size?: "default" | "large";
 }
 
-export default function Modal({ isOpen, onClose, children }: ModalProps) {
+export default function Modal({ isOpen, onClose, children, size }: ModalProps) {
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === "Escape") onClose();
     };
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEsc);
-      document.body.style.overflow = 'hidden';
+      document.addEventListener("keydown", handleEsc);
+      document.body.style.overflow = "hidden";
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEsc);
-      document.body.style.overflow = 'unset';
+      document.removeEventListener("keydown", handleEsc);
+      document.body.style.overflow = "unset";
     };
   }, [isOpen, onClose]);
 
@@ -37,7 +38,12 @@ export default function Modal({ isOpen, onClose, children }: ModalProps) {
         />
 
         {/* Modal Content */}
-        <div className="relative inline-block bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:max-w-lg sm:w-full p-6">
+        <div
+          className={`
+  relative inline-block bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all p-6
+  ${size === "large" ? "sm:max-w-4xl sm:w-full" : "sm:max-w-lg sm:w-full"}
+`}
+        >
           {children}
         </div>
       </div>
