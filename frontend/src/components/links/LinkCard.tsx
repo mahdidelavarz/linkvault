@@ -24,10 +24,11 @@ export default function LinkCard({ link, onEdit }: LinkCardProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200">
+    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 border border-gray-100">
+      {/* Header with favorite */}
       <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-semibold text-gray-900 mb-1 truncate">
             <button 
               onClick={openLink}
               className="hover:text-blue-600 transition-colors text-left"
@@ -41,51 +42,65 @@ export default function LinkCard({ link, onEdit }: LinkCardProps) {
             rel="noopener noreferrer"
             className="text-sm text-blue-600 hover:text-blue-800 truncate block"
           >
-            {link.url}
+            🔗 {link.url}
           </a>
         </div>
         
         <button
           onClick={() => toggleFavorite.mutate(link.id)}
-          className="ml-2 text-2xl hover:scale-110 transition-transform"
+          className="ml-2 text-2xl hover:scale-110 transition-transform flex-shrink-0"
           title={link.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
         >
           {link.isFavorite ? '⭐' : '☆'}
         </button>
       </div>
 
+      {/* Description */}
       {link.description && (
         <p className="text-sm text-gray-600 mb-3 line-clamp-2">
           {link.description}
         </p>
       )}
 
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-3 flex-wrap">
-        {link.username && <span>👤 {link.username}</span>}
-        {link.email && <span>📧 {link.email}</span>}
-        {link.phone && <span>📱 {link.phone}</span>}
-      </div>
+      {/* Credentials */}
+      {(link.username || link.email || link.phone) && (
+        <div className="flex items-center gap-3 text-xs text-gray-500 mb-3 flex-wrap">
+          {link.username && <span>👤 {link.username}</span>}
+          {link.email && <span>📧 {link.email}</span>}
+          {link.phone && <span>📱 {link.phone}</span>}
+        </div>
+      )}
 
+      {/* Category & Tags */}
       <div className="flex flex-wrap gap-2 mb-3">
         {link.category && (
-          <span className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+          <span className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full font-medium">
             📁 {link.category.name}
           </span>
         )}
 
         {link.tags && link.tags.length > 0 && link.tags.map((tag: any) => (
-          <span key={tag.id} className="inline-flex items-center bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
+          <span 
+            key={tag.id} 
+            className="inline-flex items-center bg-gray-100 text-gray-700 text-xs px-2.5 py-1 rounded-full"
+          >
             🏷️ {tag.name}
           </span>
         ))}
       </div>
 
-      <div className="flex justify-end gap-2 pt-3 border-t">
+      {/* Timestamp */}
+      <div className="text-xs text-gray-400 mb-3">
+        Updated {new Date(link.updatedAt).toLocaleDateString()}
+      </div>
+
+      {/* Actions */}
+      <div className="flex justify-end gap-2 pt-3 border-t border-gray-100">
         <Button variant="outline" onClick={() => onEdit(link)}>
-          Edit
+          ✏️ Edit
         </Button>
         <Button variant="secondary" onClick={handleDelete}>
-          Delete
+          🗑️ Delete
         </Button>
       </div>
     </div>

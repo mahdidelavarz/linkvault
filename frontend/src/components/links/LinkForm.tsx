@@ -7,6 +7,7 @@ import { useCategories } from '@/hooks/useCategories';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
+import TagSelector from '@/components/tags/TagSelector';
 
 interface LinkFormProps {
   link?: Link | null;
@@ -26,6 +27,7 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
     phone: '',
     isFavorite: false,
     categoryId: undefined,
+    tagIds: [],
   });
 
   const createLink = useCreateLink();
@@ -44,6 +46,7 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
         phone: link.phone || '',
         isFavorite: link.isFavorite,
         categoryId: link.categoryId,
+        tagIds: link.tags ? link.tags.map((tag: any) => tag.id) : [],
       });
     }
   }, [link]);
@@ -51,10 +54,16 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate required fields
+    if (!formData.url.trim() || !formData.title.trim()) {
+      return;
+    }
+    
     try {
       const dataToSubmit = {
         ...formData,
         categoryId: formData.categoryId || undefined,
+        tagIds: formData.tagIds || [],
       };
 
       if (isEditing && link) {
@@ -81,6 +90,13 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
     setFormData(prev => ({
       ...prev,
       categoryId: value ? parseInt(value) : undefined
+    }));
+  };
+
+  const handleTagsChange = (tagIds: number[]) => {
+    setFormData(prev => ({
+      ...prev,
+      tagIds
     }));
   };
 
@@ -138,6 +154,11 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
           ))}
         </select>
       </div>
+
+      <TagSelector
+        selectedTagIds={formData.tagIds || []}
+        onChange={handleTagsChange}
+      />
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -204,7 +225,7 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
         <span className="text-sm text-gray-700">Mark as favorite</span>
       </label>
 
-      <div className="flex justify-end gap-3 pt-4">
+      <div className="flex justify-end gap-3 pt-4 border-t">
         <Button type="button" variant="secondary" onClick={onClose}>
           Cancel
         </Button>
