@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.route';
 import { errorHandler } from './middleware/errorHandler';
 import linkRoutes from './routes/links.route';
 import categoryRoutes from './routes/category.route';
+import tagRoutes from './routes/tag.route';
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/links', linkRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/tags', tagRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
