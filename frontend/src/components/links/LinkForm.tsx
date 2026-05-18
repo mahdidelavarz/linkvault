@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { CreateLinkDto, Link } from '@/types/link';
 import { useCreateLink, useUpdateLink } from '@/hooks/useLinks';
+import { useCategories } from '@/hooks/useCategories';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Alert from '@/components/ui/Alert';
@@ -24,10 +25,12 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
     email: '',
     phone: '',
     isFavorite: false,
+    categoryId: undefined,
   });
 
   const createLink = useCreateLink();
   const updateLink = useUpdateLink();
+  const { data: categories } = useCategories();
 
   useEffect(() => {
     if (link) {
@@ -40,6 +43,7 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
         email: link.email || '',
         phone: link.phone || '',
         isFavorite: link.isFavorite,
+        categoryId: link.categoryId,
       });
     }
   }, [link]);
@@ -48,10 +52,15 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
     e.preventDefault();
     
     try {
+      const dataToSubmit = {
+        ...formData,
+        categoryId: formData.categoryId || undefined,
+      };
+
       if (isEditing && link) {
-        await updateLink.mutateAsync({ id: link.id, ...formData });
+        await updateLink.mutateAsync({ id: link.id, ...dataToSubmit });
       } else {
-        await createLink.mutateAsync(formData);
+        await createLink.mutateAsync(dataToSubmit);
       }
       onClose();
     } catch (error) {
@@ -59,11 +68,19 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    }));
+  };
+
+  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      categoryId: value ? parseInt(value) : undefined
     }));
   };
 
@@ -102,6 +119,25 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
         required
         placeholder="My Link"
       />
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Category
+        </label>
+        <select
+          name="categoryId"
+          value={formData.categoryId || ''}
+          onChange={handleCategoryChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          <option value="">No Category</option>
+          {categories?.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">

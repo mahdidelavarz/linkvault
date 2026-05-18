@@ -48,6 +48,7 @@ export default function LinkCard({ link, onEdit }: LinkCardProps) {
         <button
           onClick={() => toggleFavorite.mutate(link.id)}
           className="ml-2 text-2xl hover:scale-110 transition-transform"
+          title={link.isFavorite ? 'Remove from favorites' : 'Add to favorites'}
         >
           {link.isFavorite ? '⭐' : '☆'}
         </button>
@@ -59,27 +60,25 @@ export default function LinkCard({ link, onEdit }: LinkCardProps) {
         </p>
       )}
 
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+      <div className="flex items-center gap-2 text-sm text-gray-500 mb-3 flex-wrap">
         {link.username && <span>👤 {link.username}</span>}
         {link.email && <span>📧 {link.email}</span>}
         {link.phone && <span>📱 {link.phone}</span>}
       </div>
 
-      {link.category && (
-        <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mb-3">
-          📁 {link.category.name}
-        </span>
-      )}
+      <div className="flex flex-wrap gap-2 mb-3">
+        {link.category && (
+          <span className="inline-flex items-center bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+            📁 {link.category.name}
+          </span>
+        )}
 
-      {link.tags && link.tags.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-3">
-          {link.tags.map((tag: any) => (
-            <span key={tag.id} className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
-              {tag.tag?.name || tag.name}
-            </span>
-          ))}
-        </div>
-      )}
+        {link.tags && link.tags.length > 0 && link.tags.map((tag: any) => (
+          <span key={tag.id} className="inline-flex items-center bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
+            🏷️ {tag.name}
+          </span>
+        ))}
+      </div>
 
       <div className="flex justify-end gap-2 pt-3 border-t">
         <Button variant="outline" onClick={() => onEdit(link)}>
