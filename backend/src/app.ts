@@ -13,6 +13,7 @@ import noteRoutes from './routes/note.route';
 import snippetRoutes from './routes/snippet.route';
 import searchRoutes from './routes/search.route';
 import promptRoutes from './routes/prompt.route';
+import dashboardRoutes from './routes/dashboard.route';
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.use('/api/notes', noteRoutes);
 app.use('/api/snippets' , snippetRoutes)
 app.use('/api/search', searchRoutes);
 app.use('/api/prompts', promptRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
