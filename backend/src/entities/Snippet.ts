@@ -16,8 +16,14 @@ export class Snippet {
     @Column({ type: 'varchar', length: 50, default: 'txt' })
     language!: string;
 
+    @Column({ type: 'varchar', length: 50, default: 'code', name: 'snippet_type' })
+    snippetType!: string;
+
     @Column({ type: 'text', nullable: true })
     description?: string;
+
+    @Column({ type: 'simple-json', nullable: true })
+    metadata?: any;
 
     @Column({ type: 'bit', default: false, name: 'is_favorite' })
     isFavorite!: boolean;

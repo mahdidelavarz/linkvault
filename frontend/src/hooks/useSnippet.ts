@@ -6,6 +6,7 @@ import { Snippet, CreateSnippetDto, UpdateSnippetDto } from '@/types/snippet';
 export const useSnippets = (filters?: {
   search?: string;
   categoryId?: number;
+  snippetType?: string;
   language?: string;
   isFavorite?: boolean;
   tagIds?: number[];
@@ -16,6 +17,7 @@ export const useSnippets = (filters?: {
       const params = new URLSearchParams();
       if (filters?.search) params.append('search', filters.search);
       if (filters?.categoryId) params.append('categoryId', filters.categoryId.toString());
+      if (filters?.snippetType) params.append('snippetType', filters.snippetType);
       if (filters?.language) params.append('language', filters.language);
       if (filters?.isFavorite) params.append('isFavorite', 'true');
       if (filters?.tagIds) params.append('tagIds', filters.tagIds.join(','));

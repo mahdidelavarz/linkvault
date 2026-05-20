@@ -1,6 +1,6 @@
 'use client';
 
-import { Snippet } from '@/types/snippet';
+import { Snippet, SNIPPET_TYPES, SnippetType } from '@/types/snippet';
 import { useToggleSnippetFavorite, useDeleteSnippet } from '@/hooks/useSnippet';
 import { getLanguageIcon, getLanguageName } from '@/lib/languageDetector';
 import Button from '@/components/ui/Button';
@@ -47,6 +47,8 @@ const languageMap: Record<string, string> = {
   md: 'markdown',
   graphql: 'graphql',
   txt: 'text',
+  regex: 'javascript', // Use JS highlighting for regex
+  curl: 'bash',        // Use bash for curl
 };
 
 export default function SnippetCard({ snippet, onEdit, onCopy }: SnippetCardProps) {
@@ -59,25 +61,40 @@ export default function SnippetCard({ snippet, onEdit, onCopy }: SnippetCardProp
     }
   };
 
+  // Safely get snippet type info
+  const snippetTypeKey = (snippet.snippetType || 'code') as SnippetType;
+  const snippetType = SNIPPET_TYPES[snippetTypeKey] || SNIPPET_TYPES.code;
+  
+  // Safely get language
   const highlightLanguage = languageMap[snippet.language] || 'text';
+  
+  // Get language name
+  const languageName = getLanguageName(snippet.language);
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 border border-gray-100">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-xl">{getLanguageIcon(snippet.language)}</span>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-semibold text-gray-900 truncate">
               {snippet.title}
             </h3>
-            <span className="text-xs text-gray-500">
-              {getLanguageName(snippet.language)}
-            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Type Badge */}
+              <span className={`text-xs text-white px-2 py-0.5 rounded-full ${snippetType.color}`}>
+                {snippetType.icon} {snippetType.label}
+              </span>
+              {/* Language */}
+              <span className="text-xs text-gray-500">
+                {languageName}
+              </span>
+            </div>
           </div>
         </div>
         <button
           onClick={() => toggleFavorite.mutate(snippet.id)}
-          className="text-2xl hover:scale-110 transition-transform"
+          className="text-2xl hover:scale-110 transition-transform flex-shrink-0"
         >
           {snippet.isFavorite ? '⭐' : '☆'}
         </button>
@@ -87,6 +104,7 @@ export default function SnippetCard({ snippet, onEdit, onCopy }: SnippetCardProp
         <p className="text-sm text-gray-600 mb-3">{snippet.description}</p>
       )}
 
+      {/* Code Preview */}
       <div className="mb-3 rounded-lg overflow-hidden" style={{ maxHeight: '200px' }}>
         <SyntaxHighlighter
           language={highlightLanguage}
@@ -101,6 +119,7 @@ export default function SnippetCard({ snippet, onEdit, onCopy }: SnippetCardProp
         </SyntaxHighlighter>
       </div>
 
+      {/* Tags & Category */}
       <div className="flex flex-wrap gap-2 mb-3">
         {snippet.category && (
           <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
@@ -114,6 +133,24 @@ export default function SnippetCard({ snippet, onEdit, onCopy }: SnippetCardProp
         ))}
       </div>
 
+      {/* Type-specific metadata */}
+      {snippetTypeKey === 'regex' && snippet.metadata?.flags && (
+        <div className="text-xs text-gray-500 mb-2">
+          Flags: <code className="bg-gray-100 px-1 rounded">{snippet.metadata.flags}</code>
+        </div>
+      )}
+      {snippetTypeKey === 'sql' && snippet.metadata?.databaseType && (
+        <div className="text-xs text-gray-500 mb-2">
+          Database: <span className="font-medium">{snippet.metadata.databaseType}</span>
+        </div>
+      )}
+      {snippetTypeKey === 'command' && snippet.metadata?.shellType && (
+        <div className="text-xs text-gray-500 mb-2">
+          Shell: <span className="font-medium">{snippet.metadata.shellType}</span>
+        </div>
+      )}
+
+      {/* Timestamp */}
       <div className="flex justify-between items-center pt-3 border-t">
         <span className="text-xs text-gray-400">
           {new Date(snippet.updatedAt).toLocaleDateString()}

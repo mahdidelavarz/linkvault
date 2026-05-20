@@ -12,6 +12,7 @@ export class SnippetService {
         language?: string;
         isFavorite?: boolean;
         tagIds?: number[];
+        snippetType?: string
     }) {
         const queryBuilder = this.snippetRepository.createQueryBuilder('snippet')
             .leftJoinAndSelect('snippet.category', 'category')
@@ -22,6 +23,9 @@ export class SnippetService {
                 '(snippet.title LIKE :search OR snippet.description LIKE :search OR snippet.content LIKE :search)',
                 { search: `%${filters.search}%` }
             );
+        }
+        if (filters?.snippetType) {
+            queryBuilder.andWhere('snippet.snippetType = :snippetType', { snippetType: filters.snippetType });
         }
 
         if (filters?.categoryId) {

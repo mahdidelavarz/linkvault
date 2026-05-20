@@ -1,4 +1,48 @@
-import { LANGUAGES } from '@/types/snippet';
+import { TYPE_LANGUAGES } from '@/types/snippet';
+
+// Comprehensive language detection map
+const LANGUAGES: Record<string, string> = {
+  js: 'JavaScript',
+  jsx: 'React JSX',
+  ts: 'TypeScript',
+  tsx: 'React TSX',
+  py: 'Python',
+  rb: 'Ruby',
+  java: 'Java',
+  go: 'Go',
+  rs: 'Rust',
+  php: 'PHP',
+  cs: 'C#',
+  cpp: 'C++',
+  c: 'C',
+  swift: 'Swift',
+  kt: 'Kotlin',
+  scala: 'Scala',
+  sql: 'SQL',
+  sh: 'Shell/Bash',
+  bash: 'Bash',
+  zsh: 'Zsh',
+  ps1: 'PowerShell',
+  powershell: 'PowerShell',
+  dockerfile: 'Docker',
+  yaml: 'YAML',
+  yml: 'YAML',
+  json: 'JSON',
+  xml: 'XML',
+  html: 'HTML',
+  css: 'CSS',
+  scss: 'SCSS',
+  md: 'Markdown',
+  graphql: 'GraphQL',
+  proto: 'Protobuf',
+  tf: 'Terraform',
+  hcl: 'HCL',
+  nginx: 'Nginx',
+  env: 'Environment',
+  txt: 'Plain Text',
+  regex: 'Regex',
+  curl: 'cURL',
+};
 
 export function detectLanguage(code: string): string {
   // Remove empty lines and trim
@@ -15,7 +59,33 @@ export function detectLanguage(code: string): string {
     return 'js';
   }
 
-  // Check for common patterns
+  // Check for command patterns (shell/CLI commands)
+  const commandPatterns = [
+    /^(npm|yarn|pnpm|npx)\s/,
+    /^(docker|docker-compose)\s/,
+    /^(git|gh)\s/,
+    /^(kubectl|k|helm)\s/,
+    /^(terraform|terragrunt)\s/,
+    /^(aws|gcloud|az)\s/,
+    /^(systemctl|service)\s/,
+    /^(sudo|su)\s/,
+    /^(apt|apt-get|yum|brew|choco|pip|pip3|cargo|gem|composer)\s/,
+    /^(node|python|ruby|php|java|go|rustc|cargo)\s/,
+    /^(curl|wget)\s/,
+    /^(chmod|chown|ln|mkdir|touch|cat|tail|head|less|grep|find|which|echo|export|source)\s/,
+    /^\$\s/, // $ prompt
+    /^>\s/, // > prompt (PowerShell/CMD)
+    /^#\s/,  // # prompt (root)
+  ];
+
+  // If any command pattern matches, it's likely a shell command
+  for (const pattern of commandPatterns) {
+    if (pattern.test(trimmedCode)) {
+      return 'bash';
+    }
+  }
+
+  // Check for common patterns in other languages
   const patterns: Record<string, RegExp[]> = {
     dockerfile: [/^(FROM|RUN|CMD|EXPOSE|ENV|COPY|ADD|WORKDIR|ENTRYPOINT|VOLUME)\s/m],
     sql: [/^(SELECT|INSERT|UPDATE|DELETE|CREATE TABLE|ALTER TABLE|DROP TABLE)\s/i, /^\s*--/m],
@@ -34,7 +104,8 @@ export function detectLanguage(code: string): string {
     css: [/[@#.]\w+\s*\{/, /font-size:|margin:|padding:|color:/],
     graphql: [/^(query|mutation|subscription)\s/, /type\s+\w+\s*\{/],
     powershell: [/^(Get-|Set-|New-|Write-|Out-)\w+/, /\$\w+/],
-    bash: [/^(echo|cd|ls|mkdir|rm|cp|mv|chmod|grep|awk|sed|export)\s/m, /^\s*#!\//],
+    regex: [/^\/.+\/[gimsuyd]*$/, /^\^/, /\$$/],
+    curl: [/^curl\s/i],
   };
 
   let bestMatch = 'txt';
@@ -80,10 +151,14 @@ export function getLanguageIcon(lang: string): string {
     yaml: '⚙️',
     bash: '💻',
     sh: '💻',
+    zsh: '💻',
     ps1: '🖥️',
+    powershell: '🖥️',
     md: '📝',
     graphql: '◈',
     txt: '📄',
+    regex: '📝',
+    curl: '🌐',
   };
   return icons[lang] || '📄';
 }
