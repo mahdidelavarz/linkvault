@@ -11,6 +11,7 @@ const navigation = [
   { name: "Prompts", href: "/prompts", icon: "💬" },
   { name: "Categories", href: "/categories", icon: "📁" },
   { name: "Tags", href: "/tags", icon: "🏷️" },
+  { name: 'API Client', href: '/api-client', icon: '🌐' },
 ];
 
 export default function Sidebar() {
