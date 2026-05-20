@@ -6,3 +6,5 @@ export { Tag } from './Tag';
 export { Taggable } from './Taggable';
 export { Snippet } from './Snippet';
 export { Prompt } from './Prompt';
+export { ApiEndpoint } from './ApiEndpoint';
+export { ApiCollection } from './ApiCollection';
