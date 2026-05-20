@@ -12,6 +12,7 @@ import tagRoutes from './routes/tag.route';
 import noteRoutes from './routes/note.route';
 import snippetRoutes from './routes/snippet.route';
 import searchRoutes from './routes/search.route';
+import promptRoutes from './routes/prompt.route';
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ app.use('/api/tags', tagRoutes);
 app.use('/api/notes', noteRoutes);
 app.use('/api/snippets' , snippetRoutes)
 app.use('/api/search', searchRoutes);
+app.use('/api/prompts', promptRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

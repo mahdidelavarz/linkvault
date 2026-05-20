@@ -4,3 +4,5 @@ export { Note } from './Note';
 export { Category } from './Category';
 export { Tag } from './Tag';
 export { Taggable } from './Taggable';
+export { Snippet } from './Snippet';
+export { Prompt } from './Prompt';
