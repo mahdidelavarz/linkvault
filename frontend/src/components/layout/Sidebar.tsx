@@ -4,14 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: "🏷️" },
-  { name: "Links", href: "/links", icon: "🔗" },
-  { name: "Notes", href: "/notes", icon: "📝" },
-  { name: "Snippets", href: "/snippets", icon: "💻" },
-  { name: "Prompts", href: "/prompts", icon: "💬" },
-  { name: "Categories", href: "/categories", icon: "📁" },
-  { name: "Tags", href: "/tags", icon: "🏷️" },
+  { name: 'Links', href: '/links', icon: '🔗' },
+  { name: 'Notes', href: '/notes', icon: '📝' },
+  { name: 'Snippets', href: '/snippets', icon: '💻' },
+  { name: 'Prompts', href: '/prompts', icon: '💬' },
   { name: 'API Client', href: '/api-client', icon: '🌐' },
+  { name: 'Infrastructure', href: '/infrastructure', icon: '🏗️' },
+  { name: 'Categories', href: '/categories', icon: '📁' },
+  { name: 'Tags', href: '/tags', icon: '🏷️' },
 ];
 
 export default function Sidebar() {

@@ -15,6 +15,7 @@ import searchRoutes from './routes/search.route';
 import promptRoutes from './routes/prompt.route';
 import dashboardRoutes from './routes/dashboard.route';
 import apiRoutes from './routes/api.route';
+import infraRoutes from './routes/Infra.route';
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.use('/api/search', searchRoutes);
 app.use('/api/prompts', promptRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/api-client', apiRoutes);
+app.use('/api/infrastructure', infraRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

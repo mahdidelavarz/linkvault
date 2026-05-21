@@ -8,3 +8,4 @@ export { Snippet } from './Snippet';
 export { Prompt } from './Prompt';
 export { ApiEndpoint } from './ApiEndpoint';
 export { ApiCollection } from './ApiCollection';
+export { Infrastructure } from './Infrastructure';
