@@ -1,33 +1,110 @@
-# Dependencies
-node_modules/
+# ================== Root Level ==================
 
-# Build output
-dist/
-.next/
-out/
-
-# Env files
+# Environment variables
 .env
 .env.local
-.env.*.local
+.env.development
+.env.production
+.env.test
 
 # Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# OS files
+# Docker
+.dockerignore
+.docker/
+*.docker-volumes
+
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Editor / IDE
+# ================== Backend ==================
+
+backend/node_modules/
+backend/dist/
+backend/build/
+backend/.env
+backend/coverage/
+backend/*.log
+backend/tsconfig.tsbuildinfo
+
+# TypeScript cache
+backend/.tscache/
+
+# ================== Frontend (Next.js) ==================
+
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.env.local
+frontend/.env.development
+frontend/.env.production
+frontend/.env.test
+
+# Next.js specific
+frontend/.next/
+frontend/next-env.d.ts
+frontend/.vercel
+
+# Debug
+frontend/debug.log
+
+# Production artifacts
+frontend/.vercel
+frontend/.output
+
+# ================== Development Tools ==================
+
+# IDEs and Editors
 .vscode/
 .idea/
+*.swp
+*.swo
+*\~
 
-# Docker
-*.log
-docker-data/
-
-# TypeORM
+# Local database files (if any)
 *.sqlite
+*.db
+
+# Testing
+coverage/
+.nyc_output/
+junit.xml
+
+# Cache
+.cache/
+.parcel-cache/
+.eslintcache
+
+# ================== Misc ==================
+
+# Temporary folders
+tmp/
+temp/
+*.tmp
+
+# Yarn / pnpm
+.yarn/
+.pnp.*
+.pnp.js
+
+# Turbo / Turborepo (اگر بعداً اضافه کردی)
+.turbo/
+
+# Deployment
+.vercel
+netlify/
+
+# Git
+.gitignore.local
