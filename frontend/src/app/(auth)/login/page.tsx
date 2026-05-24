@@ -1,53 +1,57 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Icon } from '@iconify/react'
-import { useLogin } from '@/hooks/useAuth'
-import Input   from '@/components/ui/Input'
-import Button  from '@/components/ui/Button'
-import Alert   from '@/components/ui/Alert'
+import Link from "next/link";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useLogin } from "@/hooks/useAuth";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
+import Alert from "@/components/ui/Alert";
+import {
+  LucideEye,
+  LucideEyeOff,
+  LucideLock,
+  LucideUser,
+  LucideVault,
+} from "@/Icons/Icons";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
 const schema = z.object({
-  username: z.string().min(1, 'Username is required').trim(),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-})
+  username: z.string().min(1, "Username is required").trim(),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
 
-type FormData = z.infer<typeof schema>
+type FormData = z.infer<typeof schema>;
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const loginMutation = useLogin()
+  const [showPassword, setShowPassword] = useState(false);
+  const loginMutation = useLogin();
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<FormData>({ resolver: zodResolver(schema) })
+  } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   const onSubmit = (data: FormData) => {
-    loginMutation.mutate(data)
-  }
+    loginMutation.mutate(data);
+  };
 
   return (
     <>
       <style>{CSS}</style>
       <div className="auth-page">
-
         {/* Card */}
         <div className="auth-card">
-
           {/* Logo */}
           <div className="auth-logo">
             <div className="auth-logo-icon">
-              <Icon icon="lucide:vault" width={22} />
+              <LucideVault width={22} />
             </div>
             <span className="auth-logo-text">LinkVault</span>
           </div>
@@ -65,30 +69,33 @@ export default function LoginPage() {
               message={
                 loginMutation.error instanceof Error
                   ? loginMutation.error.message
-                  : 'Login failed. Please try again.'
+                  : "Login failed. Please try again."
               }
             />
           )}
 
           {/* Form */}
-          <form className="auth-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-
+          <form
+            className="auth-form"
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+          >
             <Input
               label="Username"
               type="text"
               placeholder="Enter your username"
-              leftIcon="lucide:user"
+              leftIcon={LucideUser}
               error={errors.username?.message}
               autoComplete="username"
               autoFocus
-              {...register('username')}
+              {...register("username")}
             />
 
             <Input
               label="Password"
-              type={showPassword ? 'text' : 'password'}
+              type={showPassword ? "text" : "password"}
               placeholder="Enter your password"
-              leftIcon="lucide:lock"
+              leftIcon={LucideLock}
               error={errors.password?.message}
               autoComplete="current-password"
               rightNode={
@@ -97,15 +104,16 @@ export default function LoginPage() {
                   className="auth-eye-btn"
                   onClick={() => setShowPassword((p) => !p)}
                   tabIndex={-1}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  <Icon
-                    icon={showPassword ? 'lucide:eye-off' : 'lucide:eye'}
-                    width={14}
-                  />
+                  {showPassword ? (
+                    <LucideEyeOff width={14} />
+                  ) : (
+                    <LucideEye width={14} />
+                  )}
                 </button>
               }
-              {...register('password')}
+              {...register("password")}
             />
 
             <Button
@@ -116,19 +124,19 @@ export default function LoginPage() {
             >
               Sign in
             </Button>
-
           </form>
 
           {/* Footer */}
           <p className="auth-footer-text">
-            Don't have an account?{' '}
-            <Link href="/register" className="auth-link">Sign up</Link>
+            Don't have an account?{" "}
+            <Link href="/register" className="auth-link">
+              Sign up
+            </Link>
           </p>
-
         </div>
       </div>
     </>
-  )
+  );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -241,4 +249,4 @@ const CSS = `
   transition:  color var(--transition-fast);
 }
 .auth-link:hover { color: var(--accent-hover); }
-`
+`;

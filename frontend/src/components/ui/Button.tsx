@@ -1,7 +1,7 @@
 'use client'
 
-import { Icon } from '@iconify/react'
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { SvgSpinnersRingResize } from '@/Icons/Icons'
+import type { ButtonHTMLAttributes, ComponentType, ReactNode, SVGProps } from 'react'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline'
 export type ButtonSize    = 'xs' | 'sm' | 'md' | 'lg'
@@ -11,8 +11,8 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?:      ButtonSize
   isLoading?: boolean
   fullWidth?: boolean
-  leftIcon?:  string   // iconify icon name
-  rightIcon?: string
+  leftIcon?:  ComponentType<SVGProps<SVGSVGElement>>
+  rightIcon?: ComponentType<SVGProps<SVGSVGElement>>
   children?:  ReactNode
 }
 
@@ -36,8 +36,8 @@ export default function Button({
   size      = 'md',
   isLoading = false,
   fullWidth = false,
-  leftIcon,
-  rightIcon,
+  leftIcon : LeftIcon,
+  rightIcon : RightIcon,
   children,
   className = '',
   disabled,
@@ -58,15 +58,15 @@ export default function Button({
         {...props}
       >
         {isLoading ? (
-          <Icon icon="svg-spinners:ring-resize" className="btn-spinner" />
-        ) : leftIcon ? (
-          <Icon icon={leftIcon} className="btn-icon" />
+          <SvgSpinnersRingResize className="btn-spinner" />
+        ) : LeftIcon ? (
+          <LeftIcon className="btn-icon" />
         ) : null}
 
         {children && <span>{children}</span>}
 
-        {!isLoading && rightIcon && (
-          <Icon icon={rightIcon} className="btn-icon" />
+        {!isLoading && RightIcon && (
+          <RightIcon className="btn-icon" />
         )}
       </button>
     </>

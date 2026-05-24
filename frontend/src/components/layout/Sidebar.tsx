@@ -1,66 +1,88 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useEffect } from 'react'
-import { Icon } from '@iconify/react'
-import { useAuthStore } from '@/store/authStore'
-import { useSidebar } from './SidebarContext'
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { ComponentType, SVGProps, useEffect } from "react";
+import { useAuthStore } from "@/store/authStore";
+import { useSidebar } from "./SidebarContext";
+import {
+  LucideChevronLeft,
+  LucideChevronRight,
+  LucideFileCode2,
+  LucideFileText,
+  LucideFolder,
+  LucideGlobe,
+  LucideLayoutDashboard,
+  LucideLink2,
+  LucideMessageSquare,
+  LucideServer,
+  LucideTag,
+  LucideUser,
+  LucideVault,
+  LucideX,
+} from "@/Icons/Icons";
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
 const NAV_MAIN = [
-  { name: 'Dashboard',      href: '/dashboard',     icon: 'lucide:layout-dashboard' },
-  { name: 'Links',          href: '/links',          icon: 'lucide:link-2'           },
-  { name: 'Notes',          href: '/notes',          icon: 'lucide:file-text'        },
-  { name: 'Snippets',       href: '/snippets',       icon: 'lucide:code-2'           },
-  { name: 'Prompts',        href: '/prompts',        icon: 'lucide:message-square'   },
-  { name: 'API Client',     href: '/api-client',     icon: 'lucide:globe'            },
-  { name: 'Infrastructure', href: '/infrastructure', icon: 'lucide:server'           },
-]
+  { name: "Dashboard", href: "/dashboard", icon: LucideLayoutDashboard },
+  { name: "Links", href: "/links", icon: LucideLink2 },
+  { name: "Notes", href: "/notes", icon: LucideFileText },
+  { name: "Snippets", href: "/snippets", icon: LucideFileCode2 },
+  { name: "Prompts", href: "/prompts", icon: LucideMessageSquare },
+  { name: "API Client", href: "/api-client", icon: LucideGlobe },
+  { name: "Infrastructure", href: "/infrastructure", icon: LucideServer },
+];
 
 const NAV_MANAGE = [
-  { name: 'Categories', href: '/categories', icon: 'lucide:folder' },
-  { name: 'Tags',       href: '/tags',       icon: 'lucide:tag'    },
-]
+  { name: "Categories", href: "/categories", icon: LucideFolder },
+  { name: "Tags", href: "/tags", icon: LucideTag },
+];
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 export default function Sidebar() {
-  const pathname  = usePathname()
-  const user      = useAuthStore((s) => s.user)
-  const { collapsed, mobileOpen, setCollapsed, setMobileOpen } = useSidebar()
+  const pathname = usePathname();
+  const user = useAuthStore((s) => s.user);
+  const { collapsed, mobileOpen, setCollapsed, setMobileOpen } = useSidebar();
 
   // Close mobile drawer on route change
-  useEffect(() => { setMobileOpen(false) }, [pathname, setMobileOpen])
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname, setMobileOpen]);
 
   // Close on Escape
   useEffect(() => {
-    if (!mobileOpen) return
+    if (!mobileOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileOpen(false)
-    }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [mobileOpen, setMobileOpen])
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [mobileOpen, setMobileOpen]);
 
   // Lock body scroll when mobile drawer open
   useEffect(() => {
     if (mobileOpen) {
-      document.body.style.overflow = 'hidden'
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = ''
+      document.body.style.overflow = "";
     }
-    return () => { document.body.style.overflow = '' }
-  }, [mobileOpen])
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
 
   const sidebarContent = (
-    <div className={['sidebar-inner', collapsed ? 'sidebar-inner--collapsed' : ''].filter(Boolean).join(' ')}>
-
+    <div
+      className={["sidebar-inner", collapsed ? "sidebar-inner--collapsed" : ""]
+        .filter(Boolean)
+        .join(" ")}
+    >
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="sidebar-logo-icon">
-          <Icon icon="lucide:vault" width={18} />
+          <LucideVault width={18} />
         </div>
         {!collapsed && <span className="sidebar-logo-text">LinkVault</span>}
 
@@ -68,9 +90,13 @@ export default function Sidebar() {
         <button
           className="sidebar-collapse-btn"
           onClick={() => setCollapsed(!collapsed)}
-          aria-label={collapsed ? 'Expand' : 'Collapse'}
+          aria-label={collapsed ? "Expand" : "Collapse"}
         >
-          <Icon icon={collapsed ? 'lucide:chevron-right' : 'lucide:chevron-left'} width={14} />
+          {collapsed ? (
+            <LucideChevronRight width={14} />
+          ) : (
+            <LucideChevronLeft width={14} />
+          )}
         </button>
 
         {/* Close btn — mobile only */}
@@ -79,7 +105,7 @@ export default function Sidebar() {
           onClick={() => setMobileOpen(false)}
           aria-label="Close menu"
         >
-          <Icon icon="lucide:x" width={16} />
+          <LucideX width={16} />
         </button>
       </div>
 
@@ -92,7 +118,7 @@ export default function Sidebar() {
               {...item}
               active={
                 pathname === item.href ||
-                (item.href !== '/dashboard' && pathname.startsWith(item.href))
+                (item.href !== "/dashboard" && pathname.startsWith(item.href))
               }
               collapsed={collapsed}
             />
@@ -115,23 +141,22 @@ export default function Sidebar() {
       <div className="sidebar-footer">
         <div className="sidebar-user">
           <div className="sidebar-avatar">
-            <Icon icon="lucide:user" width={14} /></div>
+            <LucideUser width={14} />
+          </div>
           {!collapsed && (
-            <span className="sidebar-username">{user?.username ?? 'User'}</span>
+            <span className="sidebar-username">{user?.username ?? "User"}</span>
           )}
         </div>
       </div>
     </div>
-  )
+  );
 
   return (
     <>
       <style>{CSS}</style>
 
       {/* ── Desktop sidebar ── */}
-      <aside className="sidebar-desktop">
-        {sidebarContent}
-      </aside>
+      <aside className="sidebar-desktop">{sidebarContent}</aside>
 
       {/* ── Mobile backdrop ── */}
       {mobileOpen && (
@@ -143,13 +168,16 @@ export default function Sidebar() {
       )}
 
       {/* ── Mobile drawer ── */}
-      <aside className={['sidebar-mobile', mobileOpen ? 'sidebar-mobile--open' : ''].filter(Boolean).join(' ')}>
+      <aside
+        className={["sidebar-mobile", mobileOpen ? "sidebar-mobile--open" : ""]
+          .filter(Boolean)
+          .join(" ")}
+      >
         {/* Force expanded in mobile drawer */}
         <div className="sidebar-inner">
-
           <div className="sidebar-logo">
             <div className="sidebar-logo-icon">
-              <Icon icon="lucide:vault" width={18} />
+              <LucideVault width={18} />
             </div>
             <span className="sidebar-logo-text">LinkVault</span>
             <button
@@ -157,7 +185,7 @@ export default function Sidebar() {
               onClick={() => setMobileOpen(false)}
               aria-label="Close menu"
             >
-              <Icon icon="lucide:x" width={16} />
+              <LucideX width={16} />
             </button>
           </div>
 
@@ -169,7 +197,8 @@ export default function Sidebar() {
                   {...item}
                   active={
                     pathname === item.href ||
-                    (item.href !== '/dashboard' && pathname.startsWith(item.href))
+                    (item.href !== "/dashboard" &&
+                      pathname.startsWith(item.href))
                   }
                   collapsed={false}
                 />
@@ -190,45 +219,64 @@ export default function Sidebar() {
           <div className="sidebar-footer">
             <div className="sidebar-user">
               <div className="sidebar-avatar">
-                <Icon icon="lucide:user" width={14} />
+                <LucideUser width={14} />
               </div>
-              <span className="sidebar-username">{user?.username ?? 'User'}</span>
+              <span className="sidebar-username">
+                {user?.username ?? "User"}
+              </span>
             </div>
           </div>
-
         </div>
       </aside>
     </>
-  )
+  );
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function NavSection({ label, collapsed, children }: {
-  label: string; collapsed: boolean; children: React.ReactNode
+function NavSection({
+  label,
+  collapsed,
+  children,
+}: {
+  label: string;
+  collapsed: boolean;
+  children: React.ReactNode;
 }) {
   return (
     <div className="nav-section">
       {!collapsed && <p className="nav-section-label">{label}</p>}
       <div className="nav-section-items">{children}</div>
     </div>
-  )
+  );
 }
 
-function NavItem({ name, href, icon, active, collapsed }: {
-  name: string; href: string; icon: string; active: boolean; collapsed: boolean
+function NavItem({
+  name,
+  href,
+  icon: Icon,
+  active,
+  collapsed,
+}: {
+  name: string;
+  href: string;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  active: boolean;
+  collapsed: boolean;
 }) {
   return (
     <Link
       href={href}
-      className={['nav-item', active ? 'nav-item--active' : ''].filter(Boolean).join(' ')}
+      className={["nav-item", active ? "nav-item--active" : ""]
+        .filter(Boolean)
+        .join(" ")}
       title={collapsed ? name : undefined}
     >
-      <Icon icon={icon} className="nav-item-icon" />
+      <Icon className="nav-item-icon" />
       {!collapsed && <span className="nav-item-label">{name}</span>}
       {active && !collapsed && <span className="nav-item-dot" />}
     </Link>
-  )
+  );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -441,4 +489,4 @@ const CSS = `
   top:      0;
   border-right: 1px solid var(--border-default);
 }
-`
+`;

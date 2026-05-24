@@ -297,7 +297,7 @@ export default function SnippetsPage() {
       )}
 
       {/* Create/Edit Modal */}
-      <Modal isOpen={isFormOpen} onClose={handleClose} size="large">
+      <Modal isOpen={isFormOpen} onClose={handleClose} size="lg">
         <SnippetForm snippet={editingSnippet} onClose={handleClose} />
       </Modal>
     </div>

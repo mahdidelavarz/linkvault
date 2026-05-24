@@ -1,148 +1,171 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Icon } from '@iconify/react'
-import { type Link, type CreateLinkDto } from '@/types/link'
-import { useCreateLink, useUpdateLink } from '@/hooks/useLinks'
-import { useCategories } from '@/hooks/useCategories'
-import Input    from '@/components/ui/Input'
-import Textarea from '@/components/ui/TextArea'
-import Button   from '@/components/ui/Button'
-import Alert    from '@/components/ui/Alert'
-import TagSelector from '@/components/tags/TagSelector'
+import { useState, useEffect } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { type Link, type CreateLinkDto } from "@/types/link";
+import { useCreateLink, useUpdateLink } from "@/hooks/useLinks";
+import { useCategories } from "@/hooks/useCategories";
+import Input from "@/components/ui/Input";
+import Textarea from "@/components/ui/TextArea";
+import Button from "@/components/ui/Button";
+import Alert from "@/components/ui/Alert";
+import TagSelector from "@/components/tags/TagSelector";
+import {
+  LucideCheck,
+  LucideChevronDown,
+  LucideEye,
+  LucideEyeOff,
+  LucideFolder,
+  LucideGlobe,
+  LucideLink2,
+  LucideLock,
+  LucideMail,
+  LucidePhone,
+  LucideStar,
+  LucideType,
+  LucideUser,
+} from "@/Icons/Icons";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
 const schema = z.object({
-  url:         z.string().min(1, 'URL is required').url('Must be a valid URL'),
-  title:       z.string().min(1, 'Title is required').max(200),
+  url: z.string().min(1, "URL is required").url("Must be a valid URL"),
+  title: z.string().min(1, "Title is required").max(200),
   description: z.string().max(1000).optional(),
-  username:    z.string().max(100).optional(),
-  password:    z.string().max(200).optional(),
-  email:       z.string().email('Invalid email').optional().or(z.literal('')),
-  phone:       z.string().max(30).optional(),
-  isFavorite:  z.boolean(),
-  categoryId:  z.number().optional(),
-  tagIds:      z.array(z.number()),
-})
+  username: z.string().max(100).optional(),
+  password: z.string().max(200).optional(),
+  email: z.string().email("Invalid email").optional().or(z.literal("")),
+  phone: z.string().max(30).optional(),
+  isFavorite: z.boolean(),
+  categoryId: z.number().optional(),
+  tagIds: z.array(z.number()),
+});
 
-type FormData = z.infer<typeof schema>
+type FormData = z.infer<typeof schema>;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 interface LinkFormProps {
-  link?:    Link | null
-  onClose:  () => void
+  link?: Link | null;
+  onClose: () => void;
 }
 
 export default function LinkForm({ link, onClose }: LinkFormProps) {
-  const [showPassword, setShowPassword] = useState(false)
-  const isEditing = !!link
+  const [showPassword, setShowPassword] = useState(false);
+  const isEditing = !!link;
 
-  const { data: categories } = useCategories()
-  const createLink = useCreateLink()
-  const updateLink = useUpdateLink()
+  const { data: categories } = useCategories();
+  const createLink = useCreateLink();
+  const updateLink = useUpdateLink();
 
-  const isLoading = createLink.isPending || updateLink.isPending
-  const error     = createLink.error     || updateLink.error
+  const isLoading = createLink.isPending || updateLink.isPending;
+  const error = createLink.error || updateLink.error;
 
-  const { register, handleSubmit, control, reset, formState: { errors } } =
-    useForm<FormData>({
-      resolver: zodResolver(schema),
-      defaultValues: {
-        url:         '',
-        title:       '',
-        description: '',
-        username:    '',
-        password:    '',
-        email:       '',
-        phone:       '',
-        isFavorite:  false,
-        categoryId:  undefined,
-        tagIds:      [],
-      },
-    })
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      url: "",
+      title: "",
+      description: "",
+      username: "",
+      password: "",
+      email: "",
+      phone: "",
+      isFavorite: false,
+      categoryId: undefined,
+      tagIds: [],
+    },
+  });
 
   // Populate form when editing
   useEffect(() => {
     if (link) {
       reset({
-        url:         link.url,
-        title:       link.title,
-        description: link.description ?? '',
-        username:    link.username    ?? '',
-        password:    '',
-        email:       link.email       ?? '',
-        phone:       link.phone       ?? '',
-        isFavorite:  link.isFavorite,
-        categoryId:  link.categoryId,
-        tagIds:      link.tags?.map((t: any) => t.id) ?? [],
-      })
+        url: link.url,
+        title: link.title,
+        description: link.description ?? "",
+        username: link.username ?? "",
+        password: "",
+        email: link.email ?? "",
+        phone: link.phone ?? "",
+        isFavorite: link.isFavorite,
+        categoryId: link.categoryId,
+        tagIds: link.tags?.map((t: any) => t.id) ?? [],
+      });
     }
-  }, [link, reset])
+  }, [link, reset]);
 
   const onSubmit = async (data: FormData) => {
     const payload: CreateLinkDto = {
       ...data,
       description: data.description || undefined,
-      username:    data.username    || undefined,
-      password:    data.password    || undefined,
-      email:       data.email       || undefined,
-      phone:       data.phone       || undefined,
-    }
+      username: data.username || undefined,
+      password: data.password || undefined,
+      email: data.email || undefined,
+      phone: data.phone || undefined,
+    };
     try {
       if (isEditing && link) {
-        await updateLink.mutateAsync({ id: link.id, ...payload })
+        await updateLink.mutateAsync({ id: link.id, ...payload });
       } else {
-        await createLink.mutateAsync(payload)
+        await createLink.mutateAsync(payload);
       }
-      onClose()
-    } catch { /* error shown via Alert */ }
-  }
+      onClose();
+    } catch {
+      /* error shown via Alert */
+    }
+  };
 
   return (
     <>
       <style>{CSS}</style>
       <form className="lform" onSubmit={handleSubmit(onSubmit)} noValidate>
-
         {error && (
           <Alert
             type="error"
-            message={error instanceof Error ? error.message : 'Something went wrong'}
+            message={
+              error instanceof Error ? error.message : "Something went wrong"
+            }
           />
         )}
 
         {/* ── Section: Basic info ── */}
         <div className="lform-section">
           <p className="lform-section-title">
-            <Icon icon="lucide:link-2" width={13} /> Basic info
+            <LucideLink2 width={13} /> Basic info
           </p>
           <div className="lform-fields">
             <Input
               label="URL"
               type="url"
-              placeholder="https://example.com"leftIcon="lucide:globe"
+              placeholder="https://example.com"
+              leftIcon={LucideGlobe}
               error={errors.url?.message}
               autoFocus
-              {...register('url')}
+              {...register("url")}
             />
             <Input
               label="Title"
               type="text"
               placeholder="My awesome link"
-              leftIcon="lucide:type"
+              leftIcon={LucideType}
               error={errors.title?.message}
-              {...register('title')}
+              {...register("title")}
             />
             <Textarea
               label="Description"
               placeholder="Optional description…"
               optional
               error={errors.description?.message}
-              {...register('description')}
+              {...register("description")}
             />
           </div>
         </div>
@@ -150,43 +173,55 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
         {/* ── Section: Organize ── */}
         <div className="lform-section">
           <p className="lform-section-title">
-            <Icon icon="lucide:folder" width={13} /> Organize
+            <LucideFolder width={13} /> Organize
           </p>
           <div className="lform-fields">
-
             {/* Category select */}
             <div className="lform-field">
-              <label className="lform-label">Category <span className="lform-optional">optional</span></label>
+              <label className="lform-label">
+                Category <span className="lform-optional">optional</span>
+              </label>
               <div className="lform-select-wrap">
-                <Icon icon="lucide:folder" className="lform-select-icon" />
+                <LucideFolder className="lform-select-icon" />
                 <Controller
                   name="categoryId"
                   control={control}
                   render={({ field }) => (
                     <select
                       className="lform-select"
-                      value={field.value ?? ''}
-                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                      value={field.value ?? ""}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value ? parseInt(e.target.value) : undefined,
+                        )
+                      }
                     >
                       <option value="">No category</option>
                       {categories?.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
                       ))}
                     </select>
                   )}
                 />
-                <Icon icon="lucide:chevron-down" className="lform-select-chevron" />
+                <LucideChevronDown className="lform-select-chevron" />
               </div>
             </div>
 
             {/* Tags */}
             <div className="lform-field">
-              <label className="lform-label">Tags <span className="lform-optional">optional</span></label>
+              <label className="lform-label">
+                Tags <span className="lform-optional">optional</span>
+              </label>
               <Controller
                 name="tagIds"
                 control={control}
                 render={({ field }) => (
-                  <TagSelector selectedTagIds={field.value} onChange={field.onChange} />
+                  <TagSelector
+                    selectedTagIds={field.value}
+                    onChange={field.onChange}
+                  />
                 )}
               />
             </div>
@@ -197,17 +232,28 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
               control={control}
               render={({ field }) => (
                 <label className="lform-checkbox">
-                  <div className={['lform-check-box', field.value ? 'lform-check-box--checked' : ''].filter(Boolean).join(' ')}>
-                    {field.value && <Icon icon="lucide:check" width={11} />}
+                  <div
+                    className={[
+                      "lform-check-box",
+                      field.value ? "lform-check-box--checked" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
+                    {field.value && <LucideCheck width={11} />}
                   </div>
                   <input
                     type="checkbox"
                     checked={field.value}
                     onChange={(e) => field.onChange(e.target.checked)}
-                    style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      pointerEvents: "none",
+                    }}
                   />
                   <span className="lform-check-label">
-                    <Icon icon="lucide:star" width={13} style={{ color: '#fbbf24' }} />
+                    <LucideStar width={13} style={{ color: "#fbbf24" }} />
                     Mark as favorite
                   </span>
                 </label>
@@ -219,7 +265,8 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
         {/* ── Section: Credentials ── */}
         <div className="lform-section">
           <p className="lform-section-title">
-            <Icon icon="lucide:lock" width={13} /> Credentials <span className="lform-section-hint">optional</span>
+            <LucideLock width={13} /> Credentials{" "}
+            <span className="lform-section-hint">optional</span>
           </p>
           <div className="lform-fields">
             <div className="lform-grid-2">
@@ -227,15 +274,16 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
                 label="Username"
                 type="text"
                 placeholder="username"
-                leftIcon="lucide:user"
+                leftIcon={LucideUser}
                 optional
-                error={errors.username?.message}{...register('username')}
+                error={errors.username?.message}
+                {...register("username")}
               />
               <Input
                 label="Password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder={isEditing ? 'Leave blank to keep' : 'password'}
-                leftIcon="lucide:lock"
+                type={showPassword ? "text" : "password"}
+                placeholder={isEditing ? "Leave blank to keep" : "password"}
+                leftIcon={LucideLock}
                 optional
                 error={errors.password?.message}
                 rightNode={
@@ -245,10 +293,14 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
                     onClick={() => setShowPassword((p) => !p)}
                     tabIndex={-1}
                   >
-                    <Icon icon={showPassword ? 'lucide:eye-off' : 'lucide:eye'} width={13} />
+                    {showPassword ? (
+                      <LucideEyeOff width={13} />
+                    ) : (
+                      <LucideEye width={13} />
+                    )}
                   </button>
                 }
-                {...register('password')}
+                {...register("password")}
               />
             </div>
             <div className="lform-grid-2">
@@ -256,19 +308,19 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
                 label="Email"
                 type="email"
                 placeholder="email@example.com"
-                leftIcon="lucide:mail"
+                leftIcon={LucideMail}
                 optional
                 error={errors.email?.message}
-                {...register('email')}
+                {...register("email")}
               />
               <Input
                 label="Phone"
                 type="tel"
                 placeholder="+1 234 567 890"
-                leftIcon="lucide:phone"
+                leftIcon={LucidePhone}
                 optional
                 error={errors.phone?.message}
-                {...register('phone')}
+                {...register("phone")}
               />
             </div>
           </div>
@@ -276,15 +328,16 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
 
         {/* ── Footer ── */}
         <div className="lform-footer">
-          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
           <Button type="submit" isLoading={isLoading}>
-            {isEditing ? 'Save changes' : 'Add link'}
+            {isEditing ? "Save changes" : "Add link"}
           </Button>
         </div>
-
       </form>
     </>
-  )
+  );
 }
 
 const CSS = `
@@ -425,4 +478,4 @@ const CSS = `
   .lform-footer { flex-direction: column-reverse; }
   .lform-footer > * { width: 100%; }
 }
-`
+`;

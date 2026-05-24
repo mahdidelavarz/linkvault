@@ -1,14 +1,20 @@
-import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react'
-import { Icon } from '@iconify/react'
+import { LucideCircleAlert } from "@/Icons/Icons";
+import {
+  ComponentType,
+  forwardRef,
+  SVGProps,
+  type InputHTMLAttributes,
+  type ReactNode,
+} from "react";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-  label?:     string
-  hint?:      string
-  error?:     string
-  leftIcon?:  string   // iconify icon name
-  rightIcon?: string
-  rightNode?: ReactNode  // custom element on the right (e.g. a button)
-  optional?:  boolean
+  label?: string;
+  hint?: string;
+  error?: string;
+  leftIcon?: ComponentType<SVGProps<SVGSVGElement>>;
+  rightIcon?: ComponentType<SVGProps<SVGSVGElement>>;
+  rightNode?: ReactNode;
+  optional?: boolean;
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -17,18 +23,19 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       label,
       hint,
       error,
-      leftIcon,
-      rightIcon,
+      leftIcon: LeftIcon,
+      rightIcon: RightIcon,
       rightNode,
       optional = false,
-      className = '',
+      className = "",
       id,
       ...props
     },
-    ref
+    ref,
   ) => {
-    const inputId = id ?? (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined)
-    const hasRight = rightIcon || rightNode
+    const inputId =
+      id ?? (label ? label.toLowerCase().replace(/\s+/g, "-") : undefined);
+    const hasRight = RightIcon || rightNode;
 
     return (
       <>
@@ -41,33 +48,37 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             </label>
           )}
 
-          <div className={['field-wrap', error ? 'field-wrap--error' : ''].filter(Boolean).join(' ')}>
-            {leftIcon && (
-              <Icon icon={leftIcon} className="field-icon field-icon--left" />
-            )}
+          <div
+            className={["field-wrap", error ? "field-wrap--error" : ""]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            {LeftIcon && <LeftIcon className="field-icon field-icon--left" />}
 
             <input
               ref={ref}
               id={inputId}
               className={[
-                'field-input',
-                leftIcon  ? 'field-input--pl' : '',
-                hasRight  ? 'field-input--pr' : '',
+                "field-input",
+                LeftIcon ? "field-input--pl" : "",
+                hasRight ? "field-input--pr" : "",
                 className,
-              ].filter(Boolean).join(' ')}
+              ]
+                .filter(Boolean)
+                .join(" ")}
               {...props}
             />
 
             {rightNode ? (
               <div className="field-right">{rightNode}</div>
-            ) : rightIcon ? (
-              <Icon icon={rightIcon} className="field-icon field-icon--right" />
+            ) : RightIcon ? (
+              <RightIcon className="field-icon field-icon--right" />
             ) : null}
           </div>
 
           {error ? (
             <p className="field-error">
-              <Icon icon="lucide:circle-alert" width={12} />
+              <LucideCircleAlert width={12} />
               {error}
             </p>
           ) : hint ? (
@@ -75,12 +86,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           ) : null}
         </div>
       </>
-    )
-  }
-)
+    );
+  },
+);
 
-Input.displayName = 'Input'
-export default Input
+Input.displayName = "Input";
+export default Input;
 
 const CSS = `
 .field {
@@ -179,4 +190,4 @@ const CSS = `
   font-size: var(--text-xs);
   color:     var(--text-tertiary);
 }
-`
+`;

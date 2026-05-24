@@ -1,49 +1,69 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useLinks }      from '@/hooks/useLinks'
-import { useCategories } from '@/hooks/useCategories'
-import { type Link }     from '@/types/link'
-import LinkCard  from '@/components/links/LinkCard'
-import LinkForm  from '@/components/links/LinkForm'
-import Button    from '@/components/ui/Button'
-import Modal     from '@/components/ui/Modal'
-import { Icon }  from '@iconify/react'
+import { useState } from "react";
+import { useLinks } from "@/hooks/useLinks";
+import { useCategories } from "@/hooks/useCategories";
+import { type Link } from "@/types/link";
+import LinkCard from "@/components/links/LinkCard";
+import LinkForm from "@/components/links/LinkForm";
+import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
+import {
+  LucideChevronDown,
+  LucideFolder,
+  LucideLink2,
+  LucideSearch,
+  LucideSearchX,
+  LucideStar,
+  LucideX,
+} from "@/Icons/Icons";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LinksPage() {
-  const [modalOpen,    setModalOpen]    = useState(false)
-  const [editingLink,  setEditingLink]  = useState<Link | null>(null)
-  const [search,       setSearch]       = useState('')
-  const [categoryId,   setCategoryId]   = useState('')
-  const [showFavorites,setShowFavorites]= useState(false)
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingLink, setEditingLink] = useState<Link | null>(null);
+  const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [showFavorites, setShowFavorites] = useState(false);
 
-  const { data: categories } = useCategories()
+  const { data: categories } = useCategories();
   const { data: links, isLoading } = useLinks({
-    search:     search     || undefined,
+    search: search || undefined,
     categoryId: categoryId ? parseInt(categoryId) : undefined,
     isFavorite: showFavorites || undefined,
-  })
+  });
 
-  const hasFilters = !!(search || categoryId || showFavorites)
+  const hasFilters = !!(search || categoryId || showFavorites);
 
-  const openCreate = () => { setEditingLink(null); setModalOpen(true) }
-  const openEdit   = (link: Link) => { setEditingLink(link); setModalOpen(true) }
-  const closeModal = () => { setModalOpen(false); setEditingLink(null) }
-  const clearFilters = () => { setSearch(''); setCategoryId(''); setShowFavorites(false) }
+  const openCreate = () => {
+    setEditingLink(null);
+    setModalOpen(true);
+  };
+  const openEdit = (link: Link) => {
+    setEditingLink(link);
+    setModalOpen(true);
+  };
+  const closeModal = () => {
+    setModalOpen(false);
+    setEditingLink(null);
+  };
+  const clearFilters = () => {
+    setSearch("");
+    setCategoryId("");
+    setShowFavorites(false);
+  };
 
   return (
     <>
       <style>{CSS}</style>
       <div className="links-page">
-
         {/* ── Header ── */}
         <div className="page-header">
           <div className="page-header-left">
             <h1 className="page-title">Links</h1>
             <p className="page-subtitle">
-              {isLoading ? '…' : `${links?.length ?? 0} saved`}
+              {isLoading ? "…" : `${links?.length ?? 0} saved`}
             </p>
           </div>
           <Button leftIcon="lucide:plus" onClick={openCreate}>
@@ -55,7 +75,7 @@ export default function LinksPage() {
         <div className="filters-bar">
           {/* Search */}
           <div className="filter-search-wrap">
-            <Icon icon="lucide:search" className="filter-search-icon" />
+            <LucideSearch className="filter-search-icon" />
             <input
               className="filter-search"
               type="text"
@@ -64,15 +84,19 @@ export default function LinksPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
             {search && (
-              <button className="filter-search-clear" onClick={() => setSearch('')} aria-label="Clear">
-                <Icon icon="lucide:x" width={12} />
+              <button
+                className="filter-search-clear"
+                onClick={() => setSearch("")}
+                aria-label="Clear"
+              >
+                <LucideX width={12} />
               </button>
             )}
           </div>
 
           {/* Category select */}
           <div className="filter-select-wrap">
-            <Icon icon="lucide:folder" className="filter-select-icon" />
+            <LucideFolder className="filter-select-icon" />
             <select
               className="filter-select"
               value={categoryId}
@@ -80,25 +104,32 @@ export default function LinksPage() {
             >
               <option value="">All categories</option>
               {categories?.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
               ))}
             </select>
-            <Icon icon="lucide:chevron-down" className="filter-select-chevron" />
+            <LucideChevronDown className="filter-select-chevron" />
           </div>
 
           {/* Favorites toggle */}
           <button
-            className={['filter-toggle', showFavorites ? 'filter-toggle--active' : ''].filter(Boolean).join(' ')}
+            className={[
+              "filter-toggle",
+              showFavorites ? "filter-toggle--active" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             onClick={() => setShowFavorites((p) => !p)}
           >
-            <Icon icon={showFavorites ? 'lucide:star' : 'lucide:star'} width={14} />
+            <LucideStar width={14} />
             Favorites
           </button>
 
           {/* Clear */}
           {hasFilters && (
             <button className="filter-clear" onClick={clearFilters}>
-              <Icon icon="lucide:x" width={13} />
+              <LucideX width={13} />
               Clear
             </button>
           )}
@@ -107,7 +138,9 @@ export default function LinksPage() {
         {/* ── Content ── */}
         {isLoading ? (
           <div className="links-grid">
-            {[...Array(6)].map((_, i) => <LinkCardSkeleton key={i} />)}
+            {[...Array(6)].map((_, i) => (
+              <LinkCardSkeleton key={i} />
+            ))}
           </div>
         ) : links && links.length > 0 ? (
           <div className="links-grid">
@@ -116,21 +149,24 @@ export default function LinksPage() {
             ))}
           </div>
         ) : (
-          <EmptyState hasFilters={hasFilters} onAdd={openCreate} onClear={clearFilters} />
+          <EmptyState
+            hasFilters={hasFilters}
+            onAdd={openCreate}
+            onClear={clearFilters}
+          />
         )}
-
       </div>
 
       <Modal
         isOpen={modalOpen}
         onClose={closeModal}
-        title={editingLink ? 'Edit Link' : 'Add Link'}
+        title={editingLink ? "Edit Link" : "Add Link"}
         size="lg"
       >
         <LinkForm link={editingLink} onClose={closeModal} />
       </Modal>
     </>
-  )
+  );
 }
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
@@ -138,36 +174,71 @@ export default function LinksPage() {
 function LinkCardSkeleton() {
   return (
     <div className="link-skeleton">
-      <div className="skeleton" style={{ height: 20, width: '70%', marginBottom: 10 }} />
-      <div className="skeleton" style={{ height: 14, width: '90%', marginBottom: 16 }} />
-      <div className="skeleton" style={{ height: 13, width: '50%', marginBottom: 12 }} />
-      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-        <div className="skeleton" style={{ height: 22, width: 70, borderRadius: 99 }} />
-        <div className="skeleton" style={{ height: 22, width: 55, borderRadius: 99 }} />
+      <div
+        className="skeleton"
+        style={{ height: 20, width: "70%", marginBottom: 10 }}
+      />
+      <div
+        className="skeleton"
+        style={{ height: 14, width: "90%", marginBottom: 16 }}
+      />
+      <div
+        className="skeleton"
+        style={{ height: 13, width: "50%", marginBottom: 12 }}
+      />
+      <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+        <div
+          className="skeleton"
+          style={{ height: 22, width: 70, borderRadius: 99 }}
+        />
+        <div
+          className="skeleton"
+          style={{ height: 22, width: 55, borderRadius: 99 }}
+        />
       </div>
-      <div className="skeleton" style={{ height: 32, width: '100%', borderRadius: 8 }} />
+      <div
+        className="skeleton"
+        style={{ height: 32, width: "100%", borderRadius: 8 }}
+      />
     </div>
-  )
+  );
 }
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
-function EmptyState({ hasFilters, onAdd, onClear }: { hasFilters: boolean; onAdd: () => void; onClear: () => void }) {
+function EmptyState({
+  hasFilters,
+  onAdd,
+  onClear,
+}: {
+  hasFilters: boolean;
+  onAdd: () => void;
+  onClear: () => void;
+}) {
   return (
     <div className="empty-state">
       <div className="empty-icon">
-        <Icon icon={hasFilters ? 'lucide:search-x' : 'lucide:link-2'} width={28} />
+        {hasFilters ? <LucideSearchX width={28} /> : <LucideLink2 width={28} />}
       </div>
-      <p className="empty-title">{hasFilters ? 'No links found' : 'No links yet'}</p>
-      <p className="empty-subtitle">
-        {hasFilters ? 'Try adjusting your filters' : 'Save your first link to get started'}
+      <p className="empty-title">
+        {hasFilters ? "No links found" : "No links yet"}
       </p>
-      {hasFilters
-        ? <Button variant="secondary" onClick={onClear}>Clear filters</Button>
-        : <Button leftIcon="lucide:plus" onClick={onAdd}>Add your first link</Button>
-      }
+      <p className="empty-subtitle">
+        {hasFilters
+          ? "Try adjusting your filters"
+          : "Save your first link to get started"}
+      </p>
+      {hasFilters ? (
+        <Button variant="secondary" onClick={onClear}>
+          Clear filters
+        </Button>
+      ) : (
+        <Button leftIcon="lucide:plus" onClick={onAdd}>
+          Add your first link
+        </Button>
+      )}
     </div>
-  )
+  );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -373,4 +444,4 @@ const CSS = `
 }
 .empty-title    { font-size: var(--text-lg); font-weight: 600; color: var(--text-primary); }
 .empty-subtitle { font-size: var(--text-sm); color: var(--text-tertiary); }
-`
+`;

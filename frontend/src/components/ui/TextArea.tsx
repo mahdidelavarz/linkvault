@@ -1,17 +1,30 @@
-import { forwardRef, type TextareaHTMLAttributes } from 'react'
-import { Icon } from '@iconify/react'
+import { LucideCircleAlert } from "@/Icons/Icons";
+import { forwardRef, type TextareaHTMLAttributes } from "react";
 
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
-  label?:    string
-  hint?:     string
-  error?:    string
-  optional?: boolean
-  mono?:     boolean   // monospace font for code-like content
+  label?: string;
+  hint?: string;
+  error?: string;
+  optional?: boolean;
+  mono?: boolean; // monospace font for code-like content
 }
 
 const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ label, hint, error, optional = false, mono = false, className = '', id, ...props }, ref) => {
-    const fieldId = id ?? (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined)
+  (
+    {
+      label,
+      hint,
+      error,
+      optional = false,
+      mono = false,
+      className = "",
+      id,
+      ...props
+    },
+    ref,
+  ) => {
+    const fieldId =
+      id ?? (label ? label.toLowerCase().replace(/\s+/g, "-") : undefined);
 
     return (
       <>
@@ -28,17 +41,19 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             ref={ref}
             id={fieldId}
             className={[
-              'ta-input',
-              error ? 'ta-input--error' : '',
-              mono  ? 'ta-input--mono'  : '',
+              "ta-input",
+              error ? "ta-input--error" : "",
+              mono ? "ta-input--mono" : "",
               className,
-            ].filter(Boolean).join(' ')}
+            ]
+              .filter(Boolean)
+              .join(" ")}
             {...props}
           />
 
           {error ? (
             <p className="ta-error">
-              <Icon icon="lucide:circle-alert" width={12} />
+              <LucideCircleAlert width={12} />
               {error}
             </p>
           ) : hint ? (
@@ -46,12 +61,12 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ) : null}
         </div>
       </>
-    )
-  }
-)
+    );
+  },
+);
 
-Textarea.displayName = 'Textarea'
-export default Textarea
+Textarea.displayName = "Textarea";
+export default Textarea;
 
 const CSS = `
 .ta-field {
@@ -118,4 +133,4 @@ const CSS = `
   font-size: var(--text-xs);
   color:     var(--text-tertiary);
 }
-`
+`;

@@ -1,63 +1,69 @@
-'use client'
+"use client";
 
-import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
-import { Icon } from '@iconify/react'
-import { useAuthStore } from '@/store/authStore'
-import { useTheme } from '@/app/providers'
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useAuthStore } from "@/store/authStore";
+import { useTheme } from "@/app/providers";
+import {
+  LucideChevronDown,
+  LucideLogOut,
+  LucideMoon,
+  LucideSearch,
+  LucideSunDim,
+  LucideUser,
+} from "@/Icons/Icons";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Header() {
-  const router = useRouter()
-  const user   = useAuthStore((s) => s.user)
-  const logout = useAuthStore((s) => s.logout)
-  const { theme, toggleTheme } = useTheme()
+  const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
+  const { theme, toggleTheme } = useTheme();
 
-  const [menuOpen,  setMenuOpen]  = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false)
+        setMenuOpen(false);
       }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   // Ctrl+K → search
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault()
-        router.push('/search')
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        router.push("/search");
       }
-    }
-    document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
-  }, [router])
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [router]);
 
   const handleLogout = () => {
-    logout()
-    router.push('/login')
-  }
+    logout();
+    router.push("/login");
+  };
 
   return (
     <>
       <style>{CSS}</style>
       <header className="header">
-
         {/* Left — search */}
         <div className="header-left">
           <button
             className="header-search"
-            onClick={() => router.push('/search')}
+            onClick={() => router.push("/search")}
             aria-label="Open search"
           >
-            <Icon icon="lucide:search" className="header-search-icon" />
+            <LucideSearch className="header-search-icon" />
             <span className="header-search-text">Search anything…</span>
             <kbd className="header-kbd">⌘K</kbd>
           </button>
@@ -65,17 +71,17 @@ export default function Header() {
 
         {/* Right — actions */}
         <div className="header-right">
-
           {/* Theme toggle */}
           <button
             className="header-icon-btn"
             onClick={toggleTheme}
             aria-label="Toggle theme"
           >
-            <Icon
-              icon={theme === 'dark' ? 'lucide:sun' : 'lucide:moon'}
-              width={16}
-            />
+            {theme === "dark" ? (
+              <LucideSunDim width={16} />
+            ) : (
+              <LucideMoon width={16} />
+            )}
           </button>
 
           {/* Divider */}
@@ -90,13 +96,19 @@ export default function Header() {
               aria-haspopup="true"
             >
               <div className="header-avatar">
-                <Icon icon="lucide:user" width={13} />
+                <LucideUser width={13} />
               </div>
-              <span className="header-username">{user?.username ?? 'User'}</span>
-              <Icon
-                icon="lucide:chevron-down"
+              <span className="header-username">
+                {user?.username ?? "User"}
+              </span>
+              <LucideChevronDown
                 width={13}
-                className={['header-chevron', menuOpen ? 'header-chevron--open' : ''].filter(Boolean).join(' ')}
+                className={[
+                  "header-chevron",
+                  menuOpen ? "header-chevron--open" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
               />
             </button>
 
@@ -104,7 +116,7 @@ export default function Header() {
               <div className="header-dropdown" role="menu">
                 <div className="header-dropdown-user">
                   <div className="header-dropdown-avatar">
-                    <Icon icon="lucide:user" width={16} />
+                    <LucideUser width={16} />
                   </div>
                   <div>
                     <p className="header-dropdown-name">{user?.username}</p>
@@ -119,16 +131,16 @@ export default function Header() {
                   role="menuitem"
                   onClick={handleLogout}
                 >
-                  <Icon icon="lucide:log-out" width={14} />
+                  <LucideLogOut width={14} />
                   Sign out
                 </button>
               </div>
             )}
           </div>
-
         </div>
-      </header></>
-  )
+      </header>
+    </>
+  );
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -353,4 +365,4 @@ const CSS = `
 .header-dropdown-item:hover { background: var(--bg-overlay); }
 .header-dropdown-item--danger       { color: var(--danger); }
 .header-dropdown-item--danger:hover { background: var(--danger-muted); }
-`
+`;

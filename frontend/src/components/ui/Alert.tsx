@@ -1,5 +1,6 @@
-import { Icon } from '@iconify/react'
-import type { ReactNode } from 'react'
+
+import { LucideCircleCheck, LucideCircleX, LucideInfo, LucideTriangleAlert, LucideX } from '@/Icons/Icons'
+import type { ComponentType, ReactNode, SVGProps } from 'react'
 
 export type AlertType = 'success' | 'error' | 'warning' | 'info'
 
@@ -11,11 +12,11 @@ interface AlertProps {
   className?: string
 }
 
-const config: Record<AlertType, { icon: string; css: string }> = {
-  success: { icon: 'lucide:circle-check',  css: 'alert--success' },
-  error:   { icon: 'lucide:circle-x',      css: 'alert--error'   },
-  warning: { icon: 'lucide:triangle-alert', css: 'alert--warning' },
-  info:    { icon: 'lucide:info',           css: 'alert--info'    },
+const config: Record<AlertType, { icon: ComponentType<SVGProps<SVGSVGElement>>; css: string }> = {
+  success: { icon: LucideCircleCheck,  css: 'alert--success' },
+  error:   { icon: LucideCircleX,      css: 'alert--error'   },
+  warning: { icon: LucideTriangleAlert, css: 'alert--warning' },
+  info:    { icon: LucideInfo,           css: 'alert--info'    },
 }
 
 export default function Alert({
@@ -25,13 +26,13 @@ export default function Alert({
   onClose,
   className = '',
 }: AlertProps) {
-  const { icon, css } = config[type]
+  const { icon : Icon, css } = config[type]
 
   return (
     <>
       <style>{CSS}</style>
       <div className={['alert', css, className].filter(Boolean).join(' ')} role="alert">
-        <Icon icon={icon} className="alert-icon" />
+        <Icon  className="alert-icon" />
 
         <div className="alert-body">
           {title   && <p className="alert-title">{title}</p>}
@@ -40,7 +41,7 @@ export default function Alert({
 
         {onClose && (
           <button className="alert-close" onClick={onClose} aria-label="Dismiss">
-            <Icon icon="lucide:x" width={14} />
+            <LucideX width={14} />
           </button>
         )}
       </div>

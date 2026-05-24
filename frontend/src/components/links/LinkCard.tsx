@@ -1,39 +1,54 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Icon } from '@iconify/react'
-import { type Link as LinkType } from '@/types/link'
-import { useToggleFavorite, useDeleteLink } from '@/hooks/useLinks'
-import Button from '@/components/ui/Button'
-import Badge  from '@/components/ui/Badge'
-import Modal  from '@/components/ui/Modal'
+import { useState } from "react";
+import { type Link as LinkType } from "@/types/link";
+import { useToggleFavorite, useDeleteLink } from "@/hooks/useLinks";
+import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
+import Modal from "@/components/ui/Modal";
+import {
+  LucideExternalLink,
+  LucideEye,
+  LucideEyeOff,
+  LucideFolder,
+  LucideLock,
+  LucideMail,
+  LucidePencil,
+  LucidePhone,
+  LucideStar,
+  LucideTrash2,
+  LucideUser,
+} from "@/Icons/Icons";
 
 interface LinkCardProps {
-  link:   LinkType
-  onEdit: (link: LinkType) => void
+  link: LinkType;
+  onEdit: (link: LinkType) => void;
 }
 
 export default function LinkCard({ link, onEdit }: LinkCardProps) {
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  const [showPassword,  setShowPassword]  = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const toggleFavorite = useToggleFavorite()
-  const deleteLink     = useDeleteLink()
+  const toggleFavorite = useToggleFavorite();
+  const deleteLink = useDeleteLink();
 
   const hostname = (() => {
-    try { return new URL(link.url).hostname.replace('www.', '') }
-    catch { return link.url }
-  })()
+    try {
+      return new URL(link.url).hostname.replace("www.", "");
+    } catch {
+      return link.url;
+    }
+  })();
 
-  const faviconUrl = `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`
+  const faviconUrl = `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`;
 
-  const hasCredentials = link.username || link.email || link.phone || link.passwordEncrypted
+  const hasCredentials =
+    link.username || link.email || link.phone || link.passwordEncrypted;
 
   return (
     <>
       <style>{CSS}</style>
       <div className="lcard">
-
         {/* ── Top row ── */}
         <div className="lcard-top">
           <div className="lcard-favicon">
@@ -42,12 +57,19 @@ export default function LinkCard({ link, onEdit }: LinkCardProps) {
               alt=""
               width={16}
               height={16}
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+              }}
             />
           </div>
 
           <div className="lcard-info">
-            <button className="lcard-title" onClick={() => window.open(link.url, '_blank', 'noopener,noreferrer')}>
+            <button
+              className="lcard-title"
+              onClick={() =>
+                window.open(link.url, "_blank", "noopener,noreferrer")
+              }
+            >
               {link.title}
             </button>
             <a
@@ -63,53 +85,57 @@ export default function LinkCard({ link, onEdit }: LinkCardProps) {
 
           {/* Favorite */}
           <button
-            className={['lcard-fav', link.isFavorite ? 'lcard-fav--active' : ''].filter(Boolean).join(' ')}
+            className={["lcard-fav", link.isFavorite ? "lcard-fav--active" : ""]
+              .filter(Boolean)
+              .join(" ")}
             onClick={() => toggleFavorite.mutate(link.id)}
-            aria-label={link.isFavorite ? 'Remove favorite' : 'Add favorite'}
+            aria-label={link.isFavorite ? "Remove favorite" : "Add favorite"}
             disabled={toggleFavorite.isPending}
           >
-            <Icon icon={link.isFavorite ? 'lucide:star' : 'lucide:star'} width={15} />
+            <LucideStar width={15} />
           </button>
         </div>
 
         {/* ── Description ── */}
-        {link.description && (
-          <p className="lcard-desc">{link.description}</p>
-        )}
+        {link.description && <p className="lcard-desc">{link.description}</p>}
 
         {/* ── Credentials ── */}
         {hasCredentials && (
           <div className="lcard-creds">
             {link.username && (
               <div className="lcard-cred-row">
-                <Icon icon="lucide:user" width={12} />
+                <LucideUser width={12} />
                 <span>{link.username}</span>
               </div>
             )}
             {link.email && (
               <div className="lcard-cred-row">
-                <Icon icon="lucide:mail" width={12} />
+                <LucideMail width={12} />
                 <span>{link.email}</span>
               </div>
             )}
             {link.phone && (
               <div className="lcard-cred-row">
-                <Icon icon="lucide:phone" width={12} />
+                <LucidePhone width={12} />
                 <span>{link.phone}</span>
               </div>
             )}
             {link.passwordEncrypted && (
               <div className="lcard-cred-row">
-                <Icon icon="lucide:lock" width={12} />
+                <LucideLock width={12} />
                 <span className="lcard-password">
-                  {showPassword ? link.passwordEncrypted : '••••••••'}
+                  {showPassword ? link.passwordEncrypted : "••••••••"}
                 </span>
                 <button
                   className="lcard-eye"
                   onClick={() => setShowPassword((p) => !p)}
-                  aria-label={showPassword ? 'Hide' : 'Show'}
+                  aria-label={showPassword ? "Hide" : "Show"}
                 >
-                  <Icon icon={showPassword ? 'lucide:eye-off' : 'lucide:eye'} width={11} />
+                  {showPassword ? (
+                    <LucideEyeOff width={11} />
+                  ) : (
+                    <LucideEye width={11} />
+                  )}
                 </button>
               </div>
             )}
@@ -120,10 +146,14 @@ export default function LinkCard({ link, onEdit }: LinkCardProps) {
         {(link.category || (link.tags && link.tags.length > 0)) && (
           <div className="lcard-tags">
             {link.category && (
-              <Badge variant="cyan" icon="lucide:folder" size="sm">{link.category.name}</Badge>
+              <Badge variant="cyan" icon={LucideFolder} size="sm">
+                {link.category.name}
+              </Badge>
             )}
             {link.tags?.map((tag: any) => (
-              <Badge key={tag.id} variant="default" size="sm">{tag.name}</Badge>
+              <Badge key={tag.id} variant="default" size="sm">
+                {tag.name}
+              </Badge>
             ))}
           </div>
         )}
@@ -131,29 +161,35 @@ export default function LinkCard({ link, onEdit }: LinkCardProps) {
         {/* ── Footer ── */}
         <div className="lcard-footer">
           <span className="lcard-date">
-            {new Date(link.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            {new Date(link.updatedAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
           </span>
           <div className="lcard-actions">
             <button
               className="lcard-action-btn"
-              onClick={() => window.open(link.url, '_blank', 'noopener,noreferrer')}
+              onClick={() =>
+                window.open(link.url, "_blank", "noopener,noreferrer")
+              }
               aria-label="Open link"
             >
-              <Icon icon="lucide:external-link" width={14} />
+              <LucideExternalLink width={14} />
             </button>
             <button
               className="lcard-action-btn"
               onClick={() => onEdit(link)}
               aria-label="Edit"
             >
-              <Icon icon="lucide:pencil" width={14} />
+              <LucidePencil width={14} />
             </button>
             <button
               className="lcard-action-btn lcard-action-btn--danger"
               onClick={() => setConfirmDelete(true)}
               aria-label="Delete"
             >
-              <Icon icon="lucide:trash-2" width={14} />
+              <LucideTrash2 width={14} />
             </button>
           </div>
         </div>
@@ -168,7 +204,8 @@ export default function LinkCard({ link, onEdit }: LinkCardProps) {
       >
         <div className="lcard-confirm">
           <p className="lcard-confirm-text">
-            Are you sure you want to delete <strong>{link.title}</strong>? This cannot be undone.
+            Are you sure you want to delete <strong>{link.title}</strong>? This
+            cannot be undone.
           </p>
           <div className="lcard-confirm-actions">
             <Button variant="secondary" onClick={() => setConfirmDelete(false)}>
@@ -177,7 +214,11 @@ export default function LinkCard({ link, onEdit }: LinkCardProps) {
             <Button
               variant="danger"
               isLoading={deleteLink.isPending}
-              onClick={() => deleteLink.mutate(link.id, { onSuccess: () => setConfirmDelete(false) })}
+              onClick={() =>
+                deleteLink.mutate(link.id, {
+                  onSuccess: () => setConfirmDelete(false),
+                })
+              }
             >
               Delete
             </Button>
@@ -185,7 +226,7 @@ export default function LinkCard({ link, onEdit }: LinkCardProps) {
         </div>
       </Modal>
     </>
-  )
+  );
 }
 
 const CSS = `
@@ -352,4 +393,4 @@ const CSS = `
 .lcard-confirm-text    { font-size: var(--text-sm); color: var(--text-secondary); line-height: var(--leading-relaxed); }
 .lcard-confirm-text strong { color: var(--text-primary); }
 .lcard-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
-`
+`;

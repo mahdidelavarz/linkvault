@@ -1,58 +1,72 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Icon } from '@iconify/react'
-import { useRegister } from '@/hooks/useAuth'
-import Input  from '@/components/ui/Input'
-import Button from '@/components/ui/Button'
-import Alert  from '@/components/ui/Alert'
+import Link from "next/link";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+import { useRegister } from "@/hooks/useAuth";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
+import Alert from "@/components/ui/Alert";
+import {
+  LucideEye,
+  LucideEyeOff,
+  LucideLock,
+  LucideLockKeyhole,
+  LucideUser,
+  LucideVault,
+} from "@/Icons/Icons";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
-const schema = z.object({
-  username: z
-    .string()
-    .min(3, 'Username must be at least 3 characters')
-    .max(32, 'Username must be at most 32 characters')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Only letters, numbers and underscores')
-    .trim(),
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
-    .regex(/[0-9]/, 'Must contain at least one number'),
-  confirmPassword: z.string(),
-}).refine((d) => d.password === d.confirmPassword, {
-  message: "Passwords don't match",
-  path:    ['confirmPassword'],
-})
+const schema = z
+  .object({
+    username: z
+      .string()
+      .min(3, "Username must be at least 3 characters")
+      .max(32, "Username must be at most 32 characters")
+      .regex(/^[a-zA-Z0-9_]+$/, "Only letters, numbers and underscores")
+      .trim(),
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/[A-Z]/, "Must contain at least one uppercase letter")
+      .regex(/[0-9]/, "Must contain at least one number"),
+    confirmPassword: z.string(),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
 
-type FormData = z.infer<typeof schema>
+type FormData = z.infer<typeof schema>;
 
 // ─── Password strength meter ──────────────────────────────────────────────────
 
-function getStrength(password: string): { score: number; label: string; color: string } {
-  if (!password) return { score: 0, label: '',        color: 'transparent' }
-  let score = 0
-  if (password.length >= 8)          score++
-  if (password.length >= 12)         score++
-  if (/[A-Z]/.test(password))        score++
-  if (/[0-9]/.test(password))        score++
-  if (/[^a-zA-Z0-9]/.test(password)) score++
+function getStrength(password: string): {
+  score: number;
+  label: string;
+  color: string;
+} {
+  if (!password) return { score: 0, label: "", color: "transparent" };
+  let score = 0;
+  if (password.length >= 8) score++;
+  if (password.length >= 12) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^a-zA-Z0-9]/.test(password)) score++;
 
-  if (score <= 1) return { score, label: 'Weak',   color: 'var(--danger)'  }
-  if (score <= 3) return { score, label: 'Fair',   color: 'var(--warning)' }
-  if (score <= 4) return { score, label: 'Good',   color: 'var(--success)' }
-  return             { score, label: 'Strong', color: 'var(--cyan-400)' }
+  if (score <= 1) return { score, label: "Weak", color: "var(--danger)" };
+  if (score <= 3) return { score, label: "Fair", color: "var(--warning)" };
+  if (score <= 4) return { score, label: "Good", color: "var(--success)" };
+  return { score, label: "Strong", color: "var(--cyan-400)" };
 }
 
 function StrengthMeter({ password }: { password: string }) {
-  const { score, label, color } = getStrength(password)
-  if (!password) return null
+  const { score, label, color } = getStrength(password);
+  if (!password) return null;
   return (
     <div className="strength-wrap">
       <div className="strength-bars">
@@ -60,42 +74,43 @@ function StrengthMeter({ password }: { password: string }) {
           <div
             key={i}
             className="strength-bar"
-            style={{ background: i <= score ? color : 'var(--bg-overlay)' }}
+            style={{ background: i <= score ? color : "var(--bg-overlay)" }}
           />
         ))}
       </div>
-      <span className="strength-label" style={{ color }}>{label}</span>
+      <span className="strength-label" style={{ color }}>
+        {label}
+      </span>
     </div>
-  )
+  );
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function RegisterPage() {
-  const [showPassword,        setShowPassword]        = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const registerMutation = useRegister()
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const registerMutation = useRegister();
 
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<FormData>({ resolver: zodResolver(schema) })
+  } = useForm<FormData>({ resolver: zodResolver(schema) });
 
-  const passwordValue = watch('password', '')
-  const onSubmit = (data: FormData) => registerMutation.mutate(data)
+  const passwordValue = watch("password", "");
+  const onSubmit = (data: FormData) => registerMutation.mutate(data);
 
   return (
     <>
       <style>{CSS}</style>
       <div className="auth-page">
         <div className="auth-card">
-
           {/* Logo */}
           <div className="auth-logo">
             <div className="auth-logo-icon">
-              <Icon icon="lucide:vault" width={22} />
+              <LucideVault width={22} />
             </div>
             <span className="auth-logo-text">LinkVault</span>
           </div>
@@ -113,32 +128,35 @@ export default function RegisterPage() {
               message={
                 registerMutation.error instanceof Error
                   ? registerMutation.error.message
-                  : 'Registration failed. Please try again.'
+                  : "Registration failed. Please try again."
               }
             />
           )}
 
           {/* Form */}
-          <form className="auth-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-
+          <form
+            className="auth-form"
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+          >
             <Input
               label="Username"
               type="text"
               placeholder="Pick a username"
-              leftIcon="lucide:user"
+              leftIcon={LucideUser}
               hint="Letters, numbers and underscores only"
               error={errors.username?.message}
               autoComplete="username"
               autoFocus
-              {...register('username')}
+              {...register("username")}
             />
 
             <div className="auth-password-wrap">
               <Input
                 label="Password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 placeholder="Create a strong password"
-                leftIcon="lucide:lock"
+                leftIcon={LucideLock}
                 error={errors.password?.message}
                 autoComplete="new-password"
                 rightNode={
@@ -147,21 +165,27 @@ export default function RegisterPage() {
                     className="auth-eye-btn"
                     onClick={() => setShowPassword((p) => !p)}
                     tabIndex={-1}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
-                    <Icon icon={showPassword ? 'lucide:eye-off' : 'lucide:eye'} width={14} />
+                    {showPassword ? (
+                      <LucideEyeOff width={14} />
+                    ) : (
+                      <LucideEye width={14} />
+                    )}
                   </button>
                 }
-                {...register('password')}
+                {...register("password")}
               />
               <StrengthMeter password={passwordValue} />
             </div>
 
             <Input
               label="Confirm password"
-              type={showConfirmPassword ? 'text' : 'password'}
+              type={showConfirmPassword ? "text" : "password"}
               placeholder="Repeat your password"
-              leftIcon="lucide:lock-keyhole"
+              leftIcon={LucideLockKeyhole}
               error={errors.confirmPassword?.message}
               autoComplete="new-password"
               rightNode={
@@ -170,12 +194,16 @@ export default function RegisterPage() {
                   className="auth-eye-btn"
                   onClick={() => setShowConfirmPassword((p) => !p)}
                   tabIndex={-1}
-                  aria-label={showConfirmPassword ? 'Hide' : 'Show'}
+                  aria-label={showConfirmPassword ? "Hide" : "Show"}
                 >
-                  <Icon icon={showConfirmPassword ? 'lucide:eye-off' : 'lucide:eye'} width={14} />
+                  {showPassword ? (
+                    <LucideEyeOff width={14} />
+                  ) : (
+                    <LucideEye width={14} />
+                  )}
                 </button>
               }
-              {...register('confirmPassword')}
+              {...register("confirmPassword")}
             />
 
             <Button
@@ -186,18 +214,18 @@ export default function RegisterPage() {
             >
               Create account
             </Button>
-
           </form>
 
           <p className="auth-footer-text">
-            Already have an account?{' '}
-            <Link href="/login" className="auth-link">Sign in</Link>
+            Already have an account?{" "}
+            <Link href="/login" className="auth-link">
+              Sign in
+            </Link>
           </p>
-
         </div>
       </div>
     </>
-  )
+  );
 }
 
 const CSS = `
@@ -296,4 +324,4 @@ const CSS = `
 .auth-footer-text { text-align: center; font-size: var(--text-sm); color: var(--text-tertiary); }
 .auth-link { color: var(--text-accent); font-weight: 500; transition: color var(--transition-fast); }
 .auth-link:hover { color: var(--accent-hover); }
-`
+`;

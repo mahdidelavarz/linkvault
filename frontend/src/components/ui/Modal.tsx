@@ -1,8 +1,8 @@
 'use client'
 
+import { LucideX } from '@/Icons/Icons'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { Icon } from '@iconify/react'
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full'
 
@@ -80,7 +80,7 @@ export default function Modal({
                 {title && <h3 className="modal-title">{title}</h3>}
                 {!hideClose && (
                   <button className="modal-close" onClick={onClose} aria-label="Close">
-                    <Icon icon="lucide:x" width={16} />
+                    <LucideX width={16} />
                   </button>
                 )}
               </div>

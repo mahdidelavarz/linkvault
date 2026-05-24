@@ -1,5 +1,5 @@
-import { Icon } from '@iconify/react'
-import type { ReactNode } from 'react'
+
+import type { ComponentType, ReactNode, SVGProps } from 'react'
 
 export type BadgeVariant = 'default' | 'cyan' | 'success' | 'warning' | 'danger' | 'purple' | 'orange' | 'pink'
 export type BadgeSize    = 'sm' | 'md'
@@ -8,7 +8,7 @@ interface BadgeProps {
   children:   ReactNode
   variant?:   BadgeVariant
   size?:      BadgeSize
-  icon?:      string
+  icon?:      ComponentType<SVGProps<SVGSVGElement>>
   dot?:       boolean
   className?: string
 }
@@ -28,7 +28,7 @@ export default function Badge({
   children,
   variant   = 'default',
   size      = 'sm',
-  icon,
+  icon : Icon,
   dot       = false,
   className = '',
 }: BadgeProps) {
@@ -42,7 +42,7 @@ export default function Badge({
         className,
       ].filter(Boolean).join(' ')}>
         {dot && <span className="badge-dot" />}
-        {icon && <Icon icon={icon} className="badge-icon" />}
+        {Icon && <Icon className="badge-icon" />}
         {children}
       </span>
     </>
