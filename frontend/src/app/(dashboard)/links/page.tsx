@@ -12,6 +12,7 @@ import {
   LucideChevronDown,
   LucideFolder,
   LucideLink2,
+  LucidePlus,
   LucideSearch,
   LucideSearchX,
   LucideStar,
@@ -66,7 +67,7 @@ export default function LinksPage() {
               {isLoading ? "…" : `${links?.length ?? 0} saved`}
             </p>
           </div>
-          <Button leftIcon="lucide:plus" onClick={openCreate}>
+          <Button leftIcon={LucidePlus} onClick={openCreate}>
             Add Link
           </Button>
         </div>
@@ -233,7 +234,7 @@ function EmptyState({
           Clear filters
         </Button>
       ) : (
-        <Button leftIcon="lucide:plus" onClick={onAdd}>
+        <Button leftIcon={LucidePlus} onClick={onAdd}>
           Add your first link
         </Button>
       )}
