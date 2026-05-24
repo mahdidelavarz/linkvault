@@ -1,138 +1,299 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useRegister } from '@/hooks/useAuth';
-import Input from '@/components/ui/Input';
-import Button from '@/components/ui/Button';
-import Alert from '@/components/ui/Alert';
+import Link from 'next/link'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { Icon } from '@iconify/react'
+import { useRegister } from '@/hooks/useAuth'
+import Input  from '@/components/ui/Input'
+import Button from '@/components/ui/Button'
+import Alert  from '@/components/ui/Alert'
+
+// ─── Schema ───────────────────────────────────────────────────────────────────
+
+const schema = z.object({
+  username: z
+    .string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(32, 'Username must be at most 32 characters')
+    .regex(/^[a-zA-Z0-9_]+$/, 'Only letters, numbers and underscores')
+    .trim(),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Must contain at least one number'),
+  confirmPassword: z.string(),
+}).refine((d) => d.password === d.confirmPassword, {
+  message: "Passwords don't match",
+  path:    ['confirmPassword'],
+})
+
+type FormData = z.infer<typeof schema>
+
+// ─── Password strength meter ──────────────────────────────────────────────────
+
+function getStrength(password: string): { score: number; label: string; color: string } {
+  if (!password) return { score: 0, label: '',        color: 'transparent' }
+  let score = 0
+  if (password.length >= 8)          score++
+  if (password.length >= 12)         score++
+  if (/[A-Z]/.test(password))        score++
+  if (/[0-9]/.test(password))        score++
+  if (/[^a-zA-Z0-9]/.test(password)) score++
+
+  if (score <= 1) return { score, label: 'Weak',   color: 'var(--danger)'  }
+  if (score <= 3) return { score, label: 'Fair',   color: 'var(--warning)' }
+  if (score <= 4) return { score, label: 'Good',   color: 'var(--success)' }
+  return             { score, label: 'Strong', color: 'var(--cyan-400)' }
+}
+
+function StrengthMeter({ password }: { password: string }) {
+  const { score, label, color } = getStrength(password)
+  if (!password) return null
+  return (
+    <div className="strength-wrap">
+      <div className="strength-bars">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div
+            key={i}
+            className="strength-bar"
+            style={{ background: i <= score ? color : 'var(--bg-overlay)' }}
+          />
+        ))}
+      </div>
+      <span className="strength-label" style={{ color }}>{label}</span>
+    </div>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function RegisterPage() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [errors, setErrors] = useState({ 
-    username: '', 
-    password: '', 
-    confirmPassword: '' 
-  });
+  const [showPassword,        setShowPassword]        = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const registerMutation = useRegister()
 
-  const registerMutation = useRegister();
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({ resolver: zodResolver(schema) })
 
-  const validate = () => {
-    const newErrors = { username: '', password: '', confirmPassword: '' };
-    let isValid = true;
-
-    if (!username.trim()) {
-      newErrors.username = 'Username is required';
-      isValid = false;
-    } else if (username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
-      isValid = false;
-    }
-
-    if (!password) {
-      newErrors.password = 'Password is required';
-      isValid = false;
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-      isValid = false;
-    }
-
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-      isValid = false;
-    }
-
-    setErrors(newErrors);
-    return isValid;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validate()) return;
-
-    registerMutation.mutate({ username, password });
-  };
+  const passwordValue = watch('password', '')
+  const onSubmit = (data: FormData) => registerMutation.mutate(data)
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h1 className="text-center text-4xl font-bold text-gray-900 mb-2">
-            🗂️ LinkVault
-          </h1>
-          <h2 className="text-center text-2xl font-semibold text-gray-700">
-            Create your account
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Start organizing your links and notes
-          </p>
-        </div>
+    <>
+      <style>{CSS}</style>
+      <div className="auth-page">
+        <div className="auth-card">
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {/* Logo */}
+          <div className="auth-logo">
+            <div className="auth-logo-icon">
+              <Icon icon="lucide:vault" width={22} />
+            </div>
+            <span className="auth-logo-text">LinkVault</span>
+          </div>
+
+          {/* Heading */}
+          <div className="auth-heading">
+            <h1 className="auth-title">Create account</h1>
+            <p className="auth-subtitle">Set up your personal vault</p>
+          </div>
+
+          {/* Server error / success */}
           {registerMutation.isError && (
-            <Alert 
-              type="error" 
-              message={registerMutation.error instanceof Error ? registerMutation.error.message : 'Registration failed'} 
+            <Alert
+              type="error"
+              message={
+                registerMutation.error instanceof Error
+                  ? registerMutation.error.message
+                  : 'Registration failed. Please try again.'
+              }
             />
           )}
 
-          <div className="space-y-4">
+          {/* Form */}
+          <form className="auth-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+
             <Input
               label="Username"
               type="text"
-              value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-                setErrors({ ...errors, username: '' });
-              }}
-              error={errors.username}
-              placeholder="Choose a username"
+              placeholder="Pick a username"
+              leftIcon="lucide:user"
+              hint="Letters, numbers and underscores only"
+              error={errors.username?.message}
+              autoComplete="username"
+              autoFocus
+              {...register('username')}
             />
+
+            <div className="auth-password-wrap">
+              <Input
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Create a strong password"
+                leftIcon="lucide:lock"
+                error={errors.password?.message}
+                autoComplete="new-password"
+                rightNode={
+                  <button
+                    type="button"
+                    className="auth-eye-btn"
+                    onClick={() => setShowPassword((p) => !p)}
+                    tabIndex={-1}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    <Icon icon={showPassword ? 'lucide:eye-off' : 'lucide:eye'} width={14} />
+                  </button>
+                }
+                {...register('password')}
+              />
+              <StrengthMeter password={passwordValue} />
+            </div>
 
             <Input
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setErrors({ ...errors, password: '' });
-              }}
-              error={errors.password}
-              placeholder="Create a password"
+              label="Confirm password"
+              type={showConfirmPassword ? 'text' : 'password'}
+              placeholder="Repeat your password"
+              leftIcon="lucide:lock-keyhole"
+              error={errors.confirmPassword?.message}
+              autoComplete="new-password"
+              rightNode={
+                <button
+                  type="button"
+                  className="auth-eye-btn"
+                  onClick={() => setShowConfirmPassword((p) => !p)}
+                  tabIndex={-1}
+                  aria-label={showConfirmPassword ? 'Hide' : 'Show'}
+                >
+                  <Icon icon={showConfirmPassword ? 'lucide:eye-off' : 'lucide:eye'} width={14} />
+                </button>
+              }
+              {...register('confirmPassword')}
             />
 
-            <Input
-              label="Confirm Password"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => {
-                setConfirmPassword(e.target.value);
-                setErrors({ ...errors, confirmPassword: '' });
-              }}
-              error={errors.confirmPassword}
-              placeholder="Confirm your password"
-            />
-          </div>
+            <Button
+              type="submit"
+              fullWidth
+              size="lg"
+              isLoading={registerMutation.isPending || isSubmitting}
+            >
+              Create account
+            </Button>
 
-          <Button
-            type="submit"
-            fullWidth
-            isLoading={registerMutation.isPending}
-          >
-            Create account
-          </Button>
+          </form>
 
-          <p className="text-center text-sm text-gray-600">
+          <p className="auth-footer-text">
             Already have an account?{' '}
-            <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
-              Sign in
-            </Link>
+            <Link href="/login" className="auth-link">Sign in</Link>
           </p>
-        </form>
+
+        </div>
       </div>
-    </div>
-  );
+    </>
+  )
 }
+
+const CSS = `
+.auth-page {
+  min-height:           100dvh;
+  display:              flex;
+  align-items:          center;
+  justify-content:      center;
+  background-color:     var(--bg-base);
+  background-image:     radial-gradient(circle at 1px 1px, var(--border-subtle) 1px, transparent 0);
+  background-size:      28px 28px;
+  padding:              24px 16px;
+}
+.auth-card {
+  width:          100%;
+  max-width:      420px;
+  background:     var(--bg-surface);
+  border:         1px solid var(--border-default);
+  border-radius:  var(--radius-xl);
+  padding:        36px 32px;
+  box-shadow:     var(--shadow-lg);
+  display:        flex;
+  flex-direction: column;
+  gap:            24px;
+  animation:      fadeInUp var(--transition-slow) ease both;
+}
+@media (max-width: 479px) {
+  .auth-card { padding: 28px 20px; border-radius: var(--radius-lg); }
+}
+
+.auth-logo {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             10px;
+}
+.auth-logo-icon {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           40px;
+  height:          40px;
+  background:      var(--accent-muted);
+  border:          1px solid var(--accent-border);
+  border-radius:   var(--radius-md);
+  color:           var(--cyan-400);
+  box-shadow:      var(--shadow-glow);
+}
+.auth-logo-text {
+  font-size:      var(--text-xl);
+  font-weight:    700;
+  color:          var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.auth-heading  { text-align: center; }
+.auth-title {
+  font-size:      var(--text-2xl);
+  font-weight:    700;
+  color:          var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom:  6px;
+}
+.auth-subtitle { font-size: var(--text-sm); color: var(--text-tertiary); }
+
+.auth-form { display: flex; flex-direction: column; gap: 16px; }
+
+.auth-password-wrap { display: flex; flex-direction: column; gap: 8px; }
+
+.auth-eye-btn {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           26px;
+  height:          26px;
+  background:      transparent;
+  border:          none;
+  border-radius:   var(--radius-sm);
+  color:           var(--text-tertiary);
+  cursor:          pointer;
+  transition:      color var(--transition-fast);
+}
+.auth-eye-btn:hover { color: var(--text-primary); }
+
+/* Strength meter */
+.strength-wrap  { display: flex; align-items: center; gap: 8px; }
+.strength-bars  { display: flex; gap: 4px; flex: 1; }
+.strength-bar   {
+  height:        4px;
+  flex:          1;
+  border-radius: var(--radius-full);
+  transition:    background var(--transition-base);
+}
+.strength-label { font-size: var(--text-xs); font-weight: 600; min-width: 42px; text-align: right; }
+
+.auth-footer-text { text-align: center; font-size: var(--text-sm); color: var(--text-tertiary); }
+.auth-link { color: var(--text-accent); font-weight: 500; transition: color var(--transition-fast); }
+.auth-link:hover { color: var(--accent-hover); }
+`

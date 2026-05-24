@@ -2,100 +2,201 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect } from 'react'
 import { Icon } from '@iconify/react'
 import { useAuthStore } from '@/store/authStore'
+import { useSidebar } from './SidebarContext'
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
 const NAV_MAIN = [
-  { name: 'Dashboard',      href: '/dashboard',      icon: 'lucide:layout-dashboard' },
-  { name: 'Links',          href: '/links',           icon: 'lucide:link-2'           },
-  { name: 'Notes',          href: '/notes',           icon: 'lucide:file-text'        },
-  { name: 'Snippets',       href: '/snippets',        icon: 'lucide:code-2'           },
-  { name: 'Prompts',        href: '/prompts',         icon: 'lucide:message-square'   },
-  { name: 'API Client',     href: '/api-client',      icon: 'lucide:globe'            },
-  { name: 'Infrastructure', href: '/infrastructure',  icon: 'lucide:server'           },
+  { name: 'Dashboard',      href: '/dashboard',     icon: 'lucide:layout-dashboard' },
+  { name: 'Links',          href: '/links',          icon: 'lucide:link-2'           },
+  { name: 'Notes',          href: '/notes',          icon: 'lucide:file-text'        },
+  { name: 'Snippets',       href: '/snippets',       icon: 'lucide:code-2'           },
+  { name: 'Prompts',        href: '/prompts',        icon: 'lucide:message-square'   },
+  { name: 'API Client',     href: '/api-client',     icon: 'lucide:globe'            },
+  { name: 'Infrastructure', href: '/infrastructure', icon: 'lucide:server'           },
 ]
 
 const NAV_MANAGE = [
-  { name: 'Categories', href: '/categories', icon: 'lucide:folder'  },
-  { name: 'Tags',       href: '/tags',       icon: 'lucide:tag'     },
+  { name: 'Categories', href: '/categories', icon: 'lucide:folder' },
+  { name: 'Tags',       href: '/tags',       icon: 'lucide:tag'    },
 ]
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 export default function Sidebar() {
   const pathname  = usePathname()
   const user      = useAuthStore((s) => s.user)
-  const [collapsed, setCollapsed] = useState(false)
+  const { collapsed, mobileOpen, setCollapsed, setMobileOpen } = useSidebar()
+
+  // Close mobile drawer on route change
+  useEffect(() => { setMobileOpen(false) }, [pathname, setMobileOpen])
+
+  // Close on Escape
+  useEffect(() => {
+    if (!mobileOpen) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileOpen(false)
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [mobileOpen, setMobileOpen])
+
+  // Lock body scroll when mobile drawer open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [mobileOpen])
+
+  const sidebarContent = (
+    <div className={['sidebar-inner', collapsed ? 'sidebar-inner--collapsed' : ''].filter(Boolean).join(' ')}>
+
+      {/* Logo */}
+      <div className="sidebar-logo">
+        <div className="sidebar-logo-icon">
+          <Icon icon="lucide:vault" width={18} />
+        </div>
+        {!collapsed && <span className="sidebar-logo-text">LinkVault</span>}
+
+        {/* Collapse btn — desktop only */}
+        <button
+          className="sidebar-collapse-btn"
+          onClick={() => setCollapsed(!collapsed)}
+          aria-label={collapsed ? 'Expand' : 'Collapse'}
+        >
+          <Icon icon={collapsed ? 'lucide:chevron-right' : 'lucide:chevron-left'} width={14} />
+        </button>
+
+        {/* Close btn — mobile only */}
+        <button
+          className="sidebar-close-btn"
+          onClick={() => setMobileOpen(false)}
+          aria-label="Close menu"
+        >
+          <Icon icon="lucide:x" width={16} />
+        </button>
+      </div>
+
+      {/* Nav */}
+      <nav className="sidebar-nav">
+        <NavSection label="Menu" collapsed={collapsed}>
+          {NAV_MAIN.map((item) => (
+            <NavItem
+              key={item.href}
+              {...item}
+              active={
+                pathname === item.href ||
+                (item.href !== '/dashboard' && pathname.startsWith(item.href))
+              }
+              collapsed={collapsed}
+            />
+          ))}
+        </NavSection>
+
+        <NavSection label="Manage" collapsed={collapsed}>
+          {NAV_MANAGE.map((item) => (
+            <NavItem
+              key={item.href}
+              {...item}
+              active={pathname.startsWith(item.href)}
+              collapsed={collapsed}
+            />
+          ))}
+        </NavSection>
+      </nav>
+
+      {/* Footer */}
+      <div className="sidebar-footer">
+        <div className="sidebar-user">
+          <div className="sidebar-avatar">
+            <Icon icon="lucide:user" width={14} /></div>
+          {!collapsed && (
+            <span className="sidebar-username">{user?.username ?? 'User'}</span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <>
       <style>{CSS}</style>
-      <aside className={['sidebar', collapsed ? 'sidebar--collapsed' : ''].filter(Boolean).join(' ')}>
 
-        {/* Logo */}
-        <div className="sidebar-logo">
-          <div className="sidebar-logo-icon">
-            <Icon icon="lucide:vault" width={18} />
-          </div>
-          {!collapsed && <span className="sidebar-logo-text">LinkVault</span>}
-          <button
-            className="sidebar-collapse-btn"
-            onClick={() => setCollapsed((p) => !p)}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            <Icon
-              icon={collapsed ? 'lucide:chevron-right' : 'lucide:chevron-left'}
-              width={14}
-            />
-          </button>
-        </div>
+      {/* ── Desktop sidebar ── */}
+      <aside className="sidebar-desktop">
+        {sidebarContent}
+      </aside>
 
-        {/* Navigation */}
-        <nav className="sidebar-nav">
+      {/* ── Mobile backdrop ── */}
+      {mobileOpen && (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
-          {/* Main section */}
-          <NavSection label="Menu" collapsed={collapsed}>
-            {NAV_MAIN.map((item) => (
-              <NavItem
-                key={item.href}
-                {...item}
-                active={pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))}
-                collapsed={collapsed}
-              />
-            ))}
-          </NavSection>
+      {/* ── Mobile drawer ── */}
+      <aside className={['sidebar-mobile', mobileOpen ? 'sidebar-mobile--open' : ''].filter(Boolean).join(' ')}>
+        {/* Force expanded in mobile drawer */}
+        <div className="sidebar-inner">
 
-          {/* Manage section */}
-          <NavSection label="Manage" collapsed={collapsed}>
-            {NAV_MANAGE.map((item) => (
-              <NavItem
-                key={item.href}
-                {...item}
-                active={pathname.startsWith(item.href)}
-                collapsed={collapsed}
-              />
-            ))}
-          </NavSection>
-
-        </nav>
-
-        {/* Footer — user info */}
-        <div className="sidebar-footer">
-          <div className="sidebar-user">
-            <div className="sidebar-avatar">
-              <Icon icon="lucide:user" width={14} />
+          <div className="sidebar-logo">
+            <div className="sidebar-logo-icon">
+              <Icon icon="lucide:vault" width={18} />
             </div>
-            {!collapsed && (
-              <div className="sidebar-user-info">
-                <span className="sidebar-username">{user?.username ?? 'User'}</span>
-              </div>
-            )}
+            <span className="sidebar-logo-text">LinkVault</span>
+            <button
+              className="sidebar-close-btn sidebar-close-btn--visible"
+              onClick={() => setMobileOpen(false)}
+              aria-label="Close menu"
+            >
+              <Icon icon="lucide:x" width={16} />
+            </button>
           </div>
-        </div>
 
+          <nav className="sidebar-nav">
+            <NavSection label="Menu" collapsed={false}>
+              {NAV_MAIN.map((item) => (
+                <NavItem
+                  key={item.href}
+                  {...item}
+                  active={
+                    pathname === item.href ||
+                    (item.href !== '/dashboard' && pathname.startsWith(item.href))
+                  }
+                  collapsed={false}
+                />
+              ))}
+            </NavSection>
+            <NavSection label="Manage" collapsed={false}>
+              {NAV_MANAGE.map((item) => (
+                <NavItem
+                  key={item.href}
+                  {...item}
+                  active={pathname.startsWith(item.href)}
+                  collapsed={false}
+                />
+              ))}
+            </NavSection>
+          </nav>
+
+          <div className="sidebar-footer">
+            <div className="sidebar-user">
+              <div className="sidebar-avatar">
+                <Icon icon="lucide:user" width={14} />
+              </div>
+              <span className="sidebar-username">{user?.username ?? 'User'}</span>
+            </div>
+          </div>
+
+        </div>
       </aside>
     </>
   )
@@ -103,14 +204,8 @@ export default function Sidebar() {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function NavSection({
-  label,
-  collapsed,
-  children,
-}: {
-  label:     string
-  collapsed: boolean
-  children:  React.ReactNode
+function NavSection({ label, collapsed, children }: {
+  label: string; collapsed: boolean; children: React.ReactNode
 }) {
   return (
     <div className="nav-section">
@@ -120,20 +215,11 @@ function NavSection({
   )
 }
 
-function NavItem({
-  name,
-  href,
-  icon,
-  active,
-  collapsed,
-}: {
-  name:      string
-  href:      string
-  icon:      string
-  active:    boolean
-  collapsed: boolean
+function NavItem({ name, href, icon, active, collapsed }: {
+  name: string; href: string; icon: string; active: boolean; collapsed: boolean
 }) {
-  return (<Link
+  return (
+    <Link
       href={href}
       className={['nav-item', active ? 'nav-item--active' : ''].filter(Boolean).join(' ')}
       title={collapsed ? name : undefined}
@@ -148,32 +234,44 @@ function NavItem({
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const CSS = `
-.sidebar {
+/* ── Desktop sidebar ── */
+.sidebar-desktop {
+  display:    flex;
+  flex-shrink: 0;
+}
+@media (max-width: 767px) {
+  .sidebar-desktop { display: none; }
+}
+
+.sidebar-inner {
   display:        flex;
   flex-direction: column;
   width:          var(--sidebar-width);
-  min-height:     100dvh;
+  height:         100dvh;
   background:     var(--bg-surface);
   border-right:   1px solid var(--border-default);
   transition:     width var(--transition-slow);
-  flex-shrink:    0;
   position:       sticky;
   top:            0;
   overflow:       hidden;
 }
-.sidebar--collapsed {
+.sidebar-inner--collapsed {
   width: var(--sidebar-width-collapsed);
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .sidebar-inner { width: var(--sidebar-width-collapsed); }
+  .sidebar-collapse-btn { display: none; }
 }
 
 /* Logo */
 .sidebar-logo {
-  display:         flex;
-  align-items:     center;
-  gap:             10px;
-  padding:         18px 14px 14px;
-  border-bottom:   1px solid var(--border-subtle);
-  flex-shrink:     0;
-  min-height:      60px;
+  display:       flex;
+  align-items:   center;
+  gap:           10px;
+  padding:       16px 14px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink:   0;
+  min-height:    60px;
 }
 .sidebar-logo-icon {
   display:         flex;
@@ -188,12 +286,12 @@ const CSS = `
   flex-shrink:     0;
 }
 .sidebar-logo-text {
-  font-size:   var(--text-md);
-  font-weight: 700;
-  color:       var(--text-primary);
+  font-size:      var(--text-md);
+  font-weight:    700;
+  color:          var(--text-primary);
   letter-spacing: -0.02em;
-  flex:        1;
-  white-space: nowrap;
+  flex:           1;
+  white-space:    nowrap;
 }
 .sidebar-collapse-btn {
   display:         flex;
@@ -208,28 +306,42 @@ const CSS = `
   cursor:          pointer;
   flex-shrink:     0;
   margin-left:     auto;
-  transition:      background var(--transition-fast),
-                   color      var(--transition-fast);
+  transition:      background var(--transition-fast), color var(--transition-fast);
 }
-.sidebar-collapse-btn:hover {
-  background: var(--bg-overlay);
-  color:      var(--text-primary);
+.sidebar-collapse-btn:hover { background: var(--bg-overlay); color: var(--text-primary); }
+
+.sidebar-close-btn {
+  display:         none;
+  align-items:     center;
+  justify-content: center;
+  width:           32px;
+  height:          32px;
+  background:      transparent;
+  border:          1px solid var(--border-default);
+  border-radius:   var(--radius-md);
+  color:           var(--text-secondary);
+  cursor:          pointer;
+  flex-shrink:     0;
+  margin-left:     auto;
+  transition:      background var(--transition-fast), color var(--transition-fast);
 }
+.sidebar-close-btn--visible { display: flex; }
+.sidebar-close-btn:hover { background: var(--bg-overlay); color: var(--text-primary); }
 
 /* Nav */
 .sidebar-nav {
   flex:       1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding:    8px 8px;
+  padding:    8px;
   display:    flex;
   flex-direction: column;
   gap:        4px;
 }
 .sidebar-nav::-webkit-scrollbar { width: 0; }
 
-.nav-section { margin-bottom: 4px; }
-.nav-section-label {
+.nav-section        { margin-bottom: 4px; }
+.nav-section-label  {
   font-size:      var(--text-xs);
   font-weight:    600;
   color:          var(--text-tertiary);
@@ -238,68 +350,40 @@ const CSS = `
   padding:        10px 8px 4px;
   white-space:    nowrap;
 }
-.nav-section-items {
-  display:        flex;
-  flex-direction: column;
-  gap:            2px;
-}
+.nav-section-items  { display: flex; flex-direction: column; gap: 2px; }
 
 .nav-item {
-  display:       flex;
-  align-items:   center;
-  gap:           10px;
-  padding:       7px 8px;
-  border-radius: var(--radius-md);
-  color:         var(--text-secondary);
-  font-size:     var(--text-sm);
-  font-weight:   500;
+  display:         flex;
+  align-items:     center;
+  gap:             10px;
+  padding:         9px 8px;
+  border-radius:   var(--radius-md);
+  color:           var(--text-secondary);
+  font-size:       var(--text-sm);
+  font-weight:     500;
   text-decoration: none;
-  transition:    background var(--transition-fast),
-                 color      var(--transition-fast);
-  white-space:   nowrap;
-  position:      relative;
+  white-space:     nowrap;
+  position:        relative;
+  transition:      background var(--transition-fast), color var(--transition-fast);
+  /* Bigger tap targets on mobile */
+  min-height:      44px;
 }
-.nav-item:hover {
-  background: var(--bg-overlay);
-  color:      var(--text-primary);
-}
-.nav-item--active {
-  background: var(--accent-muted);
-  color:      var(--cyan-300);
-}
-.nav-item--active:hover {
-  background: var(--accent-muted);
-  color:      var(--cyan-300);
-}
-.nav-item-icon {
-  width:      16px;
-  height:     16px;
-  flex-shrink: 0;
-}
-.nav-item-label { flex: 1; }
-.nav-item-dot {
-  width:         5px;
-  height:        5px;
-  border-radius: 50%;
-  background:    var(--accent);
-  flex-shrink:   0;
-}
+.nav-item:hover          { background: var(--bg-overlay); color: var(--text-primary); }
+.nav-item--active        { background: var(--accent-muted); color: var(--cyan-300); }
+.nav-item--active:hover  { background: var(--accent-muted); color: var(--cyan-300); }
+.nav-item-icon           { width: 16px; height: 16px; flex-shrink: 0; }
+.nav-item-label          { flex: 1; }
+.nav-item-dot            { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
 
 /* Footer */
 .sidebar-footer {
-  padding:      10px 8px;
-  border-top:   1px solid var(--border-subtle);
-  flex-shrink:  0;
+  padding:     10px 8px;
+  border-top:  1px solid var(--border-subtle);
+  flex-shrink: 0;
 }
-.sidebar-user {
-  display:       flex;
-  align-items:   center;
-  gap:           10px;
-  padding:       7px 8px;
-  border-radius: var(--radius-md);
-  overflow:      hidden;
-}
-.sidebar-avatar {display:         flex;
+.sidebar-user    { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: var(--radius-md); }
+.sidebar-avatar  {
+  display:         flex;
   align-items:     center;
   justify-content: center;
   width:           28px;
@@ -310,11 +394,6 @@ const CSS = `
   color:           var(--text-secondary);
   flex-shrink:     0;
 }
-.sidebar-user-info {
-  flex:      1;
-  min-width: 0;
-  overflow:  hidden;
-}
 .sidebar-username {
   font-size:     var(--text-sm);
   font-weight:   500;
@@ -322,6 +401,44 @@ const CSS = `
   white-space:   nowrap;
   overflow:      hidden;
   text-overflow: ellipsis;
-  display:       block;
+}
+
+/* ── Mobile backdrop ── */
+.sidebar-backdrop {
+  display:    none;
+  position:   fixed;
+  inset:      0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(2px);
+  z-index:    calc(var(--z-modal) - 1);
+  animation:  fadeIn var(--transition-base) ease both;
+}
+@media (max-width: 767px) {
+  .sidebar-backdrop { display: block; }
+}
+
+/* ── Mobile drawer ── */
+.sidebar-mobile {
+  display:    none;
+  position:   fixed;
+  top:        0;
+  left:       0;
+  bottom:     0;
+  width:      280px;
+  max-width:  85vw;
+  z-index:    var(--z-modal);
+  transform:  translateX(-100%);
+  transition: transform var(--transition-slow);
+}
+.sidebar-mobile--open { transform: translateX(0); }
+@media (max-width: 767px) {
+  .sidebar-mobile { display: block; }
+}
+.sidebar-mobile .sidebar-inner {
+  width:    100%;
+  height:   100%;
+  position: relative;
+  top:      0;
+  border-right: 1px solid var(--border-default);
 }
 `

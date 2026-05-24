@@ -1,47 +1,51 @@
-import { useMutation } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
-import api from '@/lib/http';
-import { useAuthStore } from '@/store/authStore';
-import { AuthResponse, LoginCredentials, RegisterCredentials } from '@/types/user';
+import { useMutation } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
+import { post } from '@/lib/http'
+import { useAuthStore } from '@/store/authStore'
+import type { AuthResponse, LoginCredentials, RegisterCredentials } from '@/types/user'
+
+// ─── useLogin ─────────────────────────────────────────────────────────────────
 
 export const useLogin = () => {
-  const router = useRouter();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const router  = useRouter()
+  const setAuth = useAuthStore((s) => s.setAuth)
 
   return useMutation({
-    mutationFn: async (credentials: LoginCredentials) => {
-      const { data } = await api.post<AuthResponse>('/auth/login', credentials);
-      return data;
+    mutationFn: (credentials: LoginCredentials) =>
+      post<AuthResponse>('/auth/login', credentials),
+
+    onSuccess: ({ user, token }) => {
+      setAuth(user, token)
+      router.push('/links')
     },
-    onSuccess: (data) => {
-      setAuth(data.user, data.token);
-      router.push('/links');
-    },
-  });
-};
+  })
+}
+
+// ─── useRegister ──────────────────────────────────────────────────────────────
 
 export const useRegister = () => {
-  const router = useRouter();
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const router  = useRouter()
+  const setAuth = useAuthStore((s) => s.setAuth)
 
   return useMutation({
-    mutationFn: async (credentials: RegisterCredentials) => {
-      const { data } = await api.post<AuthResponse>('/auth/register', credentials);
-      return data;
+    mutationFn: (credentials: RegisterCredentials) =>
+      post<AuthResponse>('/auth/register', credentials),
+
+    onSuccess: ({ user, token }) => {
+      setAuth(user, token)
+      router.push('/links')
     },
-    onSuccess: (data) => {
-      setAuth(data.user, data.token);
-      router.push('/links');
-    },
-  });
-};
+  })
+}
+
+// ─── useLogout ────────────────────────────────────────────────────────────────
 
 export const useLogout = () => {
-  const router = useRouter();
-  const logout = useAuthStore((state) => state.logout);
+  const router = useRouter()
+  const logout = useAuthStore((s) => s.logout)
 
   return () => {
-    logout();
-    router.push('/login');
-  };
-};
+    logout()
+    router.push('/login')
+  }
+}

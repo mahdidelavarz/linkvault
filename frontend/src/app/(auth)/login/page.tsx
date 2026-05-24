@@ -1,113 +1,244 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { useLogin } from '@/hooks/useAuth';
-import Input from '@/components/ui/Input';
-import Button from '@/components/ui/Button';
-import Alert from '@/components/ui/Alert';
+import Link from 'next/link'
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { Icon } from '@iconify/react'
+import { useLogin } from '@/hooks/useAuth'
+import Input   from '@/components/ui/Input'
+import Button  from '@/components/ui/Button'
+import Alert   from '@/components/ui/Alert'
+
+// ─── Schema ───────────────────────────────────────────────────────────────────
+
+const schema = z.object({
+  username: z.string().min(1, 'Username is required').trim(),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+})
+
+type FormData = z.infer<typeof schema>
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LoginPage() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState({ username: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false)
+  const loginMutation = useLogin()
 
-  const loginMutation = useLogin();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({ resolver: zodResolver(schema) })
 
-  const validate = () => {
-    const newErrors = { username: '', password: '' };
-    let isValid = true;
-
-    if (!username.trim()) {
-      newErrors.username = 'Username is required';
-      isValid = false;
-    }
-
-    if (!password) {
-      newErrors.password = 'Password is required';
-      isValid = false;
-    } else if (password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-      isValid = false;
-    }
-
-    setErrors(newErrors);
-    return isValid;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validate()) return;
-
-    loginMutation.mutate({ username, password });
-  };
+  const onSubmit = (data: FormData) => {
+    loginMutation.mutate(data)
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h1 className="text-center text-4xl font-bold text-gray-900 mb-2">
-            🗂️ LinkVault
-          </h1>
-          <h2 className="text-center text-2xl font-semibold text-gray-700">
-            Welcome back
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to your account
-          </p>
-        </div>
+    <>
+      <style>{CSS}</style>
+      <div className="auth-page">
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        {/* Card */}
+        <div className="auth-card">
+
+          {/* Logo */}
+          <div className="auth-logo">
+            <div className="auth-logo-icon">
+              <Icon icon="lucide:vault" width={22} />
+            </div>
+            <span className="auth-logo-text">LinkVault</span>
+          </div>
+
+          {/* Heading */}
+          <div className="auth-heading">
+            <h1 className="auth-title">Welcome back</h1>
+            <p className="auth-subtitle">Sign in to your personal vault</p>
+          </div>
+
+          {/* Error */}
           {loginMutation.isError && (
-            <Alert 
-              type="error" 
-              message={loginMutation.error instanceof Error ? loginMutation.error.message : 'Login failed'} 
+            <Alert
+              type="error"
+              message={
+                loginMutation.error instanceof Error
+                  ? loginMutation.error.message
+                  : 'Login failed. Please try again.'
+              }
             />
           )}
 
-          <div className="space-y-4">
+          {/* Form */}
+          <form className="auth-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+
             <Input
               label="Username"
               type="text"
-              value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-                setErrors({ ...errors, username: '' });
-              }}
-              error={errors.username}
               placeholder="Enter your username"
+              leftIcon="lucide:user"
+              error={errors.username?.message}
+              autoComplete="username"
+              autoFocus
+              {...register('username')}
             />
 
             <Input
               label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setErrors({ ...errors, password: '' });
-              }}
-              error={errors.password}
+              type={showPassword ? 'text' : 'password'}
               placeholder="Enter your password"
+              leftIcon="lucide:lock"
+              error={errors.password?.message}
+              autoComplete="current-password"
+              rightNode={
+                <button
+                  type="button"
+                  className="auth-eye-btn"
+                  onClick={() => setShowPassword((p) => !p)}
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  <Icon
+                    icon={showPassword ? 'lucide:eye-off' : 'lucide:eye'}
+                    width={14}
+                  />
+                </button>
+              }
+              {...register('password')}
             />
-          </div>
 
-          <Button
-            type="submit"
-            fullWidth
-            isLoading={loginMutation.isPending}
-          >
-            Sign in
-          </Button>
+            <Button
+              type="submit"
+              fullWidth
+              size="lg"
+              isLoading={loginMutation.isPending || isSubmitting}
+            >
+              Sign in
+            </Button>
 
-          <p className="text-center text-sm text-gray-600">
+          </form>
+
+          {/* Footer */}
+          <p className="auth-footer-text">
             Don't have an account?{' '}
-            <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
-              Sign up
-            </Link>
+            <Link href="/register" className="auth-link">Sign up</Link>
           </p>
-        </form>
+
+        </div>
       </div>
-    </div>
-  );
+    </>
+  )
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const CSS = `
+.auth-page {
+  min-height:      100dvh;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  background:      var(--bg-base);
+  padding:         24px 16px;
+  /* subtle grid pattern */
+  background-image: radial-gradient(circle at 1px 1px, var(--border-subtle) 1px, transparent 0);
+  background-size: 28px 28px;
+}
+
+.auth-card {
+  width:         100%;
+  max-width:     420px;
+  background:    var(--bg-surface);
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  padding:       36px 32px;
+  box-shadow:    var(--shadow-lg);
+  display:       flex;
+  flex-direction: column;
+  gap:           24px;
+  animation:     fadeInUp var(--transition-slow) ease both;
+}
+@media (max-width: 479px) {
+  .auth-card {
+    padding:       28px 20px;
+    border-radius: var(--radius-lg);
+  }
+}
+
+/* Logo */
+.auth-logo {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  gap:             10px;
+}
+.auth-logo-icon {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           40px;
+  height:          40px;
+  background:      var(--accent-muted);
+  border:          1px solid var(--accent-border);
+  border-radius:   var(--radius-md);
+  color:           var(--cyan-400);
+  box-shadow:      var(--shadow-glow);
+}
+.auth-logo-text {
+  font-size:      var(--text-xl);
+  font-weight:    700;
+  color:          var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+/* Heading */
+.auth-heading { text-align: center; }
+.auth-title {
+  font-size:      var(--text-2xl);
+  font-weight:    700;
+  color:          var(--text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom:  6px;
+}
+.auth-subtitle {
+  font-size: var(--text-sm);
+  color:     var(--text-tertiary);
+}
+
+/* Form */
+.auth-form {
+  display:        flex;
+  flex-direction: column;
+  gap:            16px;
+}
+
+/* Eye button inside password input */
+.auth-eye-btn {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           26px;
+  height:          26px;
+  background:      transparent;
+  border:          none;
+  border-radius:   var(--radius-sm);
+  color:           var(--text-tertiary);
+  cursor:          pointer;
+  transition:      color var(--transition-fast);
+}
+.auth-eye-btn:hover { color: var(--text-primary); }
+
+/* Footer */
+.auth-footer-text {
+  text-align: center;
+  font-size:  var(--text-sm);
+  color:      var(--text-tertiary);
+}
+.auth-link {
+  color:       var(--text-accent);
+  font-weight: 500;
+  transition:  color var(--transition-fast);
+}
+.auth-link:hover { color: var(--accent-hover); }
+`
