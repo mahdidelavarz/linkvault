@@ -1,150 +1,376 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { useLinks } from '@/hooks/useLinks';
-import { useCategories } from '@/hooks/useCategories';
-import { useTags } from '@/hooks/useTag';
-import { Link } from '@/types/link';
-import LinkCard from '@/components/links/LinkCard';
-import LinkForm from '@/components/links/LinkForm';
-import Button from '@/components/ui/Button';
-import Modal from '@/components/ui/Modal';
+import { useState } from 'react'
+import { useLinks }      from '@/hooks/useLinks'
+import { useCategories } from '@/hooks/useCategories'
+import { type Link }     from '@/types/link'
+import LinkCard  from '@/components/links/LinkCard'
+import LinkForm  from '@/components/links/LinkForm'
+import Button    from '@/components/ui/Button'
+import Modal     from '@/components/ui/Modal'
+import { Icon }  from '@iconify/react'
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LinksPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingLink, setEditingLink] = useState<Link | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [showFavorites, setShowFavorites] = useState(false);
+  const [modalOpen,    setModalOpen]    = useState(false)
+  const [editingLink,  setEditingLink]  = useState<Link | null>(null)
+  const [search,       setSearch]       = useState('')
+  const [categoryId,   setCategoryId]   = useState('')
+  const [showFavorites,setShowFavorites]= useState(false)
 
-  const { data: categories } = useCategories();
-  const { data: tags } = useTags();
-
+  const { data: categories } = useCategories()
   const { data: links, isLoading } = useLinks({
-    search: searchTerm || undefined,
-    categoryId: selectedCategory ? parseInt(selectedCategory) : undefined,
+    search:     search     || undefined,
+    categoryId: categoryId ? parseInt(categoryId) : undefined,
     isFavorite: showFavorites || undefined,
-  });
+  })
 
-  const handleEdit = (link: Link) => {
-    setEditingLink(link);
-    setIsModalOpen(true);
-  };
+  const hasFilters = !!(search || categoryId || showFavorites)
 
-  const handleClose = () => {
-    setIsModalOpen(false);
-    setEditingLink(null);
-  };
-
-  const clearFilters = () => {
-    setSearchTerm('');
-    setSelectedCategory('');
-    setShowFavorites(false);
-  };
-
-  const hasActiveFilters = searchTerm || selectedCategory || showFavorites;
+  const openCreate = () => { setEditingLink(null); setModalOpen(true) }
+  const openEdit   = (link: Link) => { setEditingLink(link); setModalOpen(true) }
+  const closeModal = () => { setModalOpen(false); setEditingLink(null) }
+  const clearFilters = () => { setSearch(''); setCategoryId(''); setShowFavorites(false) }
 
   return (
-    <div>
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Links</h2>
-            <p className="mt-1 text-sm text-gray-600">
-              Manage your saved links
+    <>
+      <style>{CSS}</style>
+      <div className="links-page">
+
+        {/* ── Header ── */}
+        <div className="page-header">
+          <div className="page-header-left">
+            <h1 className="page-title">Links</h1>
+            <p className="page-subtitle">
+              {isLoading ? '…' : `${links?.length ?? 0} saved`}
             </p>
           </div>
-          <Button onClick={() => setIsModalOpen(true)}>
-            + Add Link
+          <Button leftIcon="lucide:plus" onClick={openCreate}>
+            Add Link
           </Button>
         </div>
 
-        {/* Search and Filters */}
-        <div className="bg-white rounded-lg shadow p-4 space-y-3">
-          {/* Search Bar */}
-          <div className="relative">
+        {/* ── Filters ── */}
+        <div className="filters-bar">
+          {/* Search */}
+          <div className="filter-search-wrap">
+            <Icon icon="lucide:search" className="filter-search-icon" />
             <input
+              className="filter-search"
               type="text"
-              placeholder="Search links..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Search links…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
-            <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
-          </div>
-
-          {/* Filters Row */}
-          <div className="flex flex-wrap gap-3">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Categories</option>
-              {categories?.map((category) => (
-                <option key={category.id} value={category.id}>
-                  📁 {category.name}
-                </option>
-              ))}
-            </select>
-
-            <label className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm cursor-pointer hover:bg-gray-50">
-              <input
-                type="checkbox"
-                checked={showFavorites}
-                onChange={(e) => setShowFavorites(e.target.checked)}
-                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-              />
-              <span>⭐ Favorites Only</span>
-            </label>
-
-            {hasActiveFilters && (
-              <button
-                onClick={clearFilters}
-                className="px-3 py-2 text-sm text-red-600 hover:text-red-700 font-medium"
-              >
-                Clear Filters
+            {search && (
+              <button className="filter-search-clear" onClick={() => setSearch('')} aria-label="Clear">
+                <Icon icon="lucide:x" width={12} />
               </button>
             )}
           </div>
+
+          {/* Category select */}
+          <div className="filter-select-wrap">
+            <Icon icon="lucide:folder" className="filter-select-icon" />
+            <select
+              className="filter-select"
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
+            >
+              <option value="">All categories</option>
+              {categories?.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <Icon icon="lucide:chevron-down" className="filter-select-chevron" />
+          </div>
+
+          {/* Favorites toggle */}
+          <button
+            className={['filter-toggle', showFavorites ? 'filter-toggle--active' : ''].filter(Boolean).join(' ')}
+            onClick={() => setShowFavorites((p) => !p)}
+          >
+            <Icon icon={showFavorites ? 'lucide:star' : 'lucide:star'} width={14} />
+            Favorites
+          </button>
+
+          {/* Clear */}
+          {hasFilters && (
+            <button className="filter-clear" onClick={clearFilters}>
+              <Icon icon="lucide:x" width={13} />
+              Clear
+            </button>
+          )}
         </div>
+
+        {/* ── Content ── */}
+        {isLoading ? (
+          <div className="links-grid">
+            {[...Array(6)].map((_, i) => <LinkCardSkeleton key={i} />)}
+          </div>
+        ) : links && links.length > 0 ? (
+          <div className="links-grid">
+            {links.map((link) => (
+              <LinkCard key={link.id} link={link} onEdit={openEdit} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState hasFilters={hasFilters} onAdd={openCreate} onClear={clearFilters} />
+        )}
+
       </div>
 
-      {/* Links Grid */}
-      {isLoading ? (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading links...</p>
-        </div>
-      ) : links && links.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {links.map((link) => (
-            <LinkCard key={link.id} link={link} onEdit={handleEdit} />
-          ))}
-        </div>
-      ) : (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <p className="text-gray-500 text-lg mb-4">
-            {hasActiveFilters 
-              ? 'No links found matching your filters' 
-              : 'No links yet'}
-          </p>
-          {!hasActiveFilters && (
-            <Button onClick={() => setIsModalOpen(true)}>
-              Add your first link
-            </Button>
-          )}
-          {hasActiveFilters && (
-            <Button variant="secondary" onClick={clearFilters}>
-              Clear Filters
-            </Button>
-          )}
-        </div>
-      )}
-
-      <Modal isOpen={isModalOpen} onClose={handleClose}>
-        <LinkForm link={editingLink} onClose={handleClose} />
+      <Modal
+        isOpen={modalOpen}
+        onClose={closeModal}
+        title={editingLink ? 'Edit Link' : 'Add Link'}
+        size="lg"
+      >
+        <LinkForm link={editingLink} onClose={closeModal} />
       </Modal>
-    </div>
-  );
+    </>
+  )
 }
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
+function LinkCardSkeleton() {
+  return (
+    <div className="link-skeleton">
+      <div className="skeleton" style={{ height: 20, width: '70%', marginBottom: 10 }} />
+      <div className="skeleton" style={{ height: 14, width: '90%', marginBottom: 16 }} />
+      <div className="skeleton" style={{ height: 13, width: '50%', marginBottom: 12 }} />
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+        <div className="skeleton" style={{ height: 22, width: 70, borderRadius: 99 }} />
+        <div className="skeleton" style={{ height: 22, width: 55, borderRadius: 99 }} />
+      </div>
+      <div className="skeleton" style={{ height: 32, width: '100%', borderRadius: 8 }} />
+    </div>
+  )
+}
+
+// ─── Empty state ──────────────────────────────────────────────────────────────
+
+function EmptyState({ hasFilters, onAdd, onClear }: { hasFilters: boolean; onAdd: () => void; onClear: () => void }) {
+  return (
+    <div className="empty-state">
+      <div className="empty-icon">
+        <Icon icon={hasFilters ? 'lucide:search-x' : 'lucide:link-2'} width={28} />
+      </div>
+      <p className="empty-title">{hasFilters ? 'No links found' : 'No links yet'}</p>
+      <p className="empty-subtitle">
+        {hasFilters ? 'Try adjusting your filters' : 'Save your first link to get started'}
+      </p>
+      {hasFilters
+        ? <Button variant="secondary" onClick={onClear}>Clear filters</Button>
+        : <Button leftIcon="lucide:plus" onClick={onAdd}>Add your first link</Button>
+      }
+    </div>
+  )
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const CSS = `
+.links-page { display: flex; flex-direction: column; gap: 20px; }
+
+/* Header */
+.page-header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             16px;
+  flex-wrap:       wrap;
+}
+.page-title    { font-size: var(--text-2xl); font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
+.page-subtitle { font-size: var(--text-sm);  color: var(--text-tertiary); margin-top: 2px; }
+
+/* Filters */
+.filters-bar {
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+  flex-wrap:   wrap;
+  padding:     14px 16px;
+  background:  var(--bg-surface);
+  border:      1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+}
+
+/* Search */
+.filter-search-wrap {
+  position:    relative;
+  flex:        1;
+  min-width:   180px;
+  display:     flex;
+  align-items: center;
+}
+.filter-search-icon {
+  position:  absolute;
+  left:      10px;
+  width:     14px;
+  height:    14px;
+  color:     var(--text-tertiary);
+  pointer-events: none;
+}
+.filter-search {
+  width:         100%;
+  height:        34px;
+  padding:       0 30px 0 32px;
+  background:    var(--bg-subtle);
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color:         var(--text-primary);
+  font-family:   var(--font-sans);
+  font-size:     var(--text-sm);
+  outline:       none;
+  transition:    border-color var(--transition-fast), background var(--transition-fast);
+}
+.filter-search::placeholder { color: var(--text-tertiary); }
+.filter-search:focus { border-color: var(--border-focus); background: var(--bg-elevated); }
+.filter-search-clear {
+  position:    absolute;
+  right:       8px;
+  display:     flex;
+  align-items: center;
+  justify-content: center;
+  width:       18px;
+  height:      18px;
+  background:  var(--bg-overlay);
+  border:      none;
+  border-radius: 50%;
+  color:       var(--text-tertiary);
+  cursor:      pointer;
+}
+
+/* Select */
+.filter-select-wrap {
+  position:    relative;
+  display:     flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.filter-select-icon {
+  position:  absolute;
+  left:      9px;
+  width:     13px;
+  height:    13px;
+  color:     var(--text-tertiary);
+  pointer-events: none;
+}
+.filter-select-chevron {
+  position:  absolute;
+  right:     8px;
+  width:     12px;
+  height:    12px;
+  color:     var(--text-tertiary);
+  pointer-events: none;
+}
+.filter-select {
+  height:          34px;
+  padding:         0 28px 0 30px;
+  background:      var(--bg-subtle);
+  border:          1px solid var(--border-default);
+  border-radius:   var(--radius-md);
+  color:           var(--text-primary);
+  font-family:     var(--font-sans);
+  font-size:       var(--text-sm);
+  outline:         none;
+  cursor:          pointer;
+  appearance:      none;
+  -webkit-appearance: none;
+  transition:      border-color var(--transition-fast);
+}
+.filter-select:focus { border-color: var(--border-focus); }
+.filter-select option { background: var(--bg-elevated); }
+
+/* Toggle */
+.filter-toggle {
+  display:       flex;
+  align-items:   center;
+  gap:           6px;
+  height:        34px;
+  padding:       0 12px;
+  background:    var(--bg-subtle);
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color:         var(--text-secondary);
+  font-size:     var(--text-sm);
+  font-family:   var(--font-sans);
+  font-weight:   500;
+  cursor:        pointer;
+  white-space:   nowrap;
+  transition:    background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+.filter-toggle:hover { background: var(--bg-overlay); border-color: var(--border-strong); }
+.filter-toggle--active {
+  background:   var(--warning-muted);
+  border-color: rgba(245,158,11,0.3);
+  color:        #fbbf24;
+}
+
+/* Clear */
+.filter-clear {
+  display:     flex;
+  align-items: center;
+  gap:         5px;
+  height:      34px;
+  padding:     0 10px;
+  background:  transparent;
+  border:      none;
+  color:       var(--text-tertiary);
+  font-size:   var(--text-sm);
+  font-family: var(--font-sans);
+  cursor:      pointer;
+  border-radius: var(--radius-md);
+  transition:  color var(--transition-fast), background var(--transition-fast);
+  white-space: nowrap;
+}
+.filter-clear:hover { color: var(--danger); background: var(--danger-muted); }
+
+/* Grid */
+.links-grid {
+  display:               grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap:                   16px;
+}
+@media (max-width: 639px) {
+  .links-grid { grid-template-columns: 1fr; gap: 12px; }
+}
+
+/* Skeleton card */
+.link-skeleton {
+  background:    var(--bg-surface);
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding:       16px;
+}
+
+/* Empty state */
+.empty-state {
+  display:         flex;
+  flex-direction:  column;
+  align-items:     center;
+  justify-content: center;
+  gap:             12px;
+  padding:         64px 24px;
+  background:      var(--bg-surface);
+  border:          1px solid var(--border-default);
+  border-radius:   var(--radius-lg);
+  text-align:      center;
+}
+.empty-icon {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           56px;
+  height:          56px;
+  background:      var(--bg-overlay);
+  border:          1px solid var(--border-default);
+  border-radius:   var(--radius-lg);
+  color:           var(--text-tertiary);
+}
+.empty-title    { font-size: var(--text-lg); font-weight: 600; color: var(--text-primary); }
+.empty-subtitle { font-size: var(--text-sm); color: var(--text-tertiary); }
+`

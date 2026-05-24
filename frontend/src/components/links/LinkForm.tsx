@@ -1,238 +1,428 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { CreateLinkDto, Link } from '@/types/link';
-import { useCreateLink, useUpdateLink } from '@/hooks/useLinks';
-import { useCategories } from '@/hooks/useCategories';
-import Input from '@/components/ui/Input';
-import Button from '@/components/ui/Button';
-import Alert from '@/components/ui/Alert';
-import TagSelector from '@/components/tags/TagSelector';
+import { useState, useEffect } from 'react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { Icon } from '@iconify/react'
+import { type Link, type CreateLinkDto } from '@/types/link'
+import { useCreateLink, useUpdateLink } from '@/hooks/useLinks'
+import { useCategories } from '@/hooks/useCategories'
+import Input    from '@/components/ui/Input'
+import Textarea from '@/components/ui/TextArea'
+import Button   from '@/components/ui/Button'
+import Alert    from '@/components/ui/Alert'
+import TagSelector from '@/components/tags/TagSelector'
+
+// ─── Schema ───────────────────────────────────────────────────────────────────
+
+const schema = z.object({
+  url:         z.string().min(1, 'URL is required').url('Must be a valid URL'),
+  title:       z.string().min(1, 'Title is required').max(200),
+  description: z.string().max(1000).optional(),
+  username:    z.string().max(100).optional(),
+  password:    z.string().max(200).optional(),
+  email:       z.string().email('Invalid email').optional().or(z.literal('')),
+  phone:       z.string().max(30).optional(),
+  isFavorite:  z.boolean(),
+  categoryId:  z.number().optional(),
+  tagIds:      z.array(z.number()),
+})
+
+type FormData = z.infer<typeof schema>
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 interface LinkFormProps {
-  link?: Link | null;
-  onClose: () => void;
+  link?:    Link | null
+  onClose:  () => void
 }
 
 export default function LinkForm({ link, onClose }: LinkFormProps) {
-  const isEditing = !!link;
-  
-  const [formData, setFormData] = useState<CreateLinkDto>({
-    url: '',
-    title: '',
-    description: '',
-    username: '',
-    password: '',
-    email: '',
-    phone: '',
-    isFavorite: false,
-    categoryId: undefined,
-    tagIds: [],
-  });
+  const [showPassword, setShowPassword] = useState(false)
+  const isEditing = !!link
 
-  const createLink = useCreateLink();
-  const updateLink = useUpdateLink();
-  const { data: categories } = useCategories();
+  const { data: categories } = useCategories()
+  const createLink = useCreateLink()
+  const updateLink = useUpdateLink()
 
+  const isLoading = createLink.isPending || updateLink.isPending
+  const error     = createLink.error     || updateLink.error
+
+  const { register, handleSubmit, control, reset, formState: { errors } } =
+    useForm<FormData>({
+      resolver: zodResolver(schema),
+      defaultValues: {
+        url:         '',
+        title:       '',
+        description: '',
+        username:    '',
+        password:    '',
+        email:       '',
+        phone:       '',
+        isFavorite:  false,
+        categoryId:  undefined,
+        tagIds:      [],
+      },
+    })
+
+  // Populate form when editing
   useEffect(() => {
     if (link) {
-      setFormData({
-        url: link.url,
-        title: link.title,
-        description: link.description || '',
-        username: link.username || '',
-        password: '',
-        email: link.email || '',
-        phone: link.phone || '',
-        isFavorite: link.isFavorite,
-        categoryId: link.categoryId,
-        tagIds: link.tags ? link.tags.map((tag: any) => tag.id) : [],
-      });
+      reset({
+        url:         link.url,
+        title:       link.title,
+        description: link.description ?? '',
+        username:    link.username    ?? '',
+        password:    '',
+        email:       link.email       ?? '',
+        phone:       link.phone       ?? '',
+        isFavorite:  link.isFavorite,
+        categoryId:  link.categoryId,
+        tagIds:      link.tags?.map((t: any) => t.id) ?? [],
+      })
     }
-  }, [link]);
+  }, [link, reset])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validate required fields
-    if (!formData.url.trim() || !formData.title.trim()) {
-      return;
+  const onSubmit = async (data: FormData) => {
+    const payload: CreateLinkDto = {
+      ...data,
+      description: data.description || undefined,
+      username:    data.username    || undefined,
+      password:    data.password    || undefined,
+      email:       data.email       || undefined,
+      phone:       data.phone       || undefined,
     }
-    
     try {
-      const dataToSubmit = {
-        ...formData,
-        categoryId: formData.categoryId || undefined,
-        tagIds: formData.tagIds || [],
-      };
-
       if (isEditing && link) {
-        await updateLink.mutateAsync({ id: link.id, ...dataToSubmit });
+        await updateLink.mutateAsync({ id: link.id, ...payload })
       } else {
-        await createLink.mutateAsync(dataToSubmit);
+        await createLink.mutateAsync(payload)
       }
-      onClose();
-    } catch (error) {
-      console.error('Error saving link:', error);
-    }
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    }));
-  };
-
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      categoryId: value ? parseInt(value) : undefined
-    }));
-  };
-
-  const handleTagsChange = (tagIds: number[]) => {
-    setFormData(prev => ({
-      ...prev,
-      tagIds
-    }));
-  };
-
-  const isLoading = createLink.isPending || updateLink.isPending;
-  const error = createLink.error || updateLink.error;
+      onClose()
+    } catch { /* error shown via Alert */ }
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <h3 className="text-xl font-semibold text-gray-900 mb-4">
-        {isEditing ? 'Edit Link' : 'Create New Link'}
-      </h3>
+    <>
+      <style>{CSS}</style>
+      <form className="lform" onSubmit={handleSubmit(onSubmit)} noValidate>
 
-      {error && (
-        <Alert 
-          type="error" 
-          message={error instanceof Error ? error.message : 'An error occurred'} 
-        />
-      )}
+        {error && (
+          <Alert
+            type="error"
+            message={error instanceof Error ? error.message : 'Something went wrong'}
+          />
+        )}
 
-      <Input
-        label="URL *"
-        name="url"
-        type="url"
-        value={formData.url}
-        onChange={handleChange}
-        required
-        placeholder="https://example.com"
-      />
+        {/* ── Section: Basic info ── */}
+        <div className="lform-section">
+          <p className="lform-section-title">
+            <Icon icon="lucide:link-2" width={13} /> Basic info
+          </p>
+          <div className="lform-fields">
+            <Input
+              label="URL"
+              type="url"
+              placeholder="https://example.com"leftIcon="lucide:globe"
+              error={errors.url?.message}
+              autoFocus
+              {...register('url')}
+            />
+            <Input
+              label="Title"
+              type="text"
+              placeholder="My awesome link"
+              leftIcon="lucide:type"
+              error={errors.title?.message}
+              {...register('title')}
+            />
+            <Textarea
+              label="Description"
+              placeholder="Optional description…"
+              optional
+              error={errors.description?.message}
+              {...register('description')}
+            />
+          </div>
+        </div>
 
-      <Input
-        label="Title *"
-        name="title"
-        type="text"
-        value={formData.title}
-        onChange={handleChange}
-        required
-        placeholder="My Link"
-      />
+        {/* ── Section: Organize ── */}
+        <div className="lform-section">
+          <p className="lform-section-title">
+            <Icon icon="lucide:folder" width={13} /> Organize
+          </p>
+          <div className="lform-fields">
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Category
-        </label>
-        <select
-          name="categoryId"
-          value={formData.categoryId || ''}
-          onChange={handleCategoryChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="">No Category</option>
-          {categories?.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.name}
-            </option>
-          ))}
-        </select>
-      </div>
+            {/* Category select */}
+            <div className="lform-field">
+              <label className="lform-label">Category <span className="lform-optional">optional</span></label>
+              <div className="lform-select-wrap">
+                <Icon icon="lucide:folder" className="lform-select-icon" />
+                <Controller
+                  name="categoryId"
+                  control={control}
+                  render={({ field }) => (
+                    <select
+                      className="lform-select"
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                    >
+                      <option value="">No category</option>
+                      {categories?.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  )}
+                />
+                <Icon icon="lucide:chevron-down" className="lform-select-chevron" />
+              </div>
+            </div>
 
-      <TagSelector
-        selectedTagIds={formData.tagIds || []}
-        onChange={handleTagsChange}
-      />
+            {/* Tags */}
+            <div className="lform-field">
+              <label className="lform-label">Tags <span className="lform-optional">optional</span></label>
+              <Controller
+                name="tagIds"
+                control={control}
+                render={({ field }) => (
+                  <TagSelector selectedTagIds={field.value} onChange={field.onChange} />
+                )}
+              />
+            </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Description
-        </label>
-        <textarea
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Optional description..."
-        />
-      </div>
+            {/* Favorite checkbox */}
+            <Controller
+              name="isFavorite"
+              control={control}
+              render={({ field }) => (
+                <label className="lform-checkbox">
+                  <div className={['lform-check-box', field.value ? 'lform-check-box--checked' : ''].filter(Boolean).join(' ')}>
+                    {field.value && <Icon icon="lucide:check" width={11} />}
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={field.value}
+                    onChange={(e) => field.onChange(e.target.checked)}
+                    style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
+                  />
+                  <span className="lform-check-label">
+                    <Icon icon="lucide:star" width={13} style={{ color: '#fbbf24' }} />
+                    Mark as favorite
+                  </span>
+                </label>
+              )}
+            />
+          </div>
+        </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Input
-          label="Username"
-          name="username"
-          type="text"
-          value={formData.username}
-          onChange={handleChange}
-          placeholder="Optional"
-        />
+        {/* ── Section: Credentials ── */}
+        <div className="lform-section">
+          <p className="lform-section-title">
+            <Icon icon="lucide:lock" width={13} /> Credentials <span className="lform-section-hint">optional</span>
+          </p>
+          <div className="lform-fields">
+            <div className="lform-grid-2">
+              <Input
+                label="Username"
+                type="text"
+                placeholder="username"
+                leftIcon="lucide:user"
+                optional
+                error={errors.username?.message}{...register('username')}
+              />
+              <Input
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder={isEditing ? 'Leave blank to keep' : 'password'}
+                leftIcon="lucide:lock"
+                optional
+                error={errors.password?.message}
+                rightNode={
+                  <button
+                    type="button"
+                    className="lform-eye"
+                    onClick={() => setShowPassword((p) => !p)}
+                    tabIndex={-1}
+                  >
+                    <Icon icon={showPassword ? 'lucide:eye-off' : 'lucide:eye'} width={13} />
+                  </button>
+                }
+                {...register('password')}
+              />
+            </div>
+            <div className="lform-grid-2">
+              <Input
+                label="Email"
+                type="email"
+                placeholder="email@example.com"
+                leftIcon="lucide:mail"
+                optional
+                error={errors.email?.message}
+                {...register('email')}
+              />
+              <Input
+                label="Phone"
+                type="tel"
+                placeholder="+1 234 567 890"
+                leftIcon="lucide:phone"
+                optional
+                error={errors.phone?.message}
+                {...register('phone')}
+              />
+            </div>
+          </div>
+        </div>
 
-        <Input
-          label="Password"
-          name="password"
-          type="password"
-          value={formData.password}
-          onChange={handleChange}
-          placeholder={isEditing ? 'Leave blank to keep' : 'Optional'}
-        />
-      </div>
+        {/* ── Footer ── */}
+        <div className="lform-footer">
+          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button type="submit" isLoading={isLoading}>
+            {isEditing ? 'Save changes' : 'Add link'}
+          </Button>
+        </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Input
-          label="Email"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange}
-          placeholder="Optional"
-        />
-
-        <Input
-          label="Phone"
-          name="phone"
-          type="tel"
-          value={formData.phone}
-          onChange={handleChange}
-          placeholder="Optional"
-        />
-      </div>
-
-      <label className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          name="isFavorite"
-          checked={formData.isFavorite}
-          onChange={handleChange}
-          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-        />
-        <span className="text-sm text-gray-700">Mark as favorite</span>
-      </label>
-
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <Button type="button" variant="secondary" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="submit" isLoading={isLoading}>
-          {isEditing ? 'Update Link' : 'Create Link'}
-        </Button>
-      </div>
-    </form>
-  );
+      </form>
+    </>
+  )
 }
+
+const CSS = `
+.lform { display: flex; flex-direction: column; gap: 0; }
+
+.lform-section {
+  padding:       16px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.lform-section:last-of-type { border-bottom: none; }
+
+.lform-section-title {
+  display:       flex;
+  align-items:   center;
+  gap:           6px;
+  font-size:     var(--text-xs);
+  font-weight:   600;
+  color:         var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 14px;
+}
+.lform-section-hint {
+  font-size:      var(--text-xs);
+  font-weight:    400;
+  color:          var(--text-tertiary);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-left:    4px;
+}
+
+.lform-fields { display: flex; flex-direction: column; gap: 12px; }
+
+.lform-grid-2 {
+  display:               grid;
+  grid-template-columns: 1fr 1fr;
+  gap:                   12px;
+}
+@media (max-width: 479px) {
+  .lform-grid-2 { grid-template-columns: 1fr; }
+}
+
+/* Select */
+.lform-field   { display: flex; flex-direction: column; gap: 6px; }
+.lform-label   { font-size: var(--text-sm); font-weight: 500; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
+.lform-optional { font-size: var(--text-xs); font-weight: 400; color: var(--text-tertiary); }
+
+.lform-select-wrap { position: relative; display: flex; align-items: center; }
+.lform-select-icon {
+  position:       absolute;
+  left:           10px;
+  width:          14px;
+  height:         14px;
+  color:          var(--text-tertiary);
+  pointer-events: none;
+}
+.lform-select-chevron {
+  position:       absolute;
+  right:          10px;
+  width:          12px;
+  height:         12px;
+  color:          var(--text-tertiary);
+  pointer-events: none;
+}
+.lform-select {
+  width:            100%;
+  height:           36px;
+  padding:          0 28px 0 32px;
+  background:       var(--bg-subtle);
+  border:           1px solid var(--border-default);
+  border-radius:    var(--radius-md);
+  color:            var(--text-primary);
+  font-family:      var(--font-sans);
+  font-size:        var(--text-sm);
+  outline:          none;
+  cursor:           pointer;
+  appearance:       none;
+  -webkit-appearance: none;
+  transition:       border-color var(--transition-fast), background var(--transition-fast);
+}
+.lform-select:focus { border-color: var(--border-focus); background: var(--bg-elevated); box-shadow: 0 0 0 3px var(--accent-muted); }
+.lform-select option { background: var(--bg-elevated); }
+
+/* Checkbox */
+.lform-checkbox {
+  display:     flex;
+  align-items: center;
+  gap:         10px;
+  cursor:      pointer;
+  width:       fit-content;
+  position:    relative;
+}
+.lform-check-box {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           18px;
+  height:          18px;
+  background:      var(--bg-subtle);
+  border:          1px solid var(--border-default);
+  border-radius:   var(--radius-sm);
+  flex-shrink:     0;
+  transition:      background var(--transition-fast), border-color var(--transition-fast);
+}
+.lform-check-box--checked { background: var(--accent); border-color: var(--accent); color: white; }
+.lform-check-label {
+  display:     flex;
+  align-items: center;
+  gap:         6px;
+  font-size:   var(--text-sm);
+  color:       var(--text-secondary);
+}
+
+/* Eye button */
+.lform-eye {
+  display:      flex;
+  align-items:  center;
+  justify-content: center;
+  width:        26px;
+  height:       26px;
+  background:   transparent;
+  border:       none;
+  color:        var(--text-tertiary);
+  cursor:       pointer;
+  border-radius: var(--radius-sm);
+  transition:   color var(--transition-fast);
+}
+.lform-eye:hover { color: var(--text-primary); }
+
+/* Footer */
+.lform-footer {
+  display:         flex;
+  justify-content: flex-end;
+  gap:             8px;
+  padding-top:     16px;
+}
+@media (max-width: 479px) {
+  .lform-footer { flex-direction: column-reverse; }
+  .lform-footer > * { width: 100%; }
+}
+`
