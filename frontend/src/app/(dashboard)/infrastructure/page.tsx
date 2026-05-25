@@ -1,110 +1,169 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useInfrastructures } from '@/hooks/useInfrastructure'
-import { useCategories }      from '@/hooks/useCategories'
-import { type Infrastructure, INFRA_TYPES, type InfraType } from '@/types/infrastructure'
-import InfraCard from '@/components/infrastructure/InfraCard'
-import InfraForm from '@/components/infrastructure/InfraForm'
-import Button    from '@/components/ui/Button'
-import Modal     from '@/components/ui/Modal'
-import Badge     from '@/components/ui/Badge'
-import { Icon }  from '@iconify/react'
-import { LucidePlus } from '@/Icons/Icons'
+import { ComponentType, SVGProps, useState } from "react";
+import { useInfrastructures } from "@/hooks/useInfrastructure";
+import { useCategories } from "@/hooks/useCategories";
+import {
+  type Infrastructure,
+  INFRA_TYPES,
+  type InfraType,
+} from "@/types/infrastructure";
+import InfraCard from "@/components/infrastructure/InfraCard";
+import InfraForm from "@/components/infrastructure/InfraForm";
+import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
+import Badge from "@/components/ui/Badge";
+import {
+  LucideChevronDown,
+  LucideContainer,
+  LucideDatabase,
+  LucideFolder,
+  LucideKeyRound,
+  LucideNetwork,
+  LucidePlus,
+  LucideRocket,
+  LucideSearch,
+  LucideSettings,
+  LucideSlidersHorizontal,
+  LucideStar,
+  LucideX,
+} from "@/Icons/Icons";
+import { LucideServer } from "../../../Icons/Icons";
 
-const INFRA_ICONS: Record<string, string> = {
-  env:        'lucide:key-round',
-  server:     'lucide:server',
-  docker:     'lucide:container',
-  deployment: 'lucide:rocket',
-  database:   'lucide:database',
-  network:    'lucide:network',
-}
+const INFRA_ICONS = {
+  env: LucideKeyRound,
+  server: LucideServer,
+  docker: LucideContainer,
+  deployment: LucideRocket,
+  database: LucideDatabase,
+  network: LucideNetwork,
+} as const;
+
+type InfraIconKey = keyof typeof INFRA_ICONS;
 
 export default function InfrastructurePage() {
-  const [formOpen,        setFormOpen]        = useState(false)
-  const [editingItem,     setEditingItem]      = useState<Infrastructure | null>(null)
-  const [search,          setSearch]           = useState('')
-  const [selectedType,    setSelectedType]     = useState('')
-  const [categoryId,      setCategoryId]       = useState('')
-  const [showFavorites,   setShowFavorites]    = useState(false)
-  const [filtersExpanded, setFiltersExpanded]  = useState(false)
-  const [copiedId,        setCopiedId]         = useState<number | null>(null)
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<Infrastructure | null>(null);
+  const [search, setSearch] = useState("");
+  const [selectedType, setSelectedType] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
 
-  const { data: categories }           = useCategories()
-  const { data: items, isLoading }     = useInfrastructures({
-    search:     search      || undefined,
-    infraType:  selectedType || undefined,
-    categoryId: categoryId  ? parseInt(categoryId) : undefined,
+  const { data: categories } = useCategories();
+  const { data: items, isLoading } = useInfrastructures({
+    search: search || undefined,
+    infraType: selectedType || undefined,
+    categoryId: categoryId ? parseInt(categoryId) : undefined,
     isFavorite: showFavorites || undefined,
-  })
+  });
 
-  const hasFilters = !!(search || selectedType || categoryId || showFavorites)
-  const activeCount = [search, selectedType, categoryId, showFavorites].filter(Boolean).length
+  const hasFilters = !!(search || selectedType || categoryId || showFavorites);
+  const activeCount = [search, selectedType, categoryId, showFavorites].filter(
+    Boolean,
+  ).length;
 
   const clearFilters = () => {
-    setSearch(''); setSelectedType(''); setCategoryId(''); setShowFavorites(false)
-  }
+    setSearch("");
+    setSelectedType("");
+    setCategoryId("");
+    setShowFavorites(false);
+  };
 
-  const openCreate = () => { setEditingItem(null); setFormOpen(true) }
-  const openEdit   = (item: Infrastructure) => { setEditingItem(item); setFormOpen(true) }
-  const closeForm  = () => { setFormOpen(false); setEditingItem(null) }
+  const openCreate = () => {
+    setEditingItem(null);
+    setFormOpen(true);
+  };
+  const openEdit = (item: Infrastructure) => {
+    setEditingItem(item);
+    setFormOpen(true);
+  };
+  const closeForm = () => {
+    setFormOpen(false);
+    setEditingItem(null);
+  };
 
   const handleCopy = async (content: string, id: number) => {
     try {
-      await navigator.clipboard.writeText(content)
-      setCopiedId(id)
-      setTimeout(() => setCopiedId(null), 2000)
-    } catch { /* silently fail */ }
-  }
+      await navigator.clipboard.writeText(content);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      /* silently fail */
+    }
+  };
 
   // Group items by type for the type quick-filter tabs
   const typeCounts = items
-    ? Object.keys(INFRA_TYPES).reduce((acc, key) => {
-        acc[key] = items.filter((i) => i.infraType === key).length
-        return acc
-      }, {} as Record<string, number>)
-    : {}
+    ? Object.keys(INFRA_TYPES).reduce(
+        (acc, key) => {
+          acc[key] = items.filter((i) => i.infraType === key).length;
+          return acc;
+        },
+        {} as Record<string, number>,
+      )
+    : {};
 
   return (
     <>
       <style>{CSS}</style>
       <div className="ip-page">
-
         {/* ── Header ── */}
         <div className="ip-header">
           <div>
             <h1 className="page-title">Infrastructure</h1>
             <p className="page-subtitle">
-              {isLoading ? '…' : `${items?.length ?? 0} configs`}
+              {isLoading ? "…" : `${items?.length ?? 0} configs`}
             </p>
           </div>
-          <Button leftIcon={LucidePlus} onClick={openCreate}>New Config</Button>
+          <Button leftIcon={LucidePlus} onClick={openCreate}>
+            New Config
+          </Button>
         </div>
 
         {/* ── Type quick-tabs ── */}
         <div className="ip-type-tabs">
           <button
-            className={['ip-type-tab', !selectedType ? 'ip-type-tab--active' : ''].filter(Boolean).join(' ')}
-            onClick={() => setSelectedType('')}
+            className={[
+              "ip-type-tab",
+              !selectedType ? "ip-type-tab--active" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            onClick={() => setSelectedType("")}
           >
             All
             {items && <span className="ip-type-tab-count">{items.length}</span>}
           </button>
           {Object.entries(INFRA_TYPES).map(([key, { label }]) => {
-            const count = typeCounts[key] ?? 0
-            if (!isLoading && count === 0) return null
+            const count = typeCounts[key] ?? 0;
+            if (!isLoading && count === 0) return null;
             return (
               <button
                 key={key}
-                className={['ip-type-tab', selectedType === key ? 'ip-type-tab--active' : ''].filter(Boolean).join(' ')}
-                onClick={() => setSelectedType(selectedType === key ? '' : key)}
+                className={[
+                  "ip-type-tab",
+                  selectedType === key ? "ip-type-tab--active" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => setSelectedType(selectedType === key ? "" : key)}
               >
-                <Icon icon={INFRA_ICONS[key] ?? 'lucide:settings'} width={13} />
+                {(() => {
+                  const Icon = INFRA_ICONS[key as InfraIconKey];
+                  return Icon ? (
+                    <Icon width={13} />
+                  ) : (
+                    <LucideSettings width={13} />
+                  );
+                })()}
                 {label}
-                {count > 0 && <span className="ip-type-tab-count">{count}</span>}
+                {count > 0 && (
+                  <span className="ip-type-tab-count">{count}</span>
+                )}
               </button>
-            )
+            );
           })}
         </div>
 
@@ -112,7 +171,7 @@ export default function InfrastructurePage() {
         <div className="ip-filter-bar">
           <div className="ip-filter-top">
             <div className="ip-search-wrap">
-              <Icon icon="lucide:search" className="ip-search-icon" />
+              <LucideSearch className="ip-search-icon" />
               <input
                 className="ip-search"
                 type="text"
@@ -121,19 +180,29 @@ export default function InfrastructurePage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
               {search && (
-                <button className="ip-search-clear" onClick={() => setSearch('')}>
-                  <Icon icon="lucide:x" width={12} />
+                <button
+                  className="ip-search-clear"
+                  onClick={() => setSearch("")}
+                >
+                  <LucideX width={12} />
                 </button>
               )}
             </div>
 
             <button
-              className={['ip-filter-toggle', filtersExpanded ? 'ip-filter-toggle--active' : ''].filter(Boolean).join(' ')}
+              className={[
+                "ip-filter-toggle",
+                filtersExpanded ? "ip-filter-toggle--active" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
               onClick={() => setFiltersExpanded((p) => !p)}
             >
-              <Icon icon="lucide:sliders-horizontal" width={14} />
+              <LucideSlidersHorizontal width={14} />
               Filters
-              {activeCount > 0 && <span className="ip-filter-count">{activeCount}</span>}
+              {activeCount > 0 && (
+                <span className="ip-filter-count">{activeCount}</span>
+              )}
             </button>
           </div>
 
@@ -141,7 +210,7 @@ export default function InfrastructurePage() {
           {filtersExpanded && (
             <div className="ip-filters animate-fade-in-down">
               <div className="ip-select-wrap">
-                <Icon icon="lucide:folder" className="ip-select-icon" />
+                <LucideFolder className="ip-select-icon" />
                 <select
                   className="ip-select"
                   value={categoryId}
@@ -149,23 +218,31 @@ export default function InfrastructurePage() {
                 >
                   <option value="">All categories</option>
                   {categories?.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
                   ))}
                 </select>
-                <Icon icon="lucide:chevron-down" className="ip-select-chevron" />
+                <LucideChevronDown className="ip-select-chevron" />
               </div>
 
               <button
-                className={['ip-fav-btn', showFavorites ? 'ip-fav-btn--active' : ''].filter(Boolean).join(' ')}
+                className={[
+                  "ip-fav-btn",
+                  showFavorites ? "ip-fav-btn--active" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
                 onClick={() => setShowFavorites((p) => !p)}
               >
-                <Icon icon="lucide:star" width={14} />
+                <LucideStar width={14} />
                 Favorites only
               </button>
 
               {hasFilters && (
                 <button className="ip-clear-btn" onClick={clearFilters}>
-                  <Icon icon="lucide:x" width={13} />Clear all
+                  <LucideX width={13} />
+                  Clear all
                 </button>
               )}
             </div>
@@ -175,20 +252,23 @@ export default function InfrastructurePage() {
           {hasFilters && (
             <div className="ip-chips">
               {selectedType && (
-                <button className="ip-chip" onClick={() => setSelectedType('')}>
+                <button className="ip-chip" onClick={() => setSelectedType("")}>
                   {INFRA_TYPES[selectedType as InfraType]?.label}
-                  <Icon icon="lucide:x" width={10} />
+                  <LucideX width={10} />
                 </button>
               )}
               {categoryId && categories && (
-                <button className="ip-chip" onClick={() => setCategoryId('')}>
+                <button className="ip-chip" onClick={() => setCategoryId("")}>
                   {categories.find((c) => c.id === parseInt(categoryId))?.name}
-                  <Icon icon="lucide:x" width={10} />
+                  <LucideX width={10} />
                 </button>
               )}
               {showFavorites && (
-                <button className="ip-chip ip-chip--star" onClick={() => setShowFavorites(false)}>
-                  Favorites <Icon icon="lucide:x" width={10} />
+                <button
+                  className="ip-chip ip-chip--star"
+                  onClick={() => setShowFavorites(false)}
+                >
+                  Favorites <LucideX width={10} />
                 </button>
               )}
             </div>
@@ -198,7 +278,9 @@ export default function InfrastructurePage() {
         {/* ── Grid ── */}
         {isLoading ? (
           <div className="ip-grid">
-            {[...Array(6)].map((_, i) => <InfraSkeleton key={i} />)}
+            {[...Array(6)].map((_, i) => (
+              <InfraSkeleton key={i} />
+            ))}
           </div>
         ) : items && items.length > 0 ? (
           <div className="ip-grid">
@@ -213,59 +295,109 @@ export default function InfrastructurePage() {
             ))}
           </div>
         ) : (
-          <EmptyState hasFilters={hasFilters} onAdd={openCreate} onClear={clearFilters} />
+          <EmptyState
+            hasFilters={hasFilters}
+            onAdd={openCreate}
+            onClear={clearFilters}
+          />
         )}
-
       </div>
 
       <Modal
         isOpen={formOpen}
         onClose={closeForm}
-        title={editingItem ? 'Edit config' : 'New config'}
+        title={editingItem ? "Edit config" : "New config"}
         size="lg"
       >
         <InfraForm item={editingItem} onClose={closeForm} />
       </Modal>
     </>
-  )
+  );
 }
 
 function InfraSkeleton() {
   return (
     <div className="ip-skeleton">
-      <div style={{ display: 'flex', gap: 10, marginBottom: 12, alignItems: 'center' }}>
-        <div className="skeleton" style={{ width: 34, height: 34, borderRadius: 8, flexShrink: 0 }} />
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          marginBottom: 12,
+          alignItems: "center",
+        }}
+      >
+        <div
+          className="skeleton"
+          style={{ width: 34, height: 34, borderRadius: 8, flexShrink: 0 }}
+        />
         <div style={{ flex: 1 }}>
-          <div className="skeleton" style={{ height: 14, width: '60%', marginBottom: 6 }} />
-          <div className="skeleton" style={{ height: 18, width: 70, borderRadius: 99 }} />
+          <div
+            className="skeleton"
+            style={{ height: 14, width: "60%", marginBottom: 6 }}
+          />
+          <div
+            className="skeleton"
+            style={{ height: 18, width: 70, borderRadius: 99 }}
+          />
         </div>
       </div>
-      <div className="skeleton" style={{ height: 80, width: '100%', borderRadius: 6, marginBottom: 12 }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <div className="skeleton" style={{ height: 34, width: 80, borderRadius: 8 }} />
-        <div style={{ display: 'flex', gap: 4 }}>
-          <div className="skeleton" style={{ height: 34, width: 44, borderRadius: 8 }} />
-          <div className="skeleton" style={{ height: 34, width: 44, borderRadius: 8 }} />
+      <div
+        className="skeleton"
+        style={{ height: 80, width: "100%", borderRadius: 6, marginBottom: 12 }}
+      />
+      <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <div
+          className="skeleton"
+          style={{ height: 34, width: 80, borderRadius: 8 }}
+        />
+        <div style={{ display: "flex", gap: 4 }}>
+          <div
+            className="skeleton"
+            style={{ height: 34, width: 44, borderRadius: 8 }}
+          />
+          <div
+            className="skeleton"
+            style={{ height: 34, width: 44, borderRadius: 8 }}
+          />
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-function EmptyState({ hasFilters, onAdd, onClear }: { hasFilters: boolean; onAdd: () => void; onClear: () => void }) {
+function EmptyState({
+  hasFilters,
+  onAdd,
+  onClear,
+}: {
+  hasFilters: boolean;
+  onAdd: () => void;
+  onClear: () => void;
+}) {
   return (
     <div className="ip-empty">
       <div className="ip-empty-icon">
-        <Icon icon={hasFilters ? 'lucide:search-x' : 'lucide:server'} width={28} />
+        {hasFilters ? <LucideX width={28} /> : <LucideServer width={28} />}
       </div>
-      <p className="ip-empty-title">{hasFilters ? 'No configs found' : 'No configs yet'}</p>
-      <p className="ip-empty-sub">{hasFilters ? 'Try adjusting your filters' : 'Store your first infrastructure config'}</p>
-      {hasFilters
-        ? <Button variant="secondary" onClick={onClear}>Clear filters</Button>
-        : <Button leftIcon={LucidePlus} onClick={onAdd}>New Config</Button>
-      }
+      <p className="ip-empty-title">
+        {hasFilters ? "No configs found" : "No configs yet"}
+      </p>
+      <p className="ip-empty-sub">
+        {hasFilters
+          ? "Try adjusting your filters"
+          : "Store your first infrastructure config"}
+      </p>
+      {hasFilters ? (
+        <Button variant="secondary" onClick={onClear}>
+          Clear filters
+        </Button>
+      ) : (
+        <Button leftIcon={LucidePlus} onClick={onAdd}>
+          New Config
+        </Button>
+      )}
     </div>
-  )
+  );
 }
 
 const CSS = `
@@ -434,4 +566,4 @@ const CSS = `
 }
 .ip-empty-title { font-size: var(--text-lg); font-weight: 600; color: var(--text-primary); }
 .ip-empty-sub   { font-size: var(--text-sm); color: var(--text-tertiary); }
-`
+`;

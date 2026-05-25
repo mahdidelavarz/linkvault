@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Icon } from "@iconify/react";
 import {
   type Infrastructure,
   type CreateInfraDto,
@@ -20,19 +19,37 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
 import TagSelector from "@/components/tags/TagSelector";
-import { LucideFolder, LucideType } from "@/Icons/Icons";
+import {
+  LucideCheck,
+  LucideCircleAlert,
+  LucideContainer,
+  LucideDatabase,
+  LucideFolder,
+  LucideGlobe,
+  LucideKeyRound,
+  LucideLock,
+  LucideNetwork,
+  LucideRocket,
+  LucideServer,
+  LucideSettings,
+  LucideShield,
+  LucideStar,
+  LucideType,
+  LucideUser,
+} from "@/Icons/Icons";
 import Textarea from "../ui/TextArea";
 import FormSelect from "../snippets/FormSelect";
 
 // ─── Iconify icons per type ───────────────────────────────────────────────────
-const INFRA_ICONS: Record<string, string> = {
-  env: "lucide:key-round",
-  server: "lucide:server",
-  docker: "lucide:container",
-  deployment: "lucide:rocket",
-  database: "lucide:database",
-  network: "lucide:network",
-};
+const INFRA_ICONS = {
+  env: LucideKeyRound,
+  server: LucideServer,
+  docker: LucideContainer,
+  deployment: LucideRocket,
+  database: LucideDatabase,
+  network: LucideNetwork,
+} as const;
+type InfraIconKey = keyof typeof INFRA_ICONS;
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 const schema = z.object({
@@ -173,10 +190,14 @@ export default function InfraForm({ item, onClose }: InfraFormProps) {
                       .join(" ")}
                     onClick={() => field.onChange(key)}
                   >
-                    <Icon
-                      icon={INFRA_ICONS[key] ?? "lucide:settings"}
-                      className="iform-type-icon"
-                    />
+                    {(() => {
+                      const Icon = INFRA_ICONS[key as InfraIconKey];
+                      return Icon ? (
+                        <Icon width={13} />
+                      ) : (
+                        <LucideSettings width={13} />
+                      );
+                    })()}
                     <span>{label}</span>
                   </button>
                 ))}
@@ -229,7 +250,7 @@ export default function InfraForm({ item, onClose }: InfraFormProps) {
             </label>
             {watchedType === "env" && (
               <span className="iform-env-hint">
-                <Icon icon="lucide:shield" width={11} />
+                <LucideShield width={11} />
                 Values are masked when viewing
               </span>
             )}
@@ -252,7 +273,7 @@ export default function InfraForm({ item, onClose }: InfraFormProps) {
           </div>
           {errors.content && (
             <p className="iform-field-error">
-              <Icon icon="lucide:circle-alert" width={12} />
+              <LucideCircleAlert width={12} />
               {errors.content.message}
             </p>
           )}
@@ -304,7 +325,7 @@ export default function InfraForm({ item, onClose }: InfraFormProps) {
                   .filter(Boolean)
                   .join(" ")}
               >
-                {field.value && <Icon icon="lucide:check" width={11} />}
+                {field.value && <LucideCheck width={11} />}
               </div>
               <input
                 type="checkbox"
@@ -317,11 +338,7 @@ export default function InfraForm({ item, onClose }: InfraFormProps) {
                 }}
               />
               <span className="iform-check-label">
-                <Icon
-                  icon="lucide:star"
-                  width={13}
-                  style={{ color: "#fbbf24" }}
-                />
+                <LucideStar width={13} style={{ color: "#fbbf24" }} />
                 Mark as favorite
               </span>
             </label>
@@ -357,14 +374,14 @@ function TypeMetadata({
     return (
       <div className="iform-meta-box">
         <p className="iform-meta-title">
-          <Icon icon="lucide:server" width={12} />
+          <LucideServer width={12} />
           Server details
         </p>
         <div className="iform-grid-3">
           <Input
             label="Host / IP"
             placeholder="192.168.1.100"
-            leftIcon="lucide:globe"
+            leftIcon={LucideGlobe}
             optional
             {...register("metadata.host")}
           />
@@ -378,14 +395,14 @@ function TypeMetadata({
           <Input
             label="Username"
             placeholder="root"
-            leftIcon="lucide:user"
+            leftIcon={LucideUser}
             optional
             {...register("metadata.username")}
           />
         </div>
         <FormSelect
           label="Auth type"
-          leftIcon="lucide:lock"
+          leftIcon={LucideLock}
           optional
           {...register("metadata.authType")}
         >
@@ -416,13 +433,13 @@ function TypeMetadata({
     return (
       <div className="iform-meta-box">
         <p className="iform-meta-title">
-          <Icon icon="lucide:database" width={12} />
+          <LucideDatabase width={12} />
           Database details
         </p>
         <div className="iform-grid-2">
           <FormSelect
             label="Engine"
-            leftIcon="lucide:database"
+            leftIcon={LucideDatabase}
             optional
             {...register("metadata.engine")}
           >
@@ -464,7 +481,7 @@ function TypeMetadata({
     return (
       <FormSelect
         label="Compose version"
-        leftIcon="lucide:container"
+        leftIcon={LucideContainer}
         optional
         {...register("metadata.composeVersion")}
       >
@@ -481,7 +498,7 @@ function TypeMetadata({
     return (
       <FormSelect
         label="Platform"
-        leftIcon="lucide:rocket"
+        leftIcon={LucideRocket}
         optional
         {...register("metadata.platform")}
       >

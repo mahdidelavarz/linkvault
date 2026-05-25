@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Icon } from "@iconify/react";
 import {
   type Snippet,
   type CreateSnippetDto,
@@ -21,9 +20,19 @@ import Alert from "@/components/ui/Alert";
 import TagSelector from "@/components/tags/TagSelector";
 import {
   LucideArrowRight,
+  LucideArrowRightLeft,
+  LucideCheck,
+  LucideCircleAlert,
   LucideCodeXml,
+  LucideCpu,
+  LucideDatabase,
+  LucideFileCode2,
   LucideFolder,
+  LucideSettings2,
+  LucideStar,
+  LucideTerminal,
   LucideType,
+  LucideZap,
 } from "@/Icons/Icons";
 import TypeSelector from "./TypeSelector";
 import FormSelect from "./FormSelect";
@@ -161,7 +170,7 @@ export default function SnippetForm({
               .join(" ")}
             onClick={() => setActiveTab("basic")}
           >
-            <Icon icon="lucide:file-code" width={14} />
+            <LucideFileCode2 width={14} />
             Content
           </button>
           <button
@@ -174,7 +183,7 @@ export default function SnippetForm({
               .join(" ")}
             onClick={() => setActiveTab("meta")}
           >
-            <Icon icon="lucide:settings-2" width={14} />
+            <LucideSettings2 width={14} />
             Details
           </button>
         </div>
@@ -227,7 +236,7 @@ export default function SnippetForm({
                   className="sform-detect-hint"
                   onClick={() => setValue("language", detectedLang)}
                 >
-                  <Icon icon="lucide:zap" width={12} />
+                  <LucideZap width={12} />
                   Auto-detected:{" "}
                   <strong>{getLanguageName(detectedLang)}</strong> — click to
                   apply
@@ -281,7 +290,7 @@ export default function SnippetForm({
               </div>
               {errors.content && (
                 <p className="sform-field-error">
-                  <Icon icon="lucide:circle-alert" width={12} />
+                  <LucideCircleAlert width={12} />
                   {errors.content.message}
                 </p>
               )}
@@ -353,7 +362,7 @@ export default function SnippetForm({
                       .filter(Boolean)
                       .join(" ")}
                   >
-                    {field.value && <Icon icon="lucide:check" width={11} />}
+                    {field.value && <LucideCheck width={11} />}
                   </div>
                   <input
                     type="checkbox"
@@ -366,11 +375,7 @@ export default function SnippetForm({
                     }}
                   />
                   <span className="sform-check-label">
-                    <Icon
-                      icon="lucide:star"
-                      width={13}
-                      style={{ color: "#fbbf24" }}
-                    />
+                    <LucideStar width={13} style={{ color: "#fbbf24" }} />
                     Mark as favorite
                   </span>
                 </label>
@@ -418,7 +423,7 @@ function TypeMetadataFields({
     return (
       <div className="sform-meta-section">
         <p className="sform-meta-title">
-          <Icon icon="lucide:database" width={12} />
+          <LucideDatabase width={12} />
           SQL options
         </p>
         <FormSelect
@@ -443,14 +448,14 @@ function TypeMetadataFields({
     return (
       <div className="sform-meta-section">
         <p className="sform-meta-title">
-          <Icon icon="lucide:terminal" width={12} />
+          <LucideTerminal width={12} />
           Command options
         </p>
         <div className="sform-grid-2">
           <FormSelect
             label="Shell"
             optional
-            leftIcon="lucide:terminal"
+            leftIcon={LucideTerminal}
             {...register("metadata.shell")}
           >
             <option value="">Any shell</option>
@@ -474,14 +479,14 @@ function TypeMetadataFields({
     return (
       <div className="sform-meta-section">
         <p className="sform-meta-title">
-          <Icon icon="lucide:file-code" width={12} />
+          <LucideFileCode2 width={12} />
           Script options
         </p>
         <div className="sform-grid-2">
           <FormSelect
             label="Runtime"
             optional
-            leftIcon="lucide:cpu"
+            leftIcon={LucideCpu}
             {...register("metadata.scriptLanguage")}
           >
             <option value="">Any</option>
@@ -505,7 +510,7 @@ function TypeMetadataFields({
     return (
       <div className="sform-meta-section">
         <p className="sform-meta-title">
-          <Icon icon="lucide:arrow-right-left" width={12} />
+          <LucideArrowRightLeft width={12} />
           cURL options
         </p>
         <div className="sform-grid-2">

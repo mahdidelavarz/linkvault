@@ -1,92 +1,128 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Icon }     from '@iconify/react'
-import { type Infrastructure, INFRA_TYPES } from '@/types/infrastructure'
-import { useToggleInfraFavorite, useDeleteInfrastructure } from '@/hooks/useInfrastructure'
-import Badge  from '@/components/ui/Badge'
-import Button from '@/components/ui/Button'
-import Modal  from '@/components/ui/Modal'
-import { LucideFolder } from '@/Icons/Icons'
+import { ComponentType, SVGProps, useState } from "react";
+import { type Infrastructure, INFRA_TYPES } from "@/types/infrastructure";
+import {
+  useToggleInfraFavorite,
+  useDeleteInfrastructure,
+} from "@/hooks/useInfrastructure";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
+import {
+  LucideCheck,
+  LucideChevronDown,
+  LucideChevronUp,
+  LucideContainer,
+  LucideCopy,
+  LucideDatabase,
+  LucideEye,
+  LucideEyeOff,
+  LucideFolder,
+  LucideGlobe,
+  LucideKeyRound,
+  LucideNetwork,
+  LucidePencil,
+  LucideRocket,
+  LucideServer,
+  LucideSettings,
+  LucideStar,
+  LucideTrash2,
+} from "@/Icons/Icons";
 
 // ─── Type → Iconify icon map ──────────────────────────────────────────────────
 
-const INFRA_ICONS: Record<string, string> = {
-  env:        'lucide:key-round',
-  server:     'lucide:server',
-  docker:     'lucide:container',
-  deployment: 'lucide:rocket',
-  database:   'lucide:database',
-  network:    'lucide:network',
-}
+const INFRA_ICONS = {
+  env: LucideKeyRound,
+  server: LucideServer,
+  docker: LucideContainer,
+  deployment: LucideRocket,
+  database: LucideDatabase,
+  network: LucideNetwork,
+} as const;
+
+type InfraIconKey = keyof typeof INFRA_ICONS;
 
 const INFRA_BADGE_VARIANT: Record<string, any> = {
-  env:        'cyan',
-  server:     'purple',
-  docker:     'cyan',
-  deployment: 'success',
-  database:   'warning',
-  network:    'orange',
-}
+  env: "cyan",
+  server: "purple",
+  docker: "cyan",
+  deployment: "success",
+  database: "warning",
+  network: "orange",
+};
 
 // ENV vars: mask values by default
 function maskEnvLine(line: string) {
-  const eq = line.indexOf('=')
-  if (eq === -1) return line
-  const key = line.slice(0, eq + 1)
-  const val = line.slice(eq + 1)
-  if (!val) return line
-  return key + '•'.repeat(Math.min(val.length, 12))
+  const eq = line.indexOf("=");
+  if (eq === -1) return line;
+  const key = line.slice(0, eq + 1);
+  const val = line.slice(eq + 1);
+  if (!val) return line;
+  return key + "•".repeat(Math.min(val.length, 12));
 }
 
 interface InfraCardProps {
-  item:     Infrastructure
-  copiedId: number | null
-  onEdit:   (item: Infrastructure) => void
-  onCopy:   (content: string, id: number) => void
+  item: Infrastructure;
+  copiedId: number | null;
+  onEdit: (item: Infrastructure) => void;
+  onCopy: (content: string, id: number) => void;
 }
 
-export default function InfraCard({ item, copiedId, onEdit, onCopy }: InfraCardProps) {
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  const [expanded,      setExpanded]      = useState(false)
-  const [revealed,      setRevealed]      = useState(false)
+export default function InfraCard({
+  item,
+  copiedId,
+  onEdit,
+  onCopy,
+}: InfraCardProps) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [revealed, setRevealed] = useState(false);
 
-  const toggleFav    = useToggleInfraFavorite()
-  const deleteInfra  = useDeleteInfrastructure()
+  const toggleFav = useToggleInfraFavorite();
+  const deleteInfra = useDeleteInfrastructure();
 
-  const isCopied    = copiedId === item.id
-  const typeConfig  = INFRA_TYPES[item.infraType]
-  const icon        = INFRA_ICONS[item.infraType] ?? 'lucide:settings'
-  const badgeVar    = INFRA_BADGE_VARIANT[item.infraType] ?? 'default'
-  const isEnv       = item.infraType === 'env'
+  const isCopied = copiedId === item.id;
+  const typeConfig = INFRA_TYPES[item.infraType];
+  const Icon = INFRA_ICONS[item.infraType as InfraIconKey] ?? (
+    <LucideSettings />
+  );
+  const badgeVar = INFRA_BADGE_VARIANT[item.infraType] ?? "default";
+  const isEnv = item.infraType === "env";
 
   // Preview: first 5 lines
-  const allLines     = item.content.split('\n')
-  const previewLines = allLines.slice(0, 5)
-  const hasMore      = allLines.length > 5
+  const allLines = item.content.split("\n");
+  const previewLines = allLines.slice(0, 5);
+  const hasMore = allLines.length > 5;
 
-  const displayLines = isEnv && !revealed
-    ? previewLines.map(maskEnvLine)
-    : previewLines
+  const displayLines =
+    isEnv && !revealed ? previewLines.map(maskEnvLine) : previewLines;
 
   return (
     <>
       <style>{CSS}</style>
       <div className="ic">
-
         {/* ── Header ── */}
         <div className="ic-header">
           <div className="ic-icon-wrap">
-            <Icon icon={icon} width={16} />
+            <Icon width={16} />
           </div>
 
           <div className="ic-title-wrap">
             <h3 className="ic-title">{item.title}</h3>
             <div className="ic-meta">
-              <Badge variant={badgeVar} size="sm">{typeConfig?.label ?? item.infraType}</Badge>
+              <Badge variant={badgeVar} size="sm">
+                {typeConfig?.label ?? item.infraType}
+              </Badge>
               {item.metadata?.environment && (
                 <Badge
-                  variant={item.metadata.environment === 'production' ? 'danger' : item.metadata.environment === 'staging' ? 'warning' : 'default'}
+                  variant={
+                    item.metadata.environment === "production"
+                      ? "danger"
+                      : item.metadata.environment === "staging"
+                        ? "warning"
+                        : "default"
+                  }
                   size="sm"
                 >
                   {item.metadata.environment}
@@ -94,27 +130,30 @@ export default function InfraCard({ item, copiedId, onEdit, onCopy }: InfraCardP
               )}
               {item.metadata?.host && (
                 <span className="ic-host">
-                  <Icon icon="lucide:globe" width={11} />
-                  {item.metadata.host}{item.metadata.port ? `:${item.metadata.port}` : ''}
+                  <LucideGlobe width={11} />
+                  {item.metadata.host}
+                  {item.metadata.port ? `:${item.metadata.port}` : ""}
                 </span>
               )}
             </div>
           </div>
 
           <button
-            className={['ic-fav', item.isFavorite ? 'ic-fav--active' : ''].filter(Boolean).join(' ')}
+            className={["ic-fav", item.isFavorite ? "ic-fav--active" : ""]
+              .filter(Boolean)
+              .join(" ")}
             onClick={() => toggleFav.mutate(item.id)}
-            aria-label={item.isFavorite ? 'Remove favorite' : 'Add to favorites'}
+            aria-label={
+              item.isFavorite ? "Remove favorite" : "Add to favorites"
+            }
             disabled={toggleFav.isPending}
           >
-            <Icon icon="lucide:star" width={14} />
+            <LucideStar width={14} />
           </button>
         </div>
 
         {/* ── Description ── */}
-        {item.description && (
-          <p className="ic-desc">{item.description}</p>
-        )}
+        {item.description && <p className="ic-desc">{item.description}</p>}
 
         {/* ── Content preview ── */}
         <div className="ic-code-wrap">
@@ -123,24 +162,44 @@ export default function InfraCard({ item, copiedId, onEdit, onCopy }: InfraCardP
             <button
               className="ic-reveal-btn"
               onClick={() => setRevealed((p) => !p)}
-              aria-label={revealed ? 'Mask values' : 'Reveal values'}
+              aria-label={revealed ? "Mask values" : "Reveal values"}
             >
-              <Icon icon={revealed ? 'lucide:eye-off' : 'lucide:eye'} width={12} />
-              {revealed ? 'Mask' : 'Reveal'}
+              {revealed ? (
+                <LucideEyeOff width={12} />
+              ) : (
+                <LucideEye width={12} />
+              )}
+              {revealed ? "Mask" : "Reveal"}
             </button>
           )}
 
-          <pre className={['ic-code', expanded ? 'ic-code--expanded' : ''].filter(Boolean).join(' ')}>
-            <code>{expanded
-              ? (isEnv && !revealed ? allLines.map(maskEnvLine) : allLines).join('\n')
-              : displayLines.join('\n')
-            }</code>
+          <pre
+            className={["ic-code", expanded ? "ic-code--expanded" : ""]
+              .filter(Boolean)
+              .join(" ")}
+          >
+            <code>
+              {expanded
+                ? (isEnv && !revealed
+                    ? allLines.map(maskEnvLine)
+                    : allLines
+                  ).join("\n")
+                : displayLines.join("\n")}
+            </code>
           </pre>
 
           {hasMore && (
-            <button className="ic-expand-btn" onClick={() => setExpanded((p) => !p)}>
-              <Icon icon={expanded ? 'lucide:chevron-up' : 'lucide:chevron-down'} width={12} />
-              {expanded ? 'Show less' : `${allLines.length - 5} more lines`}
+            <button
+              className="ic-expand-btn"
+              onClick={() => setExpanded((p) => !p)}
+            >
+              {expanded ? (
+                <LucideChevronUp width={12} />
+              ) : (
+                <LucideChevronDown width={12} />
+              )}
+
+              {expanded ? "Show less" : `${allLines.length - 5} more lines`}
             </button>
           )}
         </div>
@@ -149,10 +208,14 @@ export default function InfraCard({ item, copiedId, onEdit, onCopy }: InfraCardP
         {item.category || (item.tags && item.tags.length > 0) ? (
           <div className="ic-tags">
             {item.category && (
-              <Badge variant="default" icon={LucideFolder} size="sm">{item.category.name}</Badge>
+              <Badge variant="default" icon={LucideFolder} size="sm">
+                {item.category.name}
+              </Badge>
             )}
             {item.tags?.slice(0, 3).map((tag: any) => (
-              <Badge key={tag.id} variant="default" size="sm">{tag.name}</Badge>
+              <Badge key={tag.id} variant="default" size="sm">
+                {tag.name}
+              </Badge>
             ))}
             {item.tags && item.tags.length > 3 && (
               <span className="ic-tags-more">+{item.tags.length - 3}</span>
@@ -163,12 +226,15 @@ export default function InfraCard({ item, copiedId, onEdit, onCopy }: InfraCardP
         {/* ── Footer: copy + actions ── */}
         <div className="ic-footer">
           <button
-            className={['ic-copy-btn', isCopied ? 'ic-copy-btn--copied' : ''].filter(Boolean).join(' ')}
+            className={["ic-copy-btn", isCopied ? "ic-copy-btn--copied" : ""]
+              .filter(Boolean)
+              .join(" ")}
             onClick={() => onCopy(item.content, item.id)}
             aria-label="Copy to clipboard"
           >
-            <Icon icon={isCopied ? 'lucide:check' : 'lucide:copy'} width={14} />
-            {isCopied ? 'Copied!' : 'Copy'}
+            {isCopied ? <LucideCheck width={14} /> : <LucideCopy width={14} />}
+
+            {isCopied ? "Copied!" : "Copy"}
           </button>
 
           <div className="ic-actions">
@@ -178,7 +244,7 @@ export default function InfraCard({ item, copiedId, onEdit, onCopy }: InfraCardP
               aria-label="Edit"
               title="Edit"
             >
-              <Icon icon="lucide:pencil" width={14} />
+              <LucidePencil width={14} />
             </button>
             <button
               className="ic-action-btn ic-action-btn--danger"
@@ -186,28 +252,42 @@ export default function InfraCard({ item, copiedId, onEdit, onCopy }: InfraCardP
               aria-label="Delete"
               title="Delete"
             >
-              <Icon icon="lucide:trash-2" width={14} />
+              <LucideTrash2 width={14} />
             </button>
           </div>
 
           <span className="ic-date">
-            {new Date(item.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            {new Date(item.updatedAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+            })}
           </span>
         </div>
       </div>
 
       {/* Delete confirm */}
-      <Modal isOpen={confirmDelete} onClose={() => setConfirmDelete(false)} title="Delete config" size="sm">
+      <Modal
+        isOpen={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        title="Delete config"
+        size="sm"
+      >
         <div className="ic-confirm">
           <p className="ic-confirm-text">
             Delete <strong>{item.title}</strong>? This cannot be undone.
           </p>
           <div className="ic-confirm-actions">
-            <Button variant="secondary" onClick={() => setConfirmDelete(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setConfirmDelete(false)}>
+              Cancel
+            </Button>
             <Button
               variant="danger"
               isLoading={deleteInfra.isPending}
-              onClick={() => deleteInfra.mutate(item.id, { onSuccess: () => setConfirmDelete(false) })}
+              onClick={() =>
+                deleteInfra.mutate(item.id, {
+                  onSuccess: () => setConfirmDelete(false),
+                })
+              }
             >
               Delete
             </Button>
@@ -215,7 +295,7 @@ export default function InfraCard({ item, copiedId, onEdit, onCopy }: InfraCardP
         </div>
       </Modal>
     </>
-  )
+  );
 }
 
 const CSS = `
@@ -362,4 +442,4 @@ const CSS = `
 .ic-confirm-text    { font-size: var(--text-sm); color: var(--text-secondary); line-height: var(--leading-relaxed); }
 .ic-confirm-text strong { color: var(--text-primary); }
 .ic-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
-`
+`;

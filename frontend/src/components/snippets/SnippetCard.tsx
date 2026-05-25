@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Icon }     from '@iconify/react'
 import { type Snippet, SNIPPET_TYPES } from '@/types/snippet'
 import { getLanguageName }             from '@/lib/languageDetector'
 import { useToggleSnippetFavorite, useDeleteSnippet } from '@/hooks/useSnippet'
 import Badge  from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import Modal  from '@/components/ui/Modal'
+import { LucideCheck, LucideChevronDown, LucideChevronUp, LucideCopy, LucideFolder, LucidePencil, LucideStar, LucideTrash2 } from '@/Icons/Icons'
 
 const LANG_COLORS: Record<string, string> = {
   js: 'orange', jsx: 'orange', ts: 'cyan', tsx: 'cyan',
@@ -57,7 +57,7 @@ export default function SnippetCard({ snippet, copiedId, onEdit, onCopy }: Snipp
               aria-label={snippet.isFavorite ? 'Remove favorite' : 'Add favorite'}
               disabled={toggleFav.isPending}
             >
-              <Icon icon="lucide:star" width={14} />
+              <LucideStar width={14} />
             </button>
           </div>
 
@@ -66,7 +66,7 @@ export default function SnippetCard({ snippet, copiedId, onEdit, onCopy }: Snipp
             <span className="sc-type-label">{typeConfig?.label}</span>
             {snippet.category && (
               <span className="sc-category">
-                <Icon icon="lucide:folder" width={11} />
+                <LucideFolder width={11} />
                 {snippet.category.name}
               </span>
             )}
@@ -89,7 +89,7 @@ export default function SnippetCard({ snippet, copiedId, onEdit, onCopy }: Snipp
 
           {hasMore && (
             <button className="sc-expand-btn" onClick={() => setExpanded((p) => !p)}>
-              <Icon icon={expanded ? 'lucide:chevron-up' : 'lucide:chevron-down'} width={12} />
+              {expanded ? <LucideChevronUp  width={12} /> : <LucideChevronDown  width={12} />}
               {expanded ? 'Show less' : `${lines.length - 6} more lines`}
             </button>
           )}
@@ -115,7 +115,7 @@ export default function SnippetCard({ snippet, copiedId, onEdit, onCopy }: Snipp
             onClick={() => onCopy(snippet)}
             aria-label="Copy to clipboard"
           >
-            <Icon icon={isCopied ? 'lucide:check' : 'lucide:copy'} width={14} />
+            {isCopied ? <LucideCheck width={14}/> : <LucideCopy width={14}/>}
             {isCopied ? 'Copied!' : 'Copy'}
           </button>
 
@@ -126,7 +126,7 @@ export default function SnippetCard({ snippet, copiedId, onEdit, onCopy }: Snipp
               aria-label="Edit snippet"
               title="Edit"
             >
-              <Icon icon="lucide:pencil" width={14} />
+              <LucidePencil width={14} />
             </button>
             <button
               className="sc-action-btn sc-action-btn--danger"
@@ -134,7 +134,7 @@ export default function SnippetCard({ snippet, copiedId, onEdit, onCopy }: Snipp
               aria-label="Delete snippet"
               title="Delete"
             >
-              <Icon icon="lucide:trash-2" width={14} />
+              <LucideTrash2 width={14} />
             </button>
           </div>
 

@@ -1,94 +1,158 @@
-'use client'
+"use client";
 
-import { useState, useMemo } from 'react'
-import { useSnippets }    from '@/hooks/useSnippet'
-import { useCategories }  from '@/hooks/useCategories'
-import { type Snippet, SNIPPET_TYPES, TYPE_LANGUAGES, type SnippetType } from '@/types/snippet'
-import { getLanguageName } from '@/lib/languageDetector'
-import SnippetCard from '@/components/snippets/SnippetCard'
-import SnippetForm from '@/components/snippets/SnippetForm'
-import Button      from '@/components/ui/Button'
-import Modal       from '@/components/ui/Modal'
-import Badge       from '@/components/ui/Badge'
-import { Icon }    from '@iconify/react'
-import { LucidePlus } from '@/Icons/Icons'
+import { useState, useMemo } from "react";
+import { useSnippets } from "@/hooks/useSnippet";
+import { useCategories } from "@/hooks/useCategories";
+import {
+  type Snippet,
+  SNIPPET_TYPES,
+  TYPE_LANGUAGES,
+  type SnippetType,
+} from "@/types/snippet";
+import { getLanguageName } from "@/lib/languageDetector";
+import SnippetCard from "@/components/snippets/SnippetCard";
+import SnippetForm from "@/components/snippets/SnippetForm";
+import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
+import Badge from "@/components/ui/Badge";
+import {
+  LucideChevronDown,
+  LucideCodeXml,
+  LucideFileCode2,
+  LucideFolder,
+  LucideLayers,
+  LucidePlus,
+  LucideSearch,
+  LucideSlidersHorizontal,
+  LucideStar,
+  LucideX,
+} from "@/Icons/Icons";
 
 const ALL_LANGUAGES: Record<string, string> = {
-  js: 'JavaScript', jsx: 'React JSX', ts: 'TypeScript', tsx: 'React TSX',
-  py: 'Python', rb: 'Ruby', java: 'Java', go: 'Go', rs: 'Rust', php: 'PHP',
-  sql: 'SQL', sh: 'Shell', bash: 'Bash', powershell: 'PowerShell',
-  dockerfile: 'Docker', yaml: 'YAML', json: 'JSON', xml: 'XML',
-  html: 'HTML', css: 'CSS', md: 'Markdown', regex: 'Regex', curl: 'cURL', txt: 'Plain Text',
-}
+  js: "JavaScript",
+  jsx: "React JSX",
+  ts: "TypeScript",
+  tsx: "React TSX",
+  py: "Python",
+  rb: "Ruby",
+  java: "Java",
+  go: "Go",
+  rs: "Rust",
+  php: "PHP",
+  sql: "SQL",
+  sh: "Shell",
+  bash: "Bash",
+  powershell: "PowerShell",
+  dockerfile: "Docker",
+  yaml: "YAML",
+  json: "JSON",
+  xml: "XML",
+  html: "HTML",
+  css: "CSS",
+  md: "Markdown",
+  regex: "Regex",
+  curl: "cURL",
+  txt: "Plain Text",
+};
 
 export default function SnippetsPage() {
-  const [formOpen,        setFormOpen]        = useState(false)
-  const [editingSnippet,  setEditingSnippet]  = useState<Snippet | null>(null)
-  const [search,          setSearch]          = useState('')
-  const [categoryId,      setCategoryId]      = useState('')
-  const [selectedType,    setSelectedType]    = useState('')
-  const [selectedLang,    setSelectedLang]    = useState('')
-  const [showFavorites,   setShowFavorites]   = useState(false)
-  const [filtersExpanded, setFiltersExpanded] = useState(false)
-  const [copiedId,        setCopiedId]        = useState<number | null>(null)
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingSnippet, setEditingSnippet] = useState<Snippet | null>(null);
+  const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [selectedType, setSelectedType] = useState("");
+  const [selectedLang, setSelectedLang] = useState("");
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
 
-  const { data: categories }              = useCategories()
-  const { data: snippets, isLoading }     = useSnippets({
-    search:      search      || undefined,
-    categoryId:  categoryId  ? parseInt(categoryId) : undefined,
+  const { data: categories } = useCategories();
+  const { data: snippets, isLoading } = useSnippets({
+    search: search || undefined,
+    categoryId: categoryId ? parseInt(categoryId) : undefined,
     snippetType: selectedType || undefined,
-    language:    selectedLang || undefined,
-    isFavorite:  showFavorites || undefined,
-  })
+    language: selectedLang || undefined,
+    isFavorite: showFavorites || undefined,
+  });
 
   const availableLanguages = useMemo(() => {
-    if (!selectedType) return ALL_LANGUAGES
-    const langs = TYPE_LANGUAGES[selectedType as SnippetType]
-    if (!langs) return ALL_LANGUAGES
-    return Object.fromEntries(langs.filter((l) => ALL_LANGUAGES[l]).map((l) => [l, ALL_LANGUAGES[l]]))
-  }, [selectedType])
+    if (!selectedType) return ALL_LANGUAGES;
+    const langs = TYPE_LANGUAGES[selectedType as SnippetType];
+    if (!langs) return ALL_LANGUAGES;
+    return Object.fromEntries(
+      langs.filter((l) => ALL_LANGUAGES[l]).map((l) => [l, ALL_LANGUAGES[l]]),
+    );
+  }, [selectedType]);
 
-  const hasFilters = !!(search || categoryId || selectedType || selectedLang || showFavorites)
+  const hasFilters = !!(
+    search ||
+    categoryId ||
+    selectedType ||
+    selectedLang ||
+    showFavorites
+  );
 
-  const activeFilterCount = [search, categoryId, selectedType, selectedLang, showFavorites].filter(Boolean).length
+  const activeFilterCount = [
+    search,
+    categoryId,
+    selectedType,
+    selectedLang,
+    showFavorites,
+  ].filter(Boolean).length;
 
   const clearFilters = () => {
-    setSearch(''); setCategoryId(''); setSelectedType(''); setSelectedLang(''); setShowFavorites(false)
-  }
+    setSearch("");
+    setCategoryId("");
+    setSelectedType("");
+    setSelectedLang("");
+    setShowFavorites(false);
+  };
 
-  const openCreate = () => { setEditingSnippet(null); setFormOpen(true) }
-  const openEdit   = (s: Snippet) => { setEditingSnippet(s); setFormOpen(true) }
-  const closeForm  = () => { setFormOpen(false); setEditingSnippet(null) }
+  const openCreate = () => {
+    setEditingSnippet(null);
+    setFormOpen(true);
+  };
+  const openEdit = (s: Snippet) => {
+    setEditingSnippet(s);
+    setFormOpen(true);
+  };
+  const closeForm = () => {
+    setFormOpen(false);
+    setEditingSnippet(null);
+  };
 
   const handleCopy = async (snippet: Snippet) => {
     try {
-      await navigator.clipboard.writeText(snippet.content)
-      setCopiedId(snippet.id)
-      setTimeout(() => setCopiedId(null), 2000)
-    } catch { /* silently fail */ }
-  }
+      await navigator.clipboard.writeText(snippet.content);
+      setCopiedId(snippet.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      /* silently fail */
+    }
+  };
 
   return (
     <>
       <style>{CSS}</style>
       <div className="sp-page">
-
         {/* ── Header ── */}
         <div className="sp-header">
           <div>
             <h1 className="page-title">Snippets</h1>
             <p className="page-subtitle">
-              {isLoading ? '…' : `${snippets?.length ?? 0} snippets`}
+              {isLoading ? "…" : `${snippets?.length ?? 0} snippets`}
             </p>
           </div>
-          <Button leftIcon={LucidePlus} onClick={openCreate}>New Snippet</Button>
+          <Button leftIcon={LucidePlus} onClick={openCreate}>
+            New Snippet
+          </Button>
         </div>
 
         {/* ── Filter bar ── */}
         <div className="sp-filter-bar">
           {/* Search — always visible */}
           <div className="sp-search-wrap">
-            <Icon icon="lucide:search" className="sp-search-icon" />
+            <LucideSearch className="sp-search-icon" />
             <input
               className="sp-search"
               type="text"
@@ -97,19 +161,28 @@ export default function SnippetsPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
             {search && (
-              <button className="sp-search-clear" onClick={() => setSearch('')} aria-label="Clear">
-                <Icon icon="lucide:x" width={12} />
+              <button
+                className="sp-search-clear"
+                onClick={() => setSearch("")}
+                aria-label="Clear"
+              >
+                <LucideX width={12} />
               </button>
             )}
           </div>
 
           {/* Mobile: toggle filters */}
           <button
-            className={['sp-filter-toggle', filtersExpanded ? 'sp-filter-toggle--active' : ''].filter(Boolean).join(' ')}
+            className={[
+              "sp-filter-toggle",
+              filtersExpanded ? "sp-filter-toggle--active" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             onClick={() => setFiltersExpanded((p) => !p)}
             aria-expanded={filtersExpanded}
           >
-            <Icon icon="lucide:sliders-horizontal" width={14} />
+            <LucideSlidersHorizontal width={14} />
             Filters
             {activeFilterCount > 0 && (
               <span className="sp-filter-count">{activeFilterCount}</span>
@@ -117,26 +190,35 @@ export default function SnippetsPage() {
           </button>
 
           {/* Expandable filters */}
-          <div className={['sp-filters', filtersExpanded ? 'sp-filters--open' : ''].filter(Boolean).join(' ')}>
+          <div
+            className={["sp-filters", filtersExpanded ? "sp-filters--open" : ""]
+              .filter(Boolean)
+              .join(" ")}
+          >
             {/* Type */}
             <div className="sp-select-wrap">
-              <Icon icon="lucide:layers" className="sp-select-icon" />
+              <LucideLayers className="sp-select-icon" />
               <select
                 className="sp-select"
                 value={selectedType}
-                onChange={(e) => { setSelectedType(e.target.value); setSelectedLang('') }}
+                onChange={(e) => {
+                  setSelectedType(e.target.value);
+                  setSelectedLang("");
+                }}
               >
                 <option value="">All types</option>
                 {Object.entries(SNIPPET_TYPES).map(([k, { label }]) => (
-                  <option key={k} value={k}>{label}</option>
+                  <option key={k} value={k}>
+                    {label}
+                  </option>
                 ))}
               </select>
-              <Icon icon="lucide:chevron-down" className="sp-select-chevron" />
+              <LucideChevronDown className="sp-select-chevron" />
             </div>
 
             {/* Language */}
             <div className="sp-select-wrap">
-              <Icon icon="lucide:code-2" className="sp-select-icon" />
+              <LucideFileCode2 className="sp-select-icon" />
               <select
                 className="sp-select"
                 value={selectedLang}
@@ -144,15 +226,17 @@ export default function SnippetsPage() {
               >
                 <option value="">All languages</option>
                 {Object.entries(availableLanguages).map(([k, name]) => (
-                  <option key={k} value={k}>{name}</option>
+                  <option key={k} value={k}>
+                    {name}
+                  </option>
                 ))}
               </select>
-              <Icon icon="lucide:chevron-down" className="sp-select-chevron" />
+              <LucideChevronDown className="sp-select-chevron" />
             </div>
 
             {/* Category */}
             <div className="sp-select-wrap">
-              <Icon icon="lucide:folder" className="sp-select-icon" />
+              <LucideFolder className="sp-select-icon" />
               <select
                 className="sp-select"
                 value={categoryId}
@@ -160,24 +244,32 @@ export default function SnippetsPage() {
               >
                 <option value="">All categories</option>
                 {categories?.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
                 ))}
               </select>
-              <Icon icon="lucide:chevron-down" className="sp-select-chevron" />
+              <LucideChevronDown className="sp-select-chevron" />
             </div>
 
             {/* Favorites */}
             <button
-              className={['sp-fav-btn', showFavorites ? 'sp-fav-btn--active' : ''].filter(Boolean).join(' ')}
+              className={[
+                "sp-fav-btn",
+                showFavorites ? "sp-fav-btn--active" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
               onClick={() => setShowFavorites((p) => !p)}
             >
-              <Icon icon="lucide:star" width={14} />
+              <LucideStar width={14} />
               Favorites
             </button>
 
             {hasFilters && (
               <button className="sp-clear-btn" onClick={clearFilters}>
-                <Icon icon="lucide:x" width={13} />Clear
+                <LucideX width={13} />
+                Clear
               </button>
             )}
           </div>
@@ -186,26 +278,29 @@ export default function SnippetsPage() {
           {hasFilters && (
             <div className="sp-active-filters">
               {selectedType && (
-                <button className="sp-chip" onClick={() => setSelectedType('')}>
+                <button className="sp-chip" onClick={() => setSelectedType("")}>
                   {SNIPPET_TYPES[selectedType as SnippetType]?.label}
-                  <Icon icon="lucide:x" width={10} />
+                  <LucideX width={10} />
                 </button>
               )}
               {selectedLang && (
-                <button className="sp-chip" onClick={() => setSelectedLang('')}>
+                <button className="sp-chip" onClick={() => setSelectedLang("")}>
                   {ALL_LANGUAGES[selectedLang] ?? selectedLang}
-                  <Icon icon="lucide:x" width={10} />
+                  <LucideX width={10} />
                 </button>
               )}
               {categoryId && categories && (
-                <button className="sp-chip" onClick={() => setCategoryId('')}>
+                <button className="sp-chip" onClick={() => setCategoryId("")}>
                   {categories.find((c) => c.id === parseInt(categoryId))?.name}
-                  <Icon icon="lucide:x" width={10} />
+                  <LucideX width={10} />
                 </button>
               )}
               {showFavorites && (
-                <button className="sp-chip sp-chip--star" onClick={() => setShowFavorites(false)}>
-                  Favorites <Icon icon="lucide:x" width={10} />
+                <button
+                  className="sp-chip sp-chip--star"
+                  onClick={() => setShowFavorites(false)}
+                >
+                  Favorites <LucideX width={10} />
                 </button>
               )}
             </div>
@@ -215,7 +310,9 @@ export default function SnippetsPage() {
         {/* ── Grid ── */}
         {isLoading ? (
           <div className="sp-grid">
-            {[...Array(6)].map((_, i) => <SnippetSkeleton key={i} />)}
+            {[...Array(6)].map((_, i) => (
+              <SnippetSkeleton key={i} />
+            ))}
           </div>
         ) : snippets && snippets.length > 0 ? (
           <div className="sp-grid">
@@ -230,57 +327,109 @@ export default function SnippetsPage() {
             ))}
           </div>
         ) : (
-          <EmptyState hasFilters={hasFilters} onAdd={openCreate} onClear={clearFilters} />
+          <EmptyState
+            hasFilters={hasFilters}
+            onAdd={openCreate}
+            onClear={clearFilters}
+          />
         )}
-
       </div>
 
       <Modal
         isOpen={formOpen}
         onClose={closeForm}
-        title={editingSnippet ? 'Edit Snippet' : 'New Snippet'}
+        title={editingSnippet ? "Edit Snippet" : "New Snippet"}
         size="xl"
       >
         <SnippetForm snippet={editingSnippet} onClose={closeForm} />
       </Modal>
     </>
-  )
+  );
 }
 
 function SnippetSkeleton() {
   return (
     <div className="sp-skeleton">
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div className="skeleton" style={{ height: 16, width: '55%' }} />
-        <div className="skeleton" style={{ height: 16, width: 60, borderRadius: 99 }} />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginBottom: 10,
+        }}
+      >
+        <div className="skeleton" style={{ height: 16, width: "55%" }} />
+        <div
+          className="skeleton"
+          style={{ height: 16, width: 60, borderRadius: 99 }}
+        />
       </div>
-      <div className="skeleton" style={{ height: 12, width: '80%', marginBottom: 12 }} />
-      <div className="skeleton" style={{ height: 80, width: '100%', borderRadius: 6, marginBottom: 12 }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <div className="skeleton" style={{ height: 20, width: 50, borderRadius: 99 }} />
-          <div className="skeleton" style={{ height: 20, width: 40, borderRadius: 99 }} />
+      <div
+        className="skeleton"
+        style={{ height: 12, width: "80%", marginBottom: 12 }}
+      />
+      <div
+        className="skeleton"
+        style={{ height: 80, width: "100%", borderRadius: 6, marginBottom: 12 }}
+      />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <div style={{ display: "flex", gap: 6 }}>
+          <div
+            className="skeleton"
+            style={{ height: 20, width: 50, borderRadius: 99 }}
+          />
+          <div
+            className="skeleton"
+            style={{ height: 20, width: 40, borderRadius: 99 }}
+          />
         </div>
-        <div className="skeleton" style={{ height: 32, width: 80, borderRadius: 8 }} />
+        <div
+          className="skeleton"
+          style={{ height: 32, width: 80, borderRadius: 8 }}
+        />
       </div>
     </div>
-  )
+  );
 }
 
-function EmptyState({ hasFilters, onAdd, onClear }: { hasFilters: boolean; onAdd: () => void; onClear: () => void }) {
+function EmptyState({
+  hasFilters,
+  onAdd,
+  onClear,
+}: {
+  hasFilters: boolean;
+  onAdd: () => void;
+  onClear: () => void;
+}) {
   return (
     <div className="sp-empty">
       <div className="sp-empty-icon">
-        <Icon icon={hasFilters ? 'lucide:search-x' : 'lucide:code-2'} width={28} />
+        {hasFilters ? <LucideX width={28} /> : <LucideCodeXml width={28} />}
       </div>
-      <p className="sp-empty-title">{hasFilters ? 'No snippets found' : 'No snippets yet'}</p>
-      <p className="sp-empty-sub">{hasFilters ? 'Try adjusting your filters' : 'Save your first reusable snippet'}</p>
-      {hasFilters
-        ? <Button variant="secondary" onClick={onClear}>Clear filters</Button>
-        : <Button leftIcon={LucidePlus} onClick={onAdd}>New Snippet</Button>
-      }
+      <p className="sp-empty-title">
+        {hasFilters ? "No snippets found" : "No snippets yet"}
+      </p>
+      <p className="sp-empty-sub">
+        {hasFilters
+          ? "Try adjusting your filters"
+          : "Save your first reusable snippet"}
+      </p>
+      {hasFilters ? (
+        <Button variant="secondary" onClick={onClear}>
+          Clear filters
+        </Button>
+      ) : (
+        <Button leftIcon={LucidePlus} onClick={onAdd}>
+          New Snippet
+        </Button>
+      )}
     </div>
-  )
+  );
 }
 
 const CSS = `
@@ -495,4 +644,4 @@ const CSS = `
 }
 .sp-empty-title { font-size: var(--text-lg); font-weight: 600; color: var(--text-primary); }
 .sp-empty-sub   { font-size: var(--text-sm); color: var(--text-tertiary); }
-`
+`;

@@ -1,22 +1,33 @@
 // Reusable type-pill selector for snippet types
-import { Icon } from '@iconify/react'
-import { SNIPPET_TYPES, type SnippetType } from '@/types/snippet'
+import { SNIPPET_TYPES, type SnippetType } from "@/types/snippet";
+import {
+  LucideArrowRightLeft,
+  LucideBraces,
+  LucideCodeXml,
+  LucideDatabase,
+  LucideFileCode2,
+  LucideRegex,
+  LucideSettings,
+  LucideTerminal,
+} from "@/Icons/Icons";
 
 interface TypeSelectorProps {
-  value:    SnippetType
-  onChange: (type: SnippetType) => void
+  value: SnippetType;
+  onChange: (type: SnippetType) => void;
 }
 
 // Map type keys to Iconify icons
-const TYPE_ICONS: Record<string, string> = {
-  code:    'lucide:code-2',
-  sql:     'lucide:database',
-  command: 'lucide:terminal',
-  regex:   'lucide:regex',
-  curl:    'lucide:arrow-right-left',
-  json:    'lucide:braces',
-  script:  'lucide:file-code',
-}
+const TYPE_ICONS = {
+  code: LucideCodeXml,
+  sql: LucideDatabase,
+  command: LucideTerminal,
+  regex: LucideRegex,
+  curl: LucideArrowRightLeft,
+  json: LucideBraces,
+  script: LucideFileCode2,
+};
+
+type InfraIconKey = keyof typeof TYPE_ICONS;
 
 export default function TypeSelector({ value, onChange }: TypeSelectorProps) {
   return (
@@ -24,24 +35,33 @@ export default function TypeSelector({ value, onChange }: TypeSelectorProps) {
       <style>{CSS}</style>
       <div className="type-selector" role="group" aria-label="Snippet type">
         {Object.entries(SNIPPET_TYPES).map(([key, { label }]) => {
-          const isActive = value === key
+          const isActive = value === key;
           return (
             <button
               key={key}
               type="button"
               role="radio"
               aria-checked={isActive}
-              className={['type-pill', isActive ? 'type-pill--active' : ''].filter(Boolean).join(' ')}
+              className={["type-pill", isActive ? "type-pill--active" : ""]
+                .filter(Boolean)
+                .join(" ")}
               onClick={() => onChange(key as SnippetType)}
             >
-              <Icon icon={TYPE_ICONS[key] ?? 'lucide:code-2'} className="type-pill-icon" />
+              {(() => {
+                const Icon = TYPE_ICONS[key as InfraIconKey];
+                return Icon ? (
+                  <Icon width={13} />
+                ) : (
+                  <LucideCodeXml width={13} />
+                );
+              })()}
               <span>{label}</span>
             </button>
-          )
+          );
         })}
       </div>
     </>
-  )
+  );
 }
 
 const CSS = `
@@ -87,4 +107,4 @@ const CSS = `
 @media (max-width: 479px) {
   .type-pill { flex: 1; min-width: calc(50% - 3px); justify-content: center; }
 }
-`
+`;
