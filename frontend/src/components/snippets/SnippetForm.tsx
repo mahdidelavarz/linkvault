@@ -1,395 +1,696 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Snippet, CreateSnippetDto, SNIPPET_TYPES, TYPE_LANGUAGES, SnippetType, SnippetMetadata } from '@/types/snippet';
-import { useCreateSnippet, useUpdateSnippet } from '@/hooks/useSnippet';
-import { useCategories } from '@/hooks/useCategories';
-import { detectLanguage, getLanguageName } from '@/lib/languageDetector';
-import { formatJSON } from '@/lib/snippetUtils';
-import Input from '@/components/ui/Input';
-import Button from '@/components/ui/Button';
-import TagSelector from '@/components/tags/TagSelector';
-import CodeEditor from './CodeEditor';
-import RegexTester from './RegexTester';
-import JSONFormatter from './JSONFormatter';
-import CurlParser from './CurlParser';
+import { useEffect, useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Icon } from "@iconify/react";
+import {
+  type Snippet,
+  type CreateSnippetDto,
+  SNIPPET_TYPES,
+  TYPE_LANGUAGES,
+  type SnippetType,
+} from "@/types/snippet";
+import { getLanguageName, detectLanguage } from "@/lib/languageDetector";
+import { useCreateSnippet, useUpdateSnippet } from "@/hooks/useSnippet";
+import { useCategories } from "@/hooks/useCategories";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
+import Alert from "@/components/ui/Alert";
+import TagSelector from "@/components/tags/TagSelector";
+import {
+  LucideArrowRight,
+  LucideCodeXml,
+  LucideFolder,
+  LucideType,
+} from "@/Icons/Icons";
+import TypeSelector from "./TypeSelector";
+import FormSelect from "./FormSelect";
+import Textarea from "../ui/TextArea";
 
-interface SnippetFormProps {
+// ─── Schema ───────────────────────────────────────────────────────────────────
+
+const schema = z.object({
+  title: z.string().min(1, "Title is required").max(200),
+  snippetType: z.string().min(1),
+  language: z.string().min(1),
+  content: z.string().min(1, "Content is required"),
+  description: z.string().max(1000).optional(),
+  isFavorite: z.boolean(),
+  categoryId: z.number().optional(),
+  tagIds: z.array(z.number()),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+type FormData = z.infer<typeof schema>;
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export default function SnippetForm({
+  snippet,
+  onClose,
+}: {
   snippet?: Snippet | null;
   onClose: () => void;
-}
-
-export default function SnippetForm({ snippet, onClose }: SnippetFormProps) {
+}) {
   const isEditing = !!snippet;
+  const [activeTab, setActiveTab] = useState<"basic" | "meta">("basic");
 
-  const [formData, setFormData] = useState<CreateSnippetDto>({
-    title: '',
-    content: '',
-    language: 'txt',
-    snippetType: 'code',
-    description: '',
-    isFavorite: false,
-    categoryId: undefined,
-    tagIds: [],
-    metadata: {},
-  });
-
+  const { data: categories } = useCategories();
   const createSnippet = useCreateSnippet();
   const updateSnippet = useUpdateSnippet();
-  const { data: categories } = useCategories();
+  const isLoading = createSnippet.isPending || updateSnippet.isPending;
+  const error = createSnippet.error || updateSnippet.error;
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    watch,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      title: "",
+      snippetType: "code",
+      language: "txt",
+      content: "",
+      description: "",
+      isFavorite: false,
+      categoryId: undefined,
+      tagIds: [],
+      metadata: {},
+    },
+  });
+
+  const watchedType = watch("snippetType") as SnippetType;
+  const watchedLang = watch("language");
+  const watchedContent = watch("content");
+
+  // Auto-detect language from content
+  const detectedLang = watchedContent ? detectLanguage(watchedContent) : null;
+
+  // Available languages for current type
+  const typeLangs = TYPE_LANGUAGES[watchedType] ?? [];
+
+  // When type changes, reset language to first of that type
+  const handleTypeChange = (type: SnippetType) => {
+    setValue("snippetType", type);
+    const langs = TYPE_LANGUAGES[type];
+    if (langs && langs.length > 0) setValue("language", langs[0]);
+  };
 
   useEffect(() => {
     if (snippet) {
-      setFormData({
+      reset({
         title: snippet.title,
-        content: snippet.content,
+        snippetType: snippet.snippetType,
         language: snippet.language,
-        snippetType: (snippet as any).snippetType || 'code',
-        description: snippet.description || '',
+        content: snippet.content,
+        description: snippet.description ?? "",
         isFavorite: snippet.isFavorite,
         categoryId: snippet.categoryId,
-        tagIds: snippet.tags ? snippet.tags.map((tag: any) => tag.id) : [],
-        metadata: (snippet as any).metadata || {},
+        tagIds: snippet.tags?.map((t: any) => t.id) ?? [],
+        metadata: (snippet.metadata ?? {}) as Record<string, unknown>,
       });
     }
-  }, [snippet]);
+  }, [snippet, reset]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.title.trim() || !formData.content.trim()) return;
-
+  const onSubmit = async (data: FormData) => {
     try {
-      const dataToSubmit = {
-        ...formData,
-        categoryId: formData.categoryId || undefined,
-        tagIds: formData.tagIds || [],
-        metadata: formData.metadata || {},
+      const payload: CreateSnippetDto = {
+        ...data,
+        snippetType: data.snippetType as SnippetType, // Add explicit type assertion
+        description: data.description || undefined,
       };
-
       if (isEditing && snippet) {
-        await updateSnippet.mutateAsync({ id: snippet.id, ...dataToSubmit });
+        await updateSnippet.mutateAsync({ id: snippet.id, ...payload });
       } else {
-        await createSnippet.mutateAsync(dataToSubmit);
+        await createSnippet.mutateAsync(payload);
       }
       onClose();
-    } catch (error) {
-      console.error('Error saving snippet:', error);
-    }
-  };
-
-  const handleCodeChange = (value: string, detectedLanguage?: string) => {
-    setFormData(prev => ({
-      ...prev,
-      content: value,
-      language: detectedLanguage || prev.language,
-    }));
-  };
-
-  const handleTypeChange = (type: SnippetType) => {
-    const defaultLanguage = TYPE_LANGUAGES[type][0] || 'txt';
-    setFormData(prev => ({
-      ...prev,
-      snippetType: type,
-      language: defaultLanguage,
-      metadata: {}, // Reset metadata when type changes
-    }));
-  };
-
-  const handleMetadataChange = (updates: Partial<SnippetMetadata>) => {
-    setFormData(prev => ({
-      ...prev,
-      metadata: { ...prev.metadata, ...updates },
-    }));
-  };
-
-  const isLoading = createSnippet.isPending || updateSnippet.isPending;
-
-  // Render type-specific fields based on snippetType
-  const renderTypeSpecificFields = () => {
-    switch (formData.snippetType) {
-      case 'regex':
-        return (
-          <div className="space-y-3 border-t pt-4">
-            <h4 className="text-sm font-semibold text-gray-700">Regex Options</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Flags"
-                value={formData.metadata?.flags || ''}
-                onChange={(e) => handleMetadataChange({ flags: e.target.value })}
-                placeholder="g, i, m, s, u, y"
-              />
-              <div className="flex items-end">
-                <div className="text-xs text-gray-500">
-                  <p><code>g</code> - global</p>
-                  <p><code>i</code> - case insensitive</p>
-                  <p><code>m</code> - multiline</p>
-                  <p><code>s</code> - dotall</p>
-                </div>
-              </div>
-            </div>
-            <RegexTester 
-              pattern={formData.content} 
-              flags={formData.metadata?.flags} 
-            />
-          </div>
-        );
-
-      case 'json':
-        return (
-          <div className="border-t pt-4">
-            <JSONFormatter
-              value={formData.content}
-              onChange={(value) => setFormData(prev => ({ ...prev, content: value }))}
-            />
-          </div>
-        );
-
-      case 'curl':
-        return (
-          <div className="border-t pt-4">
-            <CurlParser curlCommand={formData.content} />
-          </div>
-        );
-
-      case 'sql':
-        return (
-          <div className="border-t pt-4 space-y-3">
-            <h4 className="text-sm font-semibold text-gray-700">SQL Options</h4>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Database Type
-              </label>
-              <select
-                value={formData.metadata?.databaseType || ''}
-                onChange={(e) => handleMetadataChange({ databaseType: e.target.value as any })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="">Select Database</option>
-                <option value="mysql">MySQL</option>
-                <option value="postgresql">PostgreSQL</option>
-                <option value="sqlserver">SQL Server</option>
-                <option value="sqlite">SQLite</option>
-                <option value="oracle">Oracle</option>
-              </select>
-            </div>
-          </div>
-        );
-
-      case 'command':
-        return (
-          <div className="border-t pt-4 space-y-3">
-            <h4 className="text-sm font-semibold text-gray-700">Command Options</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Shell Type
-                </label>
-                <select
-                  value={formData.metadata?.shellType || 'bash'}
-                  onChange={(e) => handleMetadataChange({ shellType: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="bash">Bash</option>
-                  <option value="zsh">Zsh</option>
-                  <option value="powershell">PowerShell</option>
-                  <option value="cmd">CMD</option>
-                </select>
-              </div>
-              <Input
-                label="Working Directory"
-                value={formData.metadata?.workingDirectory || ''}
-                onChange={(e) => handleMetadataChange({ workingDirectory: e.target.value })}
-                placeholder="/home/user/project"
-              />
-            </div>
-          </div>
-        );
-
-      case 'script':
-        return (
-          <div className="border-t pt-4 space-y-3">
-            <h4 className="text-sm font-semibold text-gray-700">Script Options</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Language
-                </label>
-                <select
-                  value={formData.metadata?.scriptLanguage || ''}
-                  onChange={(e) => handleMetadataChange({ scriptLanguage: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select Language</option>
-                  <option value="bash">Bash</option>
-                  <option value="python">Python</option>
-                  <option value="ruby">Ruby</option>
-                  <option value="perl">Perl</option>
-                  <option value="lua">Lua</option>
-                  <option value="r">R</option>
-                </select>
-              </div>
-              <Input
-                label="Dependencies"
-                value={formData.metadata?.dependencies || ''}
-                onChange={(e) => handleMetadataChange({ dependencies: e.target.value })}
-                placeholder="requests, numpy, pandas"
-              />
-            </div>
-          </div>
-        );
-
-      case 'code':
-      default:
-        return null;
+    } catch {
+      /* shown via Alert */
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-w-4xl">
-      <h3 className="text-xl font-semibold text-gray-900 mb-4">
-        {isEditing ? 'Edit Snippet' : 'Create New Snippet'}
-      </h3>
+    <>
+      <style>{CSS}</style>
+      <form className="sform" onSubmit={handleSubmit(onSubmit)} noValidate>
+        {error && (
+          <Alert
+            type="error"
+            message={
+              error instanceof Error ? error.message : "Something went wrong"
+            }
+          />
+        )}
 
-      {/* Title */}
-      <Input
-        label="Title *"
-        name="title"
-        type="text"
-        value={formData.title}
-        onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-        required
-        placeholder="e.g., User Authentication Query"
-      />
+        {/* ── Tabs: Basic / Metadata ── */}
+        <div className="sform-tabs">
+          <button
+            type="button"
+            className={[
+              "sform-tab",
+              activeTab === "basic" ? "sform-tab--active" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            onClick={() => setActiveTab("basic")}
+          >
+            <Icon icon="lucide:file-code" width={14} />
+            Content
+          </button>
+          <button
+            type="button"
+            className={[
+              "sform-tab",
+              activeTab === "meta" ? "sform-tab--active" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            onClick={() => setActiveTab("meta")}
+          >
+            <Icon icon="lucide:settings-2" width={14} />
+            Details
+          </button>
+        </div>
 
-      {/* Snippet Type Selector */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Type *
-        </label>
-        <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
-          {Object.entries(SNIPPET_TYPES).map(([key, { label, icon, color }]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => handleTypeChange(key as SnippetType)}
-              className={`p-3 rounded-lg text-xs font-medium transition-all border-2 ${
-                formData.snippetType === key
-                  ? `${color} text-white border-transparent`
-                  : 'bg-white text-gray-700 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-              }`}
+        {/* ══ Tab: Basic ══ */}
+        {activeTab === "basic" && (
+          <div className="sform-panel">
+            {/* Title */}
+            <Input
+              label="Title"
+              type="text"
+              placeholder="e.g., Fetch user with JOIN"
+              leftIcon={LucideType}
+              error={errors.title?.message}
+              autoFocus
+              {...register("title")}
+            />
+
+            {/* Type selector */}
+            <div className="sform-field">
+              <label className="sform-label">Type</label>
+              <Controller
+                name="snippetType"
+                control={control}
+                render={({ field }) => (
+                  <TypeSelector
+                    value={field.value as SnippetType}
+                    onChange={handleTypeChange}
+                  />
+                )}
+              />
+            </div>
+
+            {/* Language + auto-detect hint */}
+            <div className="sform-field">
+              <FormSelect
+                label="Language"
+                leftIcon={LucideCodeXml}
+                {...register("language")}
+              >
+                {typeLangs.map((lang) => (
+                  <option key={lang} value={lang}>
+                    {getLanguageName(lang)}
+                  </option>
+                ))}
+              </FormSelect>
+              {detectedLang && detectedLang !== watchedLang && (
+                <button
+                  type="button"
+                  className="sform-detect-hint"
+                  onClick={() => setValue("language", detectedLang)}
+                >
+                  <Icon icon="lucide:zap" width={12} />
+                  Auto-detected:{" "}
+                  <strong>{getLanguageName(detectedLang)}</strong> — click to
+                  apply
+                </button>
+              )}
+            </div>
+
+            {/* Code editor */}
+            <div className="sform-field">
+              <div className="sform-code-header">
+                <label className="sform-label">
+                  {watchedType === "command"
+                    ? "Command"
+                    : watchedType === "curl"
+                      ? "cURL Request"
+                      : watchedType === "regex"
+                        ? "Pattern"
+                        : watchedType === "sql"
+                          ? "Query"
+                          : watchedType === "json"
+                            ? "JSON"
+                            : "Code"}
+                </label>
+                <span className="sform-lang-pill">{watchedLang}</span>
+              </div>
+              <div
+                className={[
+                  "sform-code-wrap",
+                  errors.content ? "sform-code-wrap--error" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                <textarea
+                  className="sform-code"
+                  placeholder={
+                    watchedType === "command"
+                      ? 'git commit -m "feat: add feature"'
+                      : watchedType === "regex"
+                        ? "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+                        : watchedType === "json"
+                          ? '{\n  "key": "value"\n}'
+                          : watchedType === "sql"
+                            ? "SELECT u.*, p.name\nFROM users u\nJOIN profiles p ON p.user_id = u.id\nWHERE u.active = true;"
+                            : "// Your code here"
+                  }
+                  rows={12}
+                  spellCheck={false}
+                  {...register("content")}
+                />
+              </div>
+              {errors.content && (
+                <p className="sform-field-error">
+                  <Icon icon="lucide:circle-alert" width={12} />
+                  {errors.content.message}
+                </p>
+              )}
+            </div>
+
+            {/* Description */}
+            <Textarea
+              label="Description"
+              placeholder="What does this snippet do? When should you use it?"
+              optional
+              rows={2}
+              error={errors.description?.message}
+              {...register("description")}
+            />
+          </div>
+        )}
+
+        {/* ══ Tab: Details ══ */}
+        {activeTab === "meta" && (
+          <div className="sform-panel">
+            {/* Category */}
+            <FormSelect
+              label="Category"
+              optional
+              leftIcon={LucideFolder}
+              {...register("categoryId", {
+                setValueAs: (v) => (v ? parseInt(v) : undefined),
+              })}
             >
-              <span className="block text-xl mb-1">{icon}</span>
-              {label}
-            </button>
-          ))}
+              <option value="">No category</option>
+              {categories?.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </FormSelect>
+
+            {/* Tags */}
+            <div className="sform-field">
+              <label className="sform-label">
+                Tags <span className="sform-optional">optional</span>
+              </label>
+              <Controller
+                name="tagIds"
+                control={control}
+                render={({ field }) => (
+                  <TagSelector
+                    selectedTagIds={field.value}
+                    onChange={field.onChange}
+                  />
+                )}
+              />
+            </div>
+
+            {/* Type-specific metadata */}
+            <TypeMetadataFields snippetType={watchedType} register={register} />
+
+            {/* Favorite */}
+            <Controller
+              name="isFavorite"
+              control={control}
+              render={({ field }) => (
+                <label className="sform-checkbox">
+                  <div
+                    className={[
+                      "sform-check",
+                      field.value ? "sform-check--on" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
+                    {field.value && <Icon icon="lucide:check" width={11} />}
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={field.value}
+                    onChange={(e) => field.onChange(e.target.checked)}
+                    style={{
+                      position: "absolute",
+                      opacity: 0,
+                      pointerEvents: "none",
+                    }}
+                  />
+                  <span className="sform-check-label">
+                    <Icon
+                      icon="lucide:star"
+                      width={13}
+                      style={{ color: "#fbbf24" }}
+                    />
+                    Mark as favorite
+                  </span>
+                </label>
+              )}
+            />
+          </div>
+        )}
+
+        {/* ── Footer ── */}
+        <div className="sform-footer">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <div className="sform-footer-right">
+            {activeTab === "basic" && (
+              <Button
+                type="button"
+                variant="secondary"
+                rightIcon={LucideArrowRight}
+                onClick={() => setActiveTab("meta")}
+              >
+                Details
+              </Button>
+            )}
+            <Button type="submit" isLoading={isLoading}>
+              {isEditing ? "Save changes" : "Create snippet"}
+            </Button>
+          </div>
         </div>
-      </div>
-
-      {/* Category & Language */}
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Category
-          </label>
-          <select
-            value={formData.categoryId || ''}
-            onChange={(e) => setFormData(prev => ({
-              ...prev,
-              categoryId: e.target.value ? parseInt(e.target.value) : undefined
-            }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="">No Category</option>
-            {categories?.map((cat) => (
-              <option key={cat.id} value={cat.id}>📁 {cat.name}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Language
-          </label>
-          <select
-            value={formData.language}
-            onChange={(e) => setFormData(prev => ({ ...prev, language: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="txt">Auto Detect</option>
-            {TYPE_LANGUAGES[formData.snippetType]?.map((lang) => (
-              <option key={lang} value={lang}>{getLanguageName(lang)}</option>
-            ))}
-          </select>
-          {formData.content && (
-            <p className="text-xs text-gray-500 mt-1">
-              Detected: {getLanguageName(detectLanguage(formData.content))}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Tags */}
-      <TagSelector
-        selectedTagIds={formData.tagIds || []}
-        onChange={(tagIds) => setFormData(prev => ({ ...prev, tagIds }))}
-      />
-
-      {/* Description */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Description
-        </label>
-        <textarea
-          value={formData.description}
-          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-          rows={2}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          placeholder="What does this snippet do? When should it be used?"
-        />
-      </div>
-
-      {/* Code Editor */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {formData.snippetType === 'command' ? 'Command *' :
-           formData.snippetType === 'curl' ? 'cURL Request *' :
-           formData.snippetType === 'regex' ? 'Regex Pattern *' :
-           formData.snippetType === 'sql' ? 'SQL Query *' :
-           formData.snippetType === 'json' ? 'JSON Data *' :
-           'Code *'}
-        </label>
-        <CodeEditor
-          value={formData.content}
-          onChange={handleCodeChange}
-          language={formData.language}
-          height="300px"
-        />
-      </div>
-
-      {/* Type-Specific Fields */}
-      {renderTypeSpecificFields()}
-
-      {/* Favorite Toggle */}
-      <label className="flex items-center gap-2 pt-2">
-        <input
-          type="checkbox"
-          checked={formData.isFavorite}
-          onChange={(e) => setFormData(prev => ({ ...prev, isFavorite: e.target.checked }))}
-          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-        />
-        <span className="text-sm text-gray-700">Mark as favorite</span>
-      </label>
-
-      {/* Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <Button type="button" variant="secondary" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="submit" isLoading={isLoading}>
-          {isEditing ? 'Update Snippet' : 'Create Snippet'}
-        </Button>
-      </div>
-    </form>
+      </form>
+    </>
   );
 }
+
+// ─── Type-specific metadata fields ───────────────────────────────────────────
+
+function TypeMetadataFields({
+  snippetType,
+  register,
+}: {
+  snippetType: SnippetType;
+  register: any;
+}) {
+  if (snippetType === "sql")
+    return (
+      <div className="sform-meta-section">
+        <p className="sform-meta-title">
+          <Icon icon="lucide:database" width={12} />
+          SQL options
+        </p>
+        <FormSelect
+          label="Database"
+          optional
+          leftIcon="lucide:server"
+          {...register("metadata.database")}
+        >
+          <option value="">Any</option>
+          {["PostgreSQL", "MySQL", "SQLite", "MSSQL", "Oracle", "MongoDB"].map(
+            (db) => (
+              <option key={db} value={db.toLowerCase()}>
+                {db}
+              </option>
+            ),
+          )}
+        </FormSelect>
+      </div>
+    );
+
+  if (snippetType === "command")
+    return (
+      <div className="sform-meta-section">
+        <p className="sform-meta-title">
+          <Icon icon="lucide:terminal" width={12} />
+          Command options
+        </p>
+        <div className="sform-grid-2">
+          <FormSelect
+            label="Shell"
+            optional
+            leftIcon="lucide:terminal"
+            {...register("metadata.shell")}
+          >
+            <option value="">Any shell</option>
+            {["bash", "zsh", "fish", "powershell", "cmd"].map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </FormSelect>
+          <Input
+            label="Working directory"
+            placeholder="/home/user/project"
+            optional
+            {...register("metadata.workingDirectory")}
+          />
+        </div>
+      </div>
+    );
+
+  if (snippetType === "script")
+    return (
+      <div className="sform-meta-section">
+        <p className="sform-meta-title">
+          <Icon icon="lucide:file-code" width={12} />
+          Script options
+        </p>
+        <div className="sform-grid-2">
+          <FormSelect
+            label="Runtime"
+            optional
+            leftIcon="lucide:cpu"
+            {...register("metadata.scriptLanguage")}
+          >
+            <option value="">Any</option>
+            {["bash", "python", "ruby", "perl", "lua", "r"].map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </FormSelect>
+          <Input
+            label="Dependencies"
+            placeholder="requests, numpy"
+            optional
+            {...register("metadata.dependencies")}
+          />
+        </div>
+      </div>
+    );
+
+  if (snippetType === "curl")
+    return (
+      <div className="sform-meta-section">
+        <p className="sform-meta-title">
+          <Icon icon="lucide:arrow-right-left" width={12} />
+          cURL options
+        </p>
+        <div className="sform-grid-2">
+          <FormSelect label="Method" optional {...register("metadata.method")}>
+            {["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"].map(
+              (m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ),
+            )}
+          </FormSelect>
+          <Input
+            label="Base URL"
+            placeholder="https://api.example.com"
+            optional
+            {...register("metadata.baseUrl")}
+          />
+        </div>
+      </div>
+    );
+
+  return null;
+}
+
+const CSS = `
+.sform { display: flex; flex-direction: column; gap: 0; }
+
+/* Tabs */
+.sform-tabs {
+  display:       flex;
+  gap:           4px;
+  padding:       0 0 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: 20px;
+}
+.sform-tab {
+  display:       flex;
+  align-items:   center;
+  gap:           6px;
+  height:        34px;
+  padding:       0 14px;
+  background:    transparent;
+  border:        1px solid transparent;
+  border-radius: var(--radius-md);
+  color:         var(--text-tertiary);
+  font-size:     var(--text-sm);
+  font-family:   var(--font-sans);
+  font-weight:   500;
+  cursor:        pointer;
+  transition:    background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+.sform-tab:hover    { background: var(--bg-overlay); color: var(--text-primary); }
+.sform-tab--active  { background: var(--accent-muted); border-color: var(--accent-border); color: var(--cyan-300); }
+
+/* Panel */
+.sform-panel { display: flex; flex-direction: column; gap: 16px; }
+
+/* Field */
+.sform-field { display: flex; flex-direction: column; gap: 6px; }
+.sform-label { font-size: var(--text-sm); font-weight: 500; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
+.sform-optional { font-size: var(--text-xs); font-weight: 400; color: var(--text-tertiary); }
+
+/* Language detect hint */
+.sform-detect-hint {
+  display:     flex;
+  align-items: center;
+  gap:         5px;
+  font-size:   var(--text-xs);
+  color:       var(--text-accent);
+  background:  var(--accent-subtle);
+  border:      1px solid var(--accent-border);
+  border-radius: var(--radius-sm);
+  padding:     4px 10px;
+  cursor:      pointer;
+  font-family: var(--font-sans);
+  transition:  background var(--transition-fast);
+  width:       fit-content;
+}
+.sform-detect-hint:hover { background: var(--accent-muted); }
+.sform-detect-hint strong { color: var(--text-primary); }
+
+/* Code editor */
+.sform-code-header { display: flex; align-items: center; justify-content: space-between; }
+.sform-lang-pill {
+  font-size:     10px;
+  font-family:   var(--font-mono);
+  color:         var(--text-tertiary);
+  background:    var(--bg-overlay);
+  border:        1px solid var(--border-subtle);
+  padding:       1px 8px;
+  border-radius: var(--radius-sm);
+}
+.sform-code-wrap {
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  overflow:      hidden;
+  transition:    border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.sform-code-wrap:focus-within {
+  border-color: var(--border-focus);
+  box-shadow:   0 0 0 3px var(--accent-muted);
+}
+.sform-code-wrap--error { border-color: var(--danger); }
+.sform-code-wrap--error:focus-within { box-shadow: 0 0 0 3px var(--danger-muted); }
+
+.sform-code {
+  display:     block;
+  width:       100%;
+  padding:     12px 14px;
+  background:  var(--bg-elevated);
+  border:      none;
+  outline:     none;
+  color:       var(--cyan-200);
+  font-family: var(--font-mono);
+  font-size:   var(--text-sm);
+  line-height: var(--leading-relaxed);
+  resize:      vertical;
+  min-height:  200px;
+  tab-size:    2;
+}
+.sform-code::placeholder { color: var(--text-tertiary); font-style: italic; }
+@media (max-width: 767px) {
+  .sform-code { min-height: 150px; font-size: var(--text-xs); }
+}
+
+.sform-field-error {
+  display: flex; align-items: center; gap: 4px;
+  font-size: var(--text-xs); color: var(--danger); font-weight: 500;
+}
+
+/* Metadata section */
+.sform-meta-section {
+  display:        flex;
+  flex-direction: column;
+  gap:            12px;
+  padding:        14px;
+  background:     var(--bg-elevated);
+  border:         1px solid var(--border-subtle);
+  border-radius:  var(--radius-md);
+}
+.sform-meta-title {
+  display:     flex;
+  align-items: center;
+  gap:         6px;
+  font-size:   var(--text-xs);
+  font-weight: 600;
+  color:       var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.sform-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 479px) { .sform-grid-2 { grid-template-columns: 1fr; } }
+
+/* Checkbox */
+.sform-checkbox {
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer; position: relative; width: fit-content;
+}
+.sform-check {
+  display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px;
+  background: var(--bg-subtle); border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm); flex-shrink: 0;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+.sform-check--on { background: var(--accent); border-color: var(--accent); color: white; }
+.sform-check-label { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-secondary); }
+
+/* Footer */
+.sform-footer {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             8px;
+  padding-top:     20px;
+  margin-top:      4px;
+  border-top:      1px solid var(--border-subtle);
+}
+.sform-footer-right { display: flex; align-items: center; gap: 8px; }
+
+@media (max-width: 479px) {
+  .sform-footer { flex-wrap: wrap; }
+  .sform-footer > *,
+  .sform-footer-right { width: 100%; }
+  .sform-footer-right { flex-direction: column; }
+}
+`;

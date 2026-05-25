@@ -1,172 +1,368 @@
-'use client';
+'use client'
 
-import { Snippet, SNIPPET_TYPES, SnippetType } from '@/types/snippet';
-import { useToggleSnippetFavorite, useDeleteSnippet } from '@/hooks/useSnippet';
-import { getLanguageIcon, getLanguageName } from '@/lib/languageDetector';
-import Button from '@/components/ui/Button';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { useState } from 'react'
+import { Icon }     from '@iconify/react'
+import { type Snippet, SNIPPET_TYPES } from '@/types/snippet'
+import { getLanguageName }             from '@/lib/languageDetector'
+import { useToggleSnippetFavorite, useDeleteSnippet } from '@/hooks/useSnippet'
+import Badge  from '@/components/ui/Badge'
+import Button from '@/components/ui/Button'
+import Modal  from '@/components/ui/Modal'
+
+const LANG_COLORS: Record<string, string> = {
+  js: 'orange', jsx: 'orange', ts: 'cyan', tsx: 'cyan',
+  py: 'cyan', go: 'cyan', rs: 'orange', java: 'orange',
+  sql: 'purple', json: 'success', yaml: 'warning',
+  html: 'orange', css: 'purple', sh: 'default', bash: 'default',
+  regex: 'pink', curl: 'warning', md: 'default',
+}
 
 interface SnippetCardProps {
-  snippet: Snippet;
-  onEdit: (snippet: Snippet) => void;
-  onCopy: (snippet: Snippet) => void;
+  snippet:  Snippet
+  copiedId: number | null
+  onEdit:   (s: Snippet) => void
+  onCopy:   (s: Snippet) => void
 }
 
-// Map our language keys to react-syntax-highlighter language keys
-const languageMap: Record<string, string> = {
-  js: 'javascript',
-  jsx: 'jsx',
-  ts: 'typescript',
-  tsx: 'tsx',
-  py: 'python',
-  rb: 'ruby',
-  java: 'java',
-  go: 'go',
-  rs: 'rust',
-  php: 'php',
-  cs: 'csharp',
-  cpp: 'cpp',
-  c: 'c',
-  swift: 'swift',
-  kt: 'kotlin',
-  scala: 'scala',
-  sql: 'sql',
-  sh: 'bash',
-  bash: 'bash',
-  zsh: 'bash',
-  ps1: 'powershell',
-  dockerfile: 'docker',
-  yaml: 'yaml',
-  yml: 'yaml',
-  json: 'json',
-  xml: 'xml',
-  html: 'html',
-  css: 'css',
-  scss: 'scss',
-  md: 'markdown',
-  graphql: 'graphql',
-  txt: 'text',
-  regex: 'javascript', // Use JS highlighting for regex
-  curl: 'bash',        // Use bash for curl
-};
+export default function SnippetCard({ snippet, copiedId, onEdit, onCopy }: SnippetCardProps) {
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [expanded,      setExpanded]      = useState(false)
 
-export default function SnippetCard({ snippet, onEdit, onCopy }: SnippetCardProps) {
-  const toggleFavorite = useToggleSnippetFavorite();
-  const deleteSnippet = useDeleteSnippet();
+  const toggleFav  = useToggleSnippetFavorite()
+  const deleteSnip = useDeleteSnippet()
 
-  const handleDelete = () => {
-    if (window.confirm('Are you sure you want to delete this snippet?')) {
-      deleteSnippet.mutate(snippet.id);
-    }
-  };
+  const isCopied   = copiedId === snippet.id
+  const typeConfig = SNIPPET_TYPES[snippet.snippetType]
+  const langName   = getLanguageName(snippet.language)
+  const langColor  = (LANG_COLORS[snippet.language] ?? 'default') as any
 
-  // Safely get snippet type info
-  const snippetTypeKey = (snippet.snippetType || 'code') as SnippetType;
-  const snippetType = SNIPPET_TYPES[snippetTypeKey] || SNIPPET_TYPES.code;
-  
-  // Safely get language
-  const highlightLanguage = languageMap[snippet.language] || 'text';
-  
-  // Get language name
-  const languageName = getLanguageName(snippet.language);
+  // Preview: first 6 lines of code
+  const lines        = snippet.content.split('\n')
+  const previewLines = lines.slice(0, 6)
+  const hasMore      = lines.length > 6
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 border border-gray-100">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{getLanguageIcon(snippet.language)}</span>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-gray-900 truncate">
-              {snippet.title}
-            </h3>
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Type Badge */}
-              <span className={`text-xs text-white px-2 py-0.5 rounded-full ${snippetType.color}`}>
-                {snippetType.icon} {snippetType.label}
+    <>
+      <style>{CSS}</style>
+      <div className="sc">
+
+        {/* ── Header ── */}
+        <div className="sc-header">
+          <div className="sc-title-row">
+            <div className="sc-type-dot" title={typeConfig?.label} />
+            <h3 className="sc-title">{snippet.title}</h3>
+            <button
+              className={['sc-fav', snippet.isFavorite ? 'sc-fav--active' : ''].filter(Boolean).join(' ')}
+              onClick={() => toggleFav.mutate(snippet.id)}
+              aria-label={snippet.isFavorite ? 'Remove favorite' : 'Add favorite'}
+              disabled={toggleFav.isPending}
+            >
+              <Icon icon="lucide:star" width={14} />
+            </button>
+          </div>
+
+          <div className="sc-meta">
+            <Badge variant={langColor} size="sm">{langName}</Badge>
+            <span className="sc-type-label">{typeConfig?.label}</span>
+            {snippet.category && (
+              <span className="sc-category">
+                <Icon icon="lucide:folder" width={11} />
+                {snippet.category.name}
               </span>
-              {/* Language */}
-              <span className="text-xs text-gray-500">
-                {languageName}
-              </span>
-            </div>
+            )}
           </div>
         </div>
-        <button
-          onClick={() => toggleFavorite.mutate(snippet.id)}
-          className="text-2xl hover:scale-110 transition-transform flex-shrink-0"
-        >
-          {snippet.isFavorite ? '⭐' : '☆'}
-        </button>
-      </div>
 
-      {snippet.description && (
-        <p className="text-sm text-gray-600 mb-3">{snippet.description}</p>
-      )}
-
-      {/* Code Preview */}
-      <div className="mb-3 rounded-lg overflow-hidden" style={{ maxHeight: '200px' }}>
-        <SyntaxHighlighter
-          language={highlightLanguage}
-          style={vscDarkPlus}
-          customStyle={{
-            margin: 0,
-            borderRadius: '0.5rem',
-            fontSize: '0.75rem',
-          }}
-        >
-          {snippet.content.substring(0, 500)}
-        </SyntaxHighlighter>
-      </div>
-
-      {/* Tags & Category */}
-      <div className="flex flex-wrap gap-2 mb-3">
-        {snippet.category && (
-          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-            📁 {snippet.category.name}
-          </span>
+        {/* ── Description ── */}
+        {snippet.description && (
+          <p className="sc-desc">{snippet.description}</p>
         )}
-        {snippet.tags?.map((tag: any) => (
-          <span key={tag.id} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-            🏷️ {tag.name}
+
+        {/* ── Code block ── */}
+        <div className="sc-code-wrap">
+          {/* Language label in corner */}
+          <span className="sc-code-lang">{snippet.language}</span>
+
+          <pre className={['sc-code', expanded ? 'sc-code--expanded' : ''].filter(Boolean).join(' ')}>
+            <code>{expanded ? snippet.content : previewLines.join('\n')}</code>
+          </pre>
+
+          {hasMore && (
+            <button className="sc-expand-btn" onClick={() => setExpanded((p) => !p)}>
+              <Icon icon={expanded ? 'lucide:chevron-up' : 'lucide:chevron-down'} width={12} />
+              {expanded ? 'Show less' : `${lines.length - 6} more lines`}
+            </button>
+          )}
+        </div>
+
+        {/* ── Tags ── */}
+        {snippet.tags && snippet.tags.length > 0 && (
+          <div className="sc-tags">
+            {snippet.tags.slice(0, 4).map((tag: any) => (
+              <Badge key={tag.id} variant="default" size="sm">{tag.name}</Badge>
+            ))}
+            {snippet.tags.length > 4 && (
+              <span className="sc-tags-more">+{snippet.tags.length - 4}</span>
+            )}
+          </div>
+        )}
+
+        {/* ── Footer: copy + actions ── */}
+        <div className="sc-footer">
+          {/* Copy — primary action, most prominent */}
+          <button
+            className={['sc-copy-btn', isCopied ? 'sc-copy-btn--copied' : ''].filter(Boolean).join(' ')}
+            onClick={() => onCopy(snippet)}
+            aria-label="Copy to clipboard"
+          >
+            <Icon icon={isCopied ? 'lucide:check' : 'lucide:copy'} width={14} />
+            {isCopied ? 'Copied!' : 'Copy'}
+          </button>
+
+          <div className="sc-actions">
+            <button
+              className="sc-action-btn"
+              onClick={() => onEdit(snippet)}
+              aria-label="Edit snippet"
+              title="Edit"
+            >
+              <Icon icon="lucide:pencil" width={14} />
+            </button>
+            <button
+              className="sc-action-btn sc-action-btn--danger"
+              onClick={() => setConfirmDelete(true)}
+              aria-label="Delete snippet"
+              title="Delete"
+            >
+              <Icon icon="lucide:trash-2" width={14} />
+            </button>
+          </div>
+
+          <span className="sc-date">
+            {new Date(snippet.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
-        ))}
-      </div>
-
-      {/* Type-specific metadata */}
-      {snippetTypeKey === 'regex' && snippet.metadata?.flags && (
-        <div className="text-xs text-gray-500 mb-2">
-          Flags: <code className="bg-gray-100 px-1 rounded">{snippet.metadata.flags}</code>
-        </div>
-      )}
-      {snippetTypeKey === 'sql' && snippet.metadata?.databaseType && (
-        <div className="text-xs text-gray-500 mb-2">
-          Database: <span className="font-medium">{snippet.metadata.databaseType}</span>
-        </div>
-      )}
-      {snippetTypeKey === 'command' && snippet.metadata?.shellType && (
-        <div className="text-xs text-gray-500 mb-2">
-          Shell: <span className="font-medium">{snippet.metadata.shellType}</span>
-        </div>
-      )}
-
-      {/* Timestamp */}
-      <div className="flex justify-between items-center pt-3 border-t">
-        <span className="text-xs text-gray-400">
-          {new Date(snippet.updatedAt).toLocaleDateString()}
-        </span>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => onCopy(snippet)}>
-            📋 Copy
-          </Button>
-          <Button variant="outline" onClick={() => onEdit(snippet)}>
-            ✏️ Edit
-          </Button>
-          <Button variant="secondary" onClick={handleDelete}>
-            🗑️
-          </Button>
         </div>
       </div>
-    </div>
-  );
+
+      {/* Delete confirm */}
+      <Modal isOpen={confirmDelete} onClose={() => setConfirmDelete(false)} title="Delete snippet" size="sm">
+        <div className="sc-confirm">
+          <p className="sc-confirm-text">
+            Delete <strong>{snippet.title}</strong>? This cannot be undone.
+          </p>
+          <div className="sc-confirm-actions">
+            <Button variant="secondary" onClick={() => setConfirmDelete(false)}>Cancel</Button>
+            <Button
+              variant="danger"
+              isLoading={deleteSnip.isPending}
+              onClick={() => deleteSnip.mutate(snippet.id, { onSuccess: () => setConfirmDelete(false) })}
+            >
+              Delete
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    </>
+  )
 }
+
+const CSS = `
+.sc {
+  display:        flex;
+  flex-direction: column;
+  gap:            12px;
+  padding:        16px;
+  background:     var(--bg-surface);
+  border:         1px solid var(--border-default);
+  border-radius:  var(--radius-lg);
+  transition:     border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.sc:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
+
+/* Header */
+.sc-header   { display: flex; flex-direction: column; gap: 8px; }
+.sc-title-row {
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+}
+.sc-type-dot {
+  width:         8px;
+  height:        8px;
+  border-radius: 50%;
+  background:    var(--accent);
+  flex-shrink:   0;
+}
+.sc-title {
+  flex:          1;
+  font-size:     var(--text-sm);
+  font-weight:   600;
+  color:         var(--text-primary);
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+}
+.sc-fav {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  background: transparent; border: none;
+  color: var(--text-tertiary); cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color var(--transition-fast), transform var(--transition-fast);
+  flex-shrink: 0;
+}
+.sc-fav:hover    { color: #fbbf24; transform: scale(1.15); }
+.sc-fav--active  { color: #fbbf24; }
+.sc-fav:disabled { opacity: 0.5; pointer-events: none; }
+
+.sc-meta {
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+  flex-wrap:   wrap;
+}
+.sc-type-label {
+  font-size:  var(--text-xs);
+  color:      var(--text-tertiary);
+  font-weight: 500;
+}
+.sc-category {
+  display:     flex;
+  align-items: center;
+  gap:         4px;
+  font-size:   var(--text-xs);
+  color:       var(--text-tertiary);
+}
+
+/* Description */
+.sc-desc {
+  font-size:          var(--text-xs);
+  color:              var(--text-secondary);
+  line-height:        var(--leading-snug);
+  display:            -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow:           hidden;
+}
+
+/* Code block */
+.sc-code-wrap {
+  position:      relative;
+  background:    var(--bg-elevated);
+  border:        1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow:      hidden;
+}
+.sc-code-lang {
+  position:      absolute;
+  top:           6px;
+  right:         8px;
+  font-size:     10px;
+  font-family:   var(--font-mono);
+  color:         var(--text-tertiary);
+  background:    var(--bg-overlay);
+  padding:       1px 6px;
+  border-radius: var(--radius-sm);
+  border:        1px solid var(--border-subtle);
+  pointer-events: none;
+}
+.sc-code {
+  display:    block;
+  padding:    12px 14px;
+  margin:     0;
+  font-family: var(--font-mono);
+  font-size:   var(--text-xs);
+  line-height: var(--leading-relaxed);
+  color:       var(--cyan-200);
+  overflow-x:  auto;
+  white-space: pre;
+  max-height:  140px;
+  overflow-y:  hidden;
+  transition:  max-height var(--transition-slow);
+}
+.sc-code--expanded { max-height: 400px; overflow-y: auto; }
+.sc-code::-webkit-scrollbar { height: 4px; width: 4px; }
+.sc-code::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+
+.sc-expand-btn {
+  display:     flex;
+  align-items: center;
+  gap:         4px;
+  width:       100%;
+  padding:     6px 14px;
+  background:  var(--bg-overlay);
+  border:      none;
+  border-top:  1px solid var(--border-subtle);
+  color:       var(--text-tertiary);
+  font-size:   var(--text-xs);
+  font-family: var(--font-sans);
+  cursor:      pointer;
+  transition:  color var(--transition-fast), background var(--transition-fast);
+}
+.sc-expand-btn:hover { color: var(--text-primary); background: var(--bg-subtle); }
+
+/* Tags */
+.sc-tags      { display: flex; flex-wrap: wrap; gap: 5px; }
+.sc-tags-more { font-size: var(--text-xs); color: var(--text-tertiary); align-self: center; }
+
+/* Footer */
+.sc-footer {
+  display:         flex;
+  align-items:     center;
+  gap:             8px;
+  padding-top:     12px;
+  border-top:      1px solid var(--border-subtle);
+}
+
+/* Copy button — the star of the show */
+.sc-copy-btn {
+  display:       flex;
+  align-items:   center;
+  gap:           6px;
+  height:        34px;
+  padding:       0 14px;
+  background:    var(--bg-overlay);
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color:         var(--text-secondary);
+  font-size:     var(--text-sm);
+  font-family:   var(--font-sans);
+  font-weight:   500;
+  cursor:        pointer;
+  transition:    background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+  /* Good tap target */
+  min-height:    44px;
+}
+.sc-copy-btn:hover {
+  background:   var(--accent-muted);
+  border-color: var(--border-focus);
+  color:        var(--cyan-300);
+}
+.sc-copy-btn--copied {
+  background:   var(--success-muted);
+  border-color: rgba(16,185,129,0.3);
+  color:        #34d399;
+}
+
+.sc-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.sc-action-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  background: transparent; border: 1px solid transparent;
+  border-radius: var(--radius-md); color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+  /* Good tap target */
+  min-width: 44px; min-height: 44px;
+}
+.sc-action-btn:hover              { background: var(--bg-overlay); border-color: var(--border-default); color: var(--text-primary); }
+.sc-action-btn--danger:hover      { background: var(--danger-muted); border-color: rgba(239,68,68,0.2); color: var(--danger); }
+
+.sc-date { font-size: var(--text-xs); color: var(--text-tertiary); white-space: nowrap; }
+
+/* Confirm */
+.sc-confirm         { display: flex; flex-direction: column; gap: 20px; }
+.sc-confirm-text    { font-size: var(--text-sm); color: var(--text-secondary); line-height: var(--leading-relaxed); }
+.sc-confirm-text strong { color: var(--text-primary); }
+.sc-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
+`
