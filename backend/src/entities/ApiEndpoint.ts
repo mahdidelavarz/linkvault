@@ -38,7 +38,7 @@ export class ApiEndpoint {
     @Column({ type: 'simple-json', nullable: true, name: 'auth_data' })
     authData?: any;
 
-    @Column({ type: 'bit', default: false, name: 'is_favorite' })
+    @Column({ type: 'boolean', default: false, name: 'is_favorite' })
     isFavorite!: boolean;
 
     @ManyToOne(() => ApiCollection, collection => collection.endpoints, { nullable: true })

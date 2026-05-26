@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY backend/package*.json ./
-RUN npm ci
+RUN npm config set registry https://mirror2.chabokan.net/npm/
 
 # Copy source
 COPY backend/ ./

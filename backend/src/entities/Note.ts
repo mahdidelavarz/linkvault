@@ -13,7 +13,7 @@ export class Note {
     @Column({ type: 'text', nullable: true })
     content!: string;
 
-    @Column({ type: 'bit', default: false, name: 'is_pinned' })
+    @Column({ type: 'boolean', default: false, name: 'is_pinned' })
     isPinned!: boolean;
 
     @ManyToOne(() => Category, category => category.notes, { nullable: true })

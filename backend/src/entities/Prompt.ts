@@ -28,10 +28,10 @@ export class Prompt {
     @Column({ type: 'int', default: 0, name: 'usage_count' })
     usageCount!: number;
 
-    @Column({ type: 'datetime', nullable: true, name: 'last_used_at' })
+    @Column({ type: 'timestamp', nullable: true, name: 'last_used_at' })
     lastUsedAt?: Date;
 
-    @Column({ type: 'bit', default: false, name: 'is_favorite' })
+    @Column({ type: 'boolean', default: false, name: 'is_favorite' })
     isFavorite!: boolean;
 
     @ManyToOne(() => Category, { nullable: true })

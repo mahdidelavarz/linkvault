@@ -22,7 +22,7 @@ export class Infrastructure {
     @Column({ type: 'simple-json', nullable: true })
     metadata?: any;
 
-    @Column({ type: 'bit', default: false, name: 'is_favorite' })
+    @Column({ type: 'boolean', default: false, name: 'is_favorite' })
     isFavorite!: boolean;
 
     @ManyToOne(() => Category, { nullable: true })
