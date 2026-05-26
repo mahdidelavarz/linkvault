@@ -27,4 +27,3 @@ docker-compose -f docker-compose.dev.yml exec postgres psql -U node_user -d link
 
 rebuilds 
 link - note - infra - api-client - snippets
-remain = dashboard - prompts - category - tag

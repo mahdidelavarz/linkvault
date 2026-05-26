@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Category, CreateCategoryDto } from '@/types/category';
-import { useCreateCategory, useUpdateCategory, useCategories } from '@/hooks/useCategories';
-import Input from '@/components/ui/Input';
-import Button from '@/components/ui/Button';
-import Alert from '@/components/ui/Alert';
+import { useState, useEffect } from "react";
+import { type Category } from "@/types/category";
+import { useCreateCategory, useUpdateCategory, useCategories } from "@/hooks/useCategories";
+import Button from "@/components/ui/Button";
+import Alert from "@/components/ui/Alert";
+import { LucideFolder } from "@/Icons/Icons";
 
 interface CategoryFormProps {
   category?: Category | null;
@@ -13,11 +13,17 @@ interface CategoryFormProps {
   onClose: () => void;
 }
 
-export default function CategoryForm({ category, parentId, onClose }: CategoryFormProps) {
+export default function CategoryForm({
+  category,
+  parentId,
+  onClose,
+}: CategoryFormProps) {
   const isEditing = !!category;
-  const [name, setName] = useState('');
-  const [selectedParentId, setSelectedParentId] = useState<number | undefined>(parentId);
-  
+  const [name, setName] = useState("");
+  const [selectedParentId, setSelectedParentId] = useState<number | undefined>(
+    parentId
+  );
+
   const { data: categories } = useCategories();
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
@@ -33,25 +39,25 @@ export default function CategoryForm({ category, parentId, onClose }: CategoryFo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name.trim()) return;
 
     try {
       if (isEditing && category) {
-        await updateCategory.mutateAsync({ 
-          id: category.id, 
-          name, 
-          parentId: selectedParentId 
+        await updateCategory.mutateAsync({
+          id: category.id,
+          name,
+          parentId: selectedParentId,
         });
       } else {
-        await createCategory.mutateAsync({ 
-          name, 
-          parentId: selectedParentId 
+        await createCategory.mutateAsync({
+          name,
+          parentId: selectedParentId,
         });
       }
       onClose();
     } catch (error) {
-      console.error('Error saving category:', error);
+      console.error("Error saving category:", error);
     }
   };
 
@@ -59,7 +65,7 @@ export default function CategoryForm({ category, parentId, onClose }: CategoryFo
   const error = createCategory.error || updateCategory.error;
 
   // Filter out the current category and its children to prevent circular reference
-  const availableParents = categories?.filter(cat => {
+  const availableParents = categories?.filter((cat) => {
     if (!category) return true;
     return cat.id !== category.id && !isDescendant(cat, category.id);
   });
@@ -67,59 +73,151 @@ export default function CategoryForm({ category, parentId, onClose }: CategoryFo
   function isDescendant(cat: Category, targetId: number): boolean {
     if (cat.id === targetId) return true;
     if (cat.children) {
-      return cat.children.some(child => isDescendant(child, targetId));
+      return cat.children.some((child) => isDescendant(child, targetId));
     }
     return false;
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <h3 className="text-xl font-semibold text-gray-900 mb-4">
-        {isEditing ? 'Edit Category' : 'Create New Category'}
-      </h3>
+    <>
+      <style>{CSS}</style>
+      <form onSubmit={handleSubmit} className="category-form">
+        {error && (
+          <Alert
+            type="error"
+            message={
+              error instanceof Error ? error.message : "An error occurred"
+            }
+          />
+        )}
 
-      {error && (
-        <Alert 
-          type="error" 
-          message={error instanceof Error ? error.message : 'An error occurred'} 
-        />
-      )}
+        <div className="form-field">
+          <label className="form-label" htmlFor="cat-name">
+            Category Name <span className="required">*</span>
+          </label>
+          <input
+            id="cat-name"
+            className="form-input"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            placeholder="Enter category name"
+            autoFocus
+          />
+        </div>
 
-      <Input
-        label="Category Name *"
-        type="text"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        required
-        placeholder="Enter category name"
-      />
+        <div className="form-field">
+          <label className="form-label" htmlFor="cat-parent">
+            Parent Category
+          </label>
+          <div className="form-select-wrap">
+            <LucideFolder className="form-select-icon" />
+            <select
+              id="cat-parent"
+              className="form-select"
+              value={selectedParentId || ""}
+              onChange={(e) =>
+                setSelectedParentId(
+                  e.target.value ? parseInt(e.target.value) : undefined
+                )
+              }
+            >
+              <option value="">None (Root Category)</option>
+              {availableParents?.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Parent Category
-        </label>
-        <select
-          value={selectedParentId || ''}
-          onChange={(e) => setSelectedParentId(e.target.value ? parseInt(e.target.value) : undefined)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="">None (Root Category)</option>
-          {availableParents?.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" variant="secondary" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="submit" isLoading={isLoading}>
-          {isEditing ? 'Update Category' : 'Create Category'}
-        </Button>
-      </div>
-    </form>
+        <div className="form-actions">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" isLoading={isLoading}>
+            {isEditing ? "Update Category" : "Create Category"}
+          </Button>
+        </div>
+      </form>
+    </>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const CSS = `
+.category-form {
+  display:        flex;
+  flex-direction: column;
+  gap:            20px;
+}
+
+.form-field {
+  display:        flex;
+  flex-direction: column;
+  gap:            6px;
+}
+.form-label {
+  font-size:   var(--text-sm);
+  font-weight: 600;
+  color:       var(--text-secondary);
+}
+.required { color: var(--danger); }
+
+.form-input {
+  height:          40px;
+  padding:         0 12px;
+  background:      var(--bg-subtle);
+  border:          1px solid var(--border-default);
+  border-radius:   var(--radius-md);
+  color:           var(--text-primary);
+  font-family:     var(--font-sans);
+  font-size:       var(--text-sm);
+  outline:         none;
+  transition:      border-color var(--transition-fast), background var(--transition-fast);
+}
+.form-input::placeholder { color: var(--text-tertiary); }
+.form-input:focus { border-color: var(--border-focus); background: var(--bg-elevated); }
+
+.form-select-wrap {
+  position: relative;
+  display:  flex;
+  align-items: center;
+}
+.form-select-icon {
+  position:  absolute;
+  left:      10px;
+  width:     14px;
+  height:    14px;
+  color:     var(--text-tertiary);
+  pointer-events: none;
+}
+.form-select {
+  width:            100%;
+  height:           40px;
+  padding:          0 12px 0 32px;
+  background:       var(--bg-subtle);
+  border:           1px solid var(--border-default);
+  border-radius:    var(--radius-md);
+  color:            var(--text-primary);
+  font-family:      var(--font-sans);
+  font-size:        var(--text-sm);
+  outline:          none;
+  cursor:           pointer;
+  appearance:       none;
+  -webkit-appearance: none;
+  transition:       border-color var(--transition-fast);
+}
+.form-select:focus { border-color: var(--border-focus); }
+
+.form-actions {
+  display:         flex;
+  justify-content: flex-end;
+  gap:             12px;
+  padding-top:     8px;
+  border-top:      1px solid var(--border-default);
+}
+`;

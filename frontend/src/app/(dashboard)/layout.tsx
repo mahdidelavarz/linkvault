@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
+import { SvgSpinnersRingResize } from "@/Icons/Icons";
 
 export default function DashboardLayout({
   children,
@@ -22,8 +23,32 @@ export default function DashboardLayout({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
+      <div className="layout-loading">
+        <SvgSpinnersRingResize className="layout-loading-icon" width={32} />
+        <p className="layout-loading-text">Loading...</p>
+
+        <style jsx>{`
+          .layout-loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            min-height: 100vh;
+            background: var(--bg-base);
+          }
+          .layout-loading-icon {
+            color: var(--accent);
+            animation: spin 0.8s linear infinite;
+          }
+          .layout-loading-text {
+            font-size: var(--text-sm);
+            color: var(--text-tertiary);
+          }
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     );
   }
@@ -33,12 +58,37 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-800">
+    <div className="dashboard-layout">
       <Header />
-      <div className="flex">
+      <div className="dashboard-layout-body">
         <Sidebar />
-        <main className="flex-1 p-6">{children}</main>
+        <main className="main-content">{children}</main>
       </div>
+
+      <style jsx>{`
+        .dashboard-layout {
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+          background: var(--bg-base);
+        }
+        .dashboard-layout-body {
+          display: flex;
+          flex: 1;
+        }
+        .main-content {
+          flex: 1;
+          min-width: 0;
+          padding: 24px;
+          background: var(--bg-base);
+        }
+        @media (max-width: 639px) {
+          .main-content { padding: 16px; }
+        }
+        @media (max-width: 479px) {
+          .main-content { padding: 12px; }
+        }
+      `}</style>
     </div>
   );
 }
