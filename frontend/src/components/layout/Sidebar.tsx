@@ -73,7 +73,8 @@ export default function Sidebar() {
     };
   }, [mobileOpen]);
 
-  const sidebarContent = (
+  // Desktop sidebar content (respects collapsed state)
+  const desktopContent = (
     <div
       className={["sidebar-inner", collapsed ? "sidebar-inner--collapsed" : ""]
         .filter(Boolean)
@@ -86,26 +87,17 @@ export default function Sidebar() {
         </div>
         {!collapsed && <span className="sidebar-logo-text">LinkVault</span>}
 
-        {/* Collapse btn — desktop only */}
+        {/* Collapse toggle btn — desktop only */}
         <button
           className="sidebar-collapse-btn"
-          onClick={() => setCollapsed(!collapsed)}
-          aria-label={collapsed ? "Expand" : "Collapse"}
+          onClick={() => setCollapsed(!collapsed)} // FIX: Toggle collapsed state
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? (
             <LucideChevronRight width={14} />
           ) : (
             <LucideChevronLeft width={14} />
           )}
-        </button>
-
-        {/* Close btn — mobile only */}
-        <button
-          className="sidebar-close-btn"
-          onClick={() => setMobileOpen(false)}
-          aria-label="Close menu"
-        >
-          <LucideX width={16} />
         </button>
       </div>
 
@@ -156,7 +148,7 @@ export default function Sidebar() {
       <style>{CSS}</style>
 
       {/* ── Desktop sidebar ── */}
-      <aside className="sidebar-desktop">{sidebarContent}</aside>
+      <aside className="sidebar-desktop">{desktopContent}</aside>
 
       {/* ── Mobile backdrop ── */}
       {mobileOpen && (
@@ -295,7 +287,7 @@ const CSS = `
   display:        flex;
   flex-direction: column;
   width:          var(--sidebar-width);
-  height:         100dvh;
+  height:         94.7dvh;
   background:     var(--bg-surface);
   border-right:   1px solid var(--border-default);
   transition:     width var(--transition-slow);

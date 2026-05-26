@@ -125,7 +125,7 @@ export default function PromptsPage() {
         </div>
       )}
 
-      <Modal isOpen={isFormOpen} onClose={handleClose} size="large">
+      <Modal isOpen={isFormOpen} onClose={handleClose} size="lg">
         <PromptForm prompt={editingPrompt} onClose={handleClose} />
       </Modal>
     </div>
