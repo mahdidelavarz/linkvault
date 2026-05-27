@@ -12,6 +12,8 @@ import {
   LucideSunDim,
   LucideUser,
 } from "@/Icons/Icons";
+import ThemeSwitcher from "../ui/ThemeSwitcher";
+// import ThemeSwitcher from "../ui/ThemeSwitcher";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -71,6 +73,8 @@ export default function Header() {
 
         {/* Right — actions */}
         <div className="header-right">
+
+          <ThemeSwitcher />
           {/* Theme toggle */}
           <button
             className="header-icon-btn"
