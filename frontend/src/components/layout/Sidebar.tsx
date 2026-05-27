@@ -81,8 +81,8 @@ export default function Sidebar() {
         .join(" ")}
     >
       {/* Logo */}
-      <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">
+      <div className="sidebar-logo ">
+        <div className="sidebar-logo-icon" onClick={() => setCollapsed(!collapsed)}>
           <LucideVault width={18} />
         </div>
         {!collapsed && <span className="sidebar-logo-text">LinkVault</span>}
@@ -287,7 +287,7 @@ const CSS = `
   display:        flex;
   flex-direction: column;
   width:          var(--sidebar-width);
-  height:         94.7dvh;
+  height:         94.6dvh;
   background:     var(--bg-surface);
   border-right:   1px solid var(--border-default);
   transition:     width var(--transition-slow);
@@ -345,13 +345,13 @@ const CSS = `
   color:           var(--text-tertiary);
   cursor:          pointer;
   flex-shrink:     0;
-  margin-left:     auto;
+  margin-left:     10px;
   transition:      background var(--transition-fast), color var(--transition-fast);
 }
 .sidebar-collapse-btn:hover { background: var(--bg-overlay); color: var(--text-primary); }
 
 .sidebar-close-btn {
-  display:         none;
+  display:         none;f
   align-items:     center;
   justify-content: center;
   width:           32px;
@@ -395,6 +395,7 @@ const CSS = `
 .nav-item {
   display:         flex;
   align-items:     center;
+  justify-content: center;
   gap:             10px;
   padding:         9px 8px;
   border-radius:   var(--radius-md);
@@ -411,8 +412,8 @@ const CSS = `
 .nav-item:hover          { background: var(--bg-overlay); color: var(--text-primary); }
 .nav-item--active        { background: var(--accent-muted); color: var(--cyan-300); }
 .nav-item--active:hover  { background: var(--accent-muted); color: var(--cyan-300); }
-.nav-item-icon           { width: 16px; height: 16px; flex-shrink: 0; }
-.nav-item-label          { flex: 1; }
+.nav-item-icon           { width: 17px; height: 17px; }
+.nav-item-label          { flex: 1; height:13px}
 .nav-item-dot            { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
 
 /* Footer */

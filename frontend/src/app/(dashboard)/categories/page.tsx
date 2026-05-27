@@ -7,10 +7,7 @@ import CategoryTree from "@/components/categories/CategoryTree";
 import CategoryForm from "@/components/categories/CategoryForm";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
-import {
-  LucidePlus,
-  LucideSearchX,
-} from "@/Icons/Icons";
+import { LucidePlus, LucideSearchX } from "@/Icons/Icons";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -85,9 +82,7 @@ export default function CategoriesPage() {
           <div className="page-header-left">
             <h1 className="page-title">Categories</h1>
             <p className="page-subtitle">
-              {isLoading
-                ? "…"
-                : `${categories?.length ?? 0} categories`}
+              {isLoading ? "…" : `${categories?.length ?? 0} categories`}
             </p>
           </div>
           <Button leftIcon={LucidePlus} onClick={openCreateRoot}>
@@ -185,14 +180,14 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const CSS = `
-.categories-page { display: flex; flex-direction: column; gap: 20px; }
+.categories-page { display: flex; flex-direction: column;gap:10px; }
 
 /* Header */
 .page-header {
   display:         flex;
   align-items:     center;
   justify-content: space-between;
-  gap:             16px;
+  padding:25px 10px 10px 10px;
   flex-wrap:       wrap;
 }
 .page-title    { font-size: var(--text-2xl); font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }

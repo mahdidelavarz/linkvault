@@ -266,8 +266,8 @@ function NoteCardSkeleton() {
 }
 
 const CSS = `
-.notes-page   { display: flex; flex-direction: column; gap: 16px; height: calc(100dvh - 96px); }
-.notes-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-shrink: 0; }
+.notes-page   { display: flex; flex-direction: column; height: calc(100dvh - 58px); gap:10px; }
+.notes-header { display: flex; align-items: center; justify-content: space-between;  padding:15px 10px 0px 10px; flex-shrink: 0; }
 .page-title   { font-size: var(--text-2xl); font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
 .page-subtitle{ font-size: var(--text-sm); color: var(--text-tertiary); margin-top: 2px; }
 

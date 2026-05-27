@@ -245,14 +245,14 @@ function EmptyState({
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const CSS = `
-.links-page { display: flex; flex-direction: column; gap: 20px; }
+.links-page { display: flex; flex-direction: column; gap: 10px; }
 
 /* Header */
 .page-header {
   display:         flex;
   align-items:     center;
   justify-content: space-between;
-  gap:             16px;
+  padding:15px 10px 0px 10px;
   flex-wrap:       wrap;
 }
 .page-title    { font-size: var(--text-2xl); font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }

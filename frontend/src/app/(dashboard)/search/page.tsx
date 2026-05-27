@@ -226,7 +226,7 @@ const CSS = `
 .search-page {
   display:        flex;
   flex-direction: column;
-  gap:            20px;
+  gap:            10px;
 }
 
 /* Header */
@@ -234,7 +234,7 @@ const CSS = `
   display:         flex;
   align-items:     center;
   justify-content: space-between;
-  gap:             16px;
+  padding :        15px 10px 0px 10px;
   flex-wrap:       wrap;
 }
 .page-title {

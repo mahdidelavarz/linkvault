@@ -34,7 +34,7 @@ export default function DashboardLayout({
             align-items: center;
             justify-content: center;
             gap: 16px;
-            min-height: 100vh;
+            height: calc(100dvh - 60px);
             background: var(--bg-base);
           }
           .layout-loading-icon {
@@ -46,7 +46,9 @@ export default function DashboardLayout({
             color: var(--text-tertiary);
           }
           @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+              transform: rotate(360deg);
+            }
           }
         `}</style>
       </div>
@@ -69,7 +71,7 @@ export default function DashboardLayout({
         .dashboard-layout {
           display: flex;
           flex-direction: column;
-          min-height: 100vh;
+          height: calc(100dvh - 60px);
           background: var(--bg-base);
         }
         .dashboard-layout-body {
@@ -79,14 +81,21 @@ export default function DashboardLayout({
         .main-content {
           flex: 1;
           min-width: 0;
-          padding: 24px;
+          padding-right: 24px;
+          padding-left: 24px;
           background: var(--bg-base);
         }
         @media (max-width: 639px) {
-          .main-content { padding: 16px; }
+          .main-content {
+            padding-right: 16px;
+            padding-left: 16px;
+          }
         }
         @media (max-width: 479px) {
-          .main-content { padding: 12px; }
+          .main-content {
+            padding-right: 12px;
+            padding-left: 12px;
+          }
         }
       `}</style>
     </div>

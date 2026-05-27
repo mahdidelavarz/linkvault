@@ -401,12 +401,12 @@ function EmptyState({
 }
 
 const CSS = `
-.ip-page   { display: flex; flex-direction: column; gap: 16px; }
+.ip-page   { display: flex; flex-direction: column; gap:10px; }
 .page-title    { font-size: var(--text-2xl); font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
-.page-subtitle { font-size: var(--text-sm); color: var(--text-tertiary); margin-top: 2px; }
+.page-subtitle { font-size: var(--text-sm); color: var(--text-tertiary); margin-top: 2px;  }
 
 /* Header */
-.ip-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.ip-header { display: flex; align-items: center; justify-content: space-between; padding:15px 10px 0px 10px; flex-wrap: wrap; }
 
 /* Type tabs */
 .ip-type-tabs {

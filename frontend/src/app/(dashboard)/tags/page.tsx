@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useTags, useCreateTag, useUpdateTag, useDeleteTag } from "@/hooks/useTag";
+import {
+  useTags,
+  useCreateTag,
+  useUpdateTag,
+  useDeleteTag,
+} from "@/hooks/useTag";
 import { type Tag } from "@/types/tag";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
@@ -56,7 +61,7 @@ export default function TagsPage() {
   const handleDelete = async (id: number) => {
     if (
       window.confirm(
-        "Are you sure you want to delete this tag? It will be removed from all items."
+        "Are you sure you want to delete this tag? It will be removed from all items.",
       )
     ) {
       deleteTag.mutate(id);
@@ -250,14 +255,14 @@ function EmptyState() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const CSS = `
-.tags-page { display: flex; flex-direction: column; gap: 20px; }
+.tags-page { display: flex; flex-direction: column; gap:10px }
 
 /* Header */
 .page-header {
   display:         flex;
   align-items:     center;
   justify-content: space-between;
-  gap:             16px;
+  padding:25px 10px 10px 10px;
   flex-wrap:       wrap;
 }
 .page-title    { font-size: var(--text-2xl); font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }

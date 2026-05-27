@@ -137,14 +137,15 @@ export default function QuickActions() {
                   e.currentTarget.style.color = colors.text;
                 }}
               >
-                <Icon width={18} />
-                {action.label}
+                <Icon width={20} height={20} />
+                <span className="h-4">{action.label}</span>
               </button>
             );
           })}
         </div>
         <div className="quick-actions-footer">
           <Button
+            size="lg"
             variant="secondary"
             fullWidth
             leftIcon={LucideSearch}
