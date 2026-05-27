@@ -173,6 +173,6 @@ const CSS = `
 }
 
 .modal-body {
-  padding: 20px;
+  padding: 5px;
 }
 `

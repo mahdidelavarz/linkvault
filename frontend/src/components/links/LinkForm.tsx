@@ -127,355 +127,381 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
   return (
     <>
       <style>{CSS}</style>
-      <form className="lform" onSubmit={handleSubmit(onSubmit)} noValidate>
-        {error && (
-          <Alert
-            type="error"
-            message={
-              error instanceof Error ? error.message : "Something went wrong"
-            }
-          />
-        )}
+      <div className="lform-wrapper">
+        <form className="lform" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="lform-content">
+            {error && (
+              <Alert
+                type="error"
+                message={
+                  error instanceof Error ? error.message : "Something went wrong"
+                }
+              />
+            )}
 
-        {/* ── Section: Basic info ── */}
-        <div className="lform-section">
-          <p className="lform-section-title">
-            <LucideLink2 width={13} /> Basic info
-          </p>
-          <div className="lform-fields">
-            <Input
-              label="URL"
-              type="url"
-              placeholder="https://example.com"
-              leftIcon={LucideGlobe}
-              error={errors.url?.message}
-              autoFocus
-              {...register("url")}
-            />
-            <Input
-              label="Title"
-              type="text"
-              placeholder="My awesome link"
-              leftIcon={LucideType}
-              error={errors.title?.message}
-              {...register("title")}
-            />
-            <Textarea
-              label="Description"
-              placeholder="Optional description…"
-              optional
-              error={errors.description?.message}
-              {...register("description")}
-            />
-          </div>
-        </div>
-
-        {/* ── Section: Organize ── */}
-        <div className="lform-section">
-          <p className="lform-section-title">
-            <LucideFolder width={13} /> Organize
-          </p>
-          <div className="lform-fields">
-            {/* Category select */}
-            <div className="lform-field">
-              <label className="lform-label">
-                Category <span className="lform-optional">optional</span>
-              </label>
-              <div className="lform-select-wrap">
-                <LucideFolder className="lform-select-icon" />
-                <Controller
-                  name="categoryId"
-                  control={control}
-                  render={({ field }) => (
-                    <select
-                      className="lform-select"
-                      value={field.value ?? ""}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value ? parseInt(e.target.value) : undefined,
-                        )
-                      }
-                    >
-                      <option value="">No category</option>
-                      {categories?.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
+            {/* ── Section: Basic info ── */}
+            <div className="lform-section">
+              <p className="lform-section-title">
+                <LucideLink2 width={13} /> Basic info
+              </p>
+              <div className="lform-fields">
+                <Input
+                  label="URL"
+                  type="url"
+                  placeholder="https://example.com"
+                  leftIcon={LucideGlobe}
+                  error={errors.url?.message}
+                  autoFocus
+                  {...register("url")}
                 />
-                <LucideChevronDown className="lform-select-chevron" />
+                <Input
+                  label="Title"
+                  type="text"
+                  placeholder="My awesome link"
+                  leftIcon={LucideType}
+                  error={errors.title?.message}
+                  {...register("title")}
+                />
+                <Textarea
+                  label="Description"
+                  placeholder="Optional description…"
+                  optional
+                  error={errors.description?.message}
+                  {...register("description")}
+                />
               </div>
             </div>
 
-            {/* Tags */}
-            <div className="lform-field">
-              <label className="lform-label">
-                Tags <span className="lform-optional">optional</span>
-              </label>
-              <Controller
-                name="tagIds"
-                control={control}
-                render={({ field }) => (
-                  <TagSelector
-                    selectedTagIds={field.value}
-                    onChange={field.onChange}
-                  />
-                )}
-              />
-            </div>
-
-            {/* Favorite checkbox */}
-            <Controller
-              name="isFavorite"
-              control={control}
-              render={({ field }) => (
-                <label className="lform-checkbox">
-                  <div
-                    className={[
-                      "lform-check-box",
-                      field.value ? "lform-check-box--checked" : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                  >
-                    {field.value && <LucideCheck width={11} />}
+            {/* ── Section: Organize ── */}
+            <div className="lform-section">
+              <p className="lform-section-title">
+                <LucideFolder width={13} /> Organize
+              </p>
+              <div className="lform-fields">
+                {/* Category select */}
+                <div className="lform-field">
+                  <label className="lform-label">
+                    Category <span className="lform-optional">optional</span>
+                  </label>
+                  <div className="lform-select-wrap">
+                    <LucideFolder className="lform-select-icon" />
+                    <Controller
+                      name="categoryId"
+                      control={control}
+                      render={({ field }) => (
+                        <select
+                          className="lform-select"
+                          value={field.value ?? ""}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value ? parseInt(e.target.value) : undefined,
+                            )
+                          }
+                        >
+                          <option value="">No category</option>
+                          {categories?.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    />
+                    <LucideChevronDown className="lform-select-chevron" />
                   </div>
-                  <input
-                    type="checkbox"
-                    checked={field.value}
-                    onChange={(e) => field.onChange(e.target.checked)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      pointerEvents: "none",
-                    }}
-                  />
-                  <span className="lform-check-label">
-                    <LucideStar width={13} style={{ color: "#fbbf24" }} />
-                    Mark as favorite
-                  </span>
-                </label>
-              )}
-            />
-          </div>
-        </div>
+                </div>
 
-        {/* ── Section: Credentials ── */}
-        <div className="lform-section">
-          <p className="lform-section-title">
-            <LucideLock width={13} /> Credentials{" "}
-            <span className="lform-section-hint">optional</span>
-          </p>
-          <div className="lform-fields">
-            <div className="lform-grid-2">
-              <Input
-                label="Username"
-                type="text"
-                placeholder="username"
-                leftIcon={LucideUser}
-                optional
-                error={errors.username?.message}
-                {...register("username")}
-              />
-              <Input
-                label="Password"
-                type={showPassword ? "text" : "password"}
-                placeholder={isEditing ? "Leave blank to keep" : "password"}
-                leftIcon={LucideLock}
-                optional
-                error={errors.password?.message}
-                rightNode={
-                  <button
-                    type="button"
-                    className="lform-eye"
-                    onClick={() => setShowPassword((p) => !p)}
-                    tabIndex={-1}
-                  >
-                    {showPassword ? (
-                      <LucideEyeOff width={13} />
-                    ) : (
-                      <LucideEye width={13} />
+                {/* Tags */}
+                <div className="lform-field">
+                  <label className="lform-label">
+                    Tags <span className="lform-optional">optional</span>
+                  </label>
+                  <Controller
+                    name="tagIds"
+                    control={control}
+                    render={({ field }) => (
+                      <TagSelector
+                        selectedTagIds={field.value}
+                        onChange={field.onChange}
+                      />
                     )}
-                  </button>
-                }
-                {...register("password")}
-              />
+                  />
+                </div>
+
+                {/* Favorite checkbox */}
+                <Controller
+                  name="isFavorite"
+                  control={control}
+                  render={({ field }) => (
+                    <label className="lform-checkbox">
+                      <div
+                        className={[
+                          "lform-check-box",
+                          field.value ? "lform-check-box--checked" : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                      >
+                        {field.value && <LucideCheck width={11} />}
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={(e) => field.onChange(e.target.checked)}
+                        style={{
+                          position: "absolute",
+                          opacity: 0,
+                          pointerEvents: "none",
+                        }}
+                      />
+                      <span className="lform-check-label">
+                        <LucideStar width={13} style={{ color: "#fbbf24" }} />
+                       <span className="h-4"> Mark as favorite</span>
+                      </span>
+                    </label>
+                  )}
+                />
+              </div>
             </div>
-            <div className="lform-grid-2">
-              <Input
-                label="Email"
-                type="email"
-                placeholder="email@example.com"
-                leftIcon={LucideMail}
-                optional
-                error={errors.email?.message}
-                {...register("email")}
-              />
-              <Input
-                label="Phone"
-                type="tel"
-                placeholder="+1 234 567 890"
-                leftIcon={LucidePhone}
-                optional
-                error={errors.phone?.message}
-                {...register("phone")}
-              />
+
+            {/* ── Section: Credentials ── */}
+            <div className="lform-section">
+              <p className="lform-section-title">
+                <LucideLock width={13} /> Credentials{" "}
+                <span className="lform-section-hint">optional</span>
+              </p>
+              <div className="lform-fields">
+                <div className="lform-grid-2">
+                  <Input
+                    label="Username"
+                    type="text"
+                    placeholder="username"
+                    leftIcon={LucideUser}
+                    optional
+                    error={errors.username?.message}
+                    {...register("username")}
+                  />
+                  <Input
+                    label="Password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder={isEditing ? "Leave blank to keep" : "password"}
+                    leftIcon={LucideLock}
+                    optional
+                    error={errors.password?.message}
+                    rightNode={
+                      <button
+                        type="button"
+                        className="lform-eye"
+                        onClick={() => setShowPassword((p) => !p)}
+                        tabIndex={-1}
+                      >
+                        {showPassword ? (
+                          <LucideEyeOff width={13} />
+                        ) : (
+                          <LucideEye width={13} />
+                        )}
+                      </button>
+                    }
+                    {...register("password")}
+                  />
+                </div>
+                <div className="lform-grid-2">
+                  <Input
+                    label="Email"
+                    type="email"
+                    placeholder="email@example.com"
+                    leftIcon={LucideMail}
+                    optional
+                    error={errors.email?.message}
+                    {...register("email")}
+                  />
+                  <Input
+                    label="Phone"
+                    type="tel"
+                    placeholder="+1 234 567 890"
+                    leftIcon={LucidePhone}
+                    optional
+                    error={errors.phone?.message}
+                    {...register("phone")}
+                  />
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* ── Footer ── */}
-        <div className="lform-footer">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" isLoading={isLoading}>
-            {isEditing ? "Save changes" : "Add link"}
-          </Button>
-        </div>
-      </form>
+          {/* ── Footer ── */}
+          <div className="lform-footer">
+            <Button type="button" variant="ghost" onClick={onClose} className="shadow-sm shadow-slate-900">
+              Cancel
+            </Button>
+            <Button type="submit" isLoading={isLoading} fullWidth >
+              {isEditing ? "Save changes" : "Add link"}
+            </Button>
+          </div>
+        </form>
+      </div>
     </>
   );
 }
 
 const CSS = `
-.lform { display: flex; flex-direction: column; gap: 0; }
+.lform-wrapper {
+  position: relative;
+  height: 80dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.lform {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.lform-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 16px;
+}
 
 .lform-section {
-  padding:       16px 0;
+  padding: 16px 0;
   border-bottom: 1px solid var(--border-subtle);
 }
 .lform-section:last-of-type { border-bottom: none; }
 
 .lform-section-title {
-  display:       flex;
-  align-items:   center;
-  gap:           6px;
-  font-size:     var(--text-xs);
-  font-weight:   600;
-  color:         var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin-bottom: 14px;
 }
 .lform-section-hint {
-  font-size:      var(--text-xs);
-  font-weight:    400;
-  color:          var(--text-tertiary);
+  font-size: var(--text-xs);
+  font-weight: 400;
+  color: var(--text-tertiary);
   text-transform: none;
   letter-spacing: 0;
-  margin-left:    4px;
+  margin-left: 4px;
 }
 
 .lform-fields { display: flex; flex-direction: column; gap: 12px; }
 
 .lform-grid-2 {
-  display:               grid;
+  display: grid;
   grid-template-columns: 1fr 1fr;
-  gap:                   12px;
+  gap: 12px;
 }
 @media (max-width: 479px) {
   .lform-grid-2 { grid-template-columns: 1fr; }
 }
 
 /* Select */
-.lform-field   { display: flex; flex-direction: column; gap: 6px; }
-.lform-label   { font-size: var(--text-sm); font-weight: 500; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
+.lform-field { display: flex; flex-direction: column; gap: 6px; }
+.lform-label { font-size: var(--text-sm); font-weight: 500; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
 .lform-optional { font-size: var(--text-xs); font-weight: 400; color: var(--text-tertiary); }
 
 .lform-select-wrap { position: relative; display: flex; align-items: center; }
 .lform-select-icon {
-  position:       absolute;
-  left:           10px;
-  width:          14px;
-  height:         14px;
-  color:          var(--text-tertiary);
+  position: absolute;
+  left: 10px;
+  width: 14px;
+  height: 14px;
+  color: var(--text-tertiary);
   pointer-events: none;
 }
 .lform-select-chevron {
-  position:       absolute;
-  right:          10px;
-  width:          12px;
-  height:         12px;
-  color:          var(--text-tertiary);
+  position: absolute;
+  right: 10px;
+  width: 12px;
+  height: 12px;
+  color: var(--text-tertiary);
   pointer-events: none;
 }
 .lform-select {
-  width:            100%;
-  height:           36px;
-  padding:          0 28px 0 32px;
-  background:       var(--bg-subtle);
-  border:           1px solid var(--border-default);
-  border-radius:    var(--radius-md);
-  color:            var(--text-primary);
-  font-family:      var(--font-sans);
-  font-size:        var(--text-sm);
-  outline:          none;
-  cursor:           pointer;
-  appearance:       none;
+  width: 100%;
+  height: 36px;
+  padding: 0 28px 0 32px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
   -webkit-appearance: none;
-  transition:       border-color var(--transition-fast), background var(--transition-fast);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
 }
 .lform-select:focus { border-color: var(--border-focus); background: var(--bg-elevated); box-shadow: 0 0 0 3px var(--accent-muted); }
 .lform-select option { background: var(--bg-elevated); }
 
 /* Checkbox */
 .lform-checkbox {
-  display:     flex;
+  display: flex;
   align-items: center;
-  gap:         10px;
-  cursor:      pointer;
-  width:       fit-content;
-  position:    relative;
+  gap: 10px;
+  cursor: pointer;
+  width: fit-content;
+  position: relative;
 }
 .lform-check-box {
-  display:         flex;
-  align-items:     center;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  width:           18px;
-  height:          18px;
-  background:      var(--bg-subtle);
-  border:          1px solid var(--border-default);
-  border-radius:   var(--radius-sm);
-  flex-shrink:     0;
-  transition:      background var(--transition-fast), border-color var(--transition-fast);
+  width: 18px;
+  height: 18px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
 }
 .lform-check-box--checked { background: var(--accent); border-color: var(--accent); color: white; }
 .lform-check-label {
-  display:     flex;
+  display: flex;
   align-items: center;
-  gap:         6px;
-  font-size:   var(--text-sm);
-  color:       var(--text-secondary);
+  gap: 6px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 
 /* Eye button */
 .lform-eye {
-  display:      flex;
-  align-items:  center;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  width:        26px;
-  height:       26px;
-  background:   transparent;
-  border:       none;
-  color:        var(--text-tertiary);
-  cursor:       pointer;
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  cursor: pointer;
   border-radius: var(--radius-sm);
-  transition:   color var(--transition-fast);
+  transition: color var(--transition-fast);
 }
 .lform-eye:hover { color: var(--text-primary); }
 
 /* Footer */
 .lform-footer {
-  display:         flex;
+  display: flex;
   justify-content: flex-end;
-  gap:             8px;
-  padding-top:     16px;
+  gap: 15px;
+  padding: 10px;
+  background: var(--bg-subtle);
+   border-radius: 20px;
+  border-top: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
-@media (max-width: 479px) {
-  .lform-footer { flex-direction: column-reverse; }
-  .lform-footer > * { width: 100%; }
-}
+
 `;

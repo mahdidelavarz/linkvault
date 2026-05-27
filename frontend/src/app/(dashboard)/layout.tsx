@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/authStore";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import { SvgSpinnersRingResize } from "@/Icons/Icons";
+import BottomTabBar from "@/components/layout/BottomNavBar";
 
 export default function DashboardLayout({
   children,
@@ -65,6 +66,7 @@ export default function DashboardLayout({
       <div className="dashboard-layout-body">
         <Sidebar />
         <main className="main-content">{children}</main>
+        <BottomTabBar />
       </div>
 
       <style jsx>{`
