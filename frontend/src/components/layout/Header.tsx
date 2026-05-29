@@ -182,7 +182,7 @@ const CSS = `
   font-family:   var(--font-sans);
   cursor:        pointer;
   max-width:     360px;
-  width:         100%;
+  width:         140px;
   text-align:    left;
   transition:    border-color var(--transition-fast),
                  background   var(--transition-fast);
