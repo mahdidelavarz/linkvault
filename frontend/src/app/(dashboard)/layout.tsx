@@ -16,49 +16,79 @@ export default function DashboardLayout({
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuthStore();
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push("/login");
-    }
-  }, [isAuthenticated, isLoading, router]);
+  // useEffect(() => {
+  //   if (!isLoading && !isAuthenticated) {
+  //     router.push("/login");
+  //   }
+  // }, [isAuthenticated, isLoading, router]);
 
-  if (isLoading) {
-    return (
-      <div className="layout-loading">
-        <SvgSpinnersRingResize className="layout-loading-icon" width={32} />
-        <p className="layout-loading-text">Loading...</p>
+  // if (isLoading) {
+  //   return (
+  //     <div className="layout-loading">
+  //       <SvgSpinnersRingResize className="layout-loading-icon" width={32} />
+  //       <p className="layout-loading-text">Loading...</p>
 
-        <style jsx>{`
-          .layout-loading {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            height: calc(100dvh - 60px);
-            background: var(--bg-base);
-          }
-          .layout-loading-icon {
-            color: var(--accent);
-            animation: spin 0.8s linear infinite;
-          }
-          .layout-loading-text {
-            font-size: var(--text-sm);
-            color: var(--text-tertiary);
-          }
-          @keyframes spin {
-            to {
-              transform: rotate(360deg);
-            }
-          }
-        `}</style>
+  //       <style jsx>{`
+  //         .layout-loading {
+  //           display: flex;
+  //           flex-direction: column;
+  //           align-items: center;
+  //           justify-content: center;
+  //           gap: 16px;
+  //           height: calc(100dvh - 60px);
+  //           background: var(--bg-base);
+  //         }
+  //         .layout-loading-icon {
+  //           color: var(--accent);
+  //           animation: spin 0.8s linear infinite;
+  //         }
+  //         .layout-loading-text {
+  //           font-size: var(--text-sm);
+  //           color: var(--text-tertiary);
+  //         }
+  //         @keyframes spin {
+  //           to {
+  //             transform: rotate(360deg);
+  //           }
+  //         }
+  //       `}</style>
+  //     </div>
+  //   );
+  // }
+
+  // if (!isAuthenticated) {
+  //   return null;
+  // }
+
+  const showGuestState = !isLoading && !isAuthenticated;
+
+  return (
+    <div className="dashboard-layout">
+      <Header />
+
+      <div className="dashboard-layout-body">
+        <Sidebar />
+
+        <main className="main-content">
+          {isLoading ? (
+            <div className="layout-loading">
+              <SvgSpinnersRingResize
+                className="layout-loading-icon"
+                width={32}
+              />
+              <p className="layout-loading-text">Syncing...</p>
+            </div>
+          ) : showGuestState ? (
+            <div className="offline-state">Offline mode</div>
+          ) : (
+            children
+          )}
+        </main>
+
+        <BottomTabBar />
       </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
+    </div>
+  );
 
   return (
     <div className="dashboard-layout">
