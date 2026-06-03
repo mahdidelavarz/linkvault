@@ -239,27 +239,36 @@ const CSS = `
   border:         1px solid var(--border-default);
   border-radius:  var(--radius-lg);
   transition:     border-color var(--transition-fast), box-shadow var(--transition-fast);
+  /* Prevent any child from blowing the card wider than its grid cell */
+  width:          100%;
+  min-width:      0;
+  overflow:       hidden;
+  box-sizing:     border-box;
 }
 .lcard:hover {
   border-color: var(--border-strong);
   box-shadow:   var(--shadow-md);
 }
+@media (max-width: 479px) {
+  .lcard { padding: 12px; gap: 10px; }
+}
 
 /* Top row */
-.lcard-top    { display: flex; align-items: flex-start; gap: 10px; }
+.lcard-top { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
 .lcard-favicon {
   display:         flex;
   align-items:     center;
   justify-content: center;
   width:           30px;
   height:          30px;
+  min-width:       30px;
   background:      var(--bg-overlay);
   border:          1px solid var(--border-subtle);
   border-radius:   var(--radius-md);
   flex-shrink:     0;
   overflow:        hidden;
 }
-.lcard-info   { flex: 1; min-width: 0; }
+.lcard-info   { flex: 1; min-width: 0; overflow: hidden; }
 .lcard-title  {
   display:       block;
   width:         100%;
@@ -280,15 +289,15 @@ const CSS = `
 }
 .lcard-title:hover { color: var(--text-accent); }
 .lcard-url {
-  display:       block;
-  font-size:     var(--text-xs);
-  color:         var(--text-tertiary);
-  white-space:   nowrap;
-  overflow:      hidden;
-  text-overflow: ellipsis;
-  margin-top:    2px;
+  display:         block;
+  font-size:       var(--text-xs);
+  color:           var(--text-tertiary);
+  white-space:     nowrap;
+  overflow:        hidden;
+  text-overflow:   ellipsis;
+  margin-top:      2px;
   text-decoration: none;
-  transition:    color var(--transition-fast);
+  transition:      color var(--transition-fast);
 }
 .lcard-url:hover { color: var(--text-accent); }
 
@@ -298,6 +307,7 @@ const CSS = `
   justify-content: center;
   width:           28px;
   height:          28px;
+  min-width:       28px;
   background:      transparent;
   border:          none;
   border-radius:   var(--radius-sm);
@@ -319,17 +329,23 @@ const CSS = `
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow:    hidden;
+  word-break:  break-word;
 }
 
 /* Credentials */
 .lcard-creds {
-  display:       flex;
+  display:        flex;
   flex-direction: column;
-  gap:           5px;
-  padding:       10px 12px;
-  background:    var(--bg-elevated);
-  border:        1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
+  gap:            5px;
+  padding:        10px 12px;
+  background:     var(--bg-elevated);
+  border:         1px solid var(--border-subtle);
+  border-radius:  var(--radius-md);
+  overflow:       hidden;
+  min-width:      0;
+}
+@media (max-width: 479px) {
+  .lcard-creds { padding: 8px 10px; }
 }
 .lcard-cred-row {
   display:     flex;
@@ -337,19 +353,27 @@ const CSS = `
   gap:         7px;
   font-size:   var(--text-xs);
   color:       var(--text-secondary);
+  min-width:   0;
 }
-.lcard-cred-row svg { color: var(--text-tertiary); flex-shrink: 0; }
+.lcard-cred-row svg  { color: var(--text-tertiary); flex-shrink: 0; }
+.lcard-cred-row span {
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  white-space:   nowrap;
+  min-width:     0;
+  flex:          1;
+}
 .lcard-password { font-family: var(--font-mono); letter-spacing: 0.05em; }
 .lcard-eye {
-  display:      flex;
-  align-items:  center;
-  background:   transparent;
-  border:       none;
-  color:        var(--text-tertiary);
-  cursor:       pointer;
-  padding:      0;
-  margin-left:  2px;
-  transition:   color var(--transition-fast);
+  display:     flex;
+  align-items: center;
+  background:  transparent;
+  border:      none;
+  color:       var(--text-tertiary);
+  cursor:      pointer;
+  padding:     2px;
+  flex-shrink: 0;
+  transition:  color var(--transition-fast);
 }
 .lcard-eye:hover { color: var(--text-primary); }
 
@@ -365,25 +389,35 @@ const CSS = `
   padding-top:     10px;
   border-top:      1px solid var(--border-subtle);
   margin-top:      auto;
+  min-width:       0;
 }
-.lcard-date    { font-size: var(--text-xs); color: var(--text-tertiary); }
-.lcard-actions { display: flex; align-items: center; gap: 4px; }
+.lcard-date {
+  font-size:     var(--text-xs);
+  color:         var(--text-tertiary);
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  min-width:     0;
+  flex-shrink:   1;
+}
+.lcard-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
 
 .lcard-action-btn {
   display:         flex;
   align-items:     center;
   justify-content: center;
-  width:           30px;
-  height:          30px;
+  width:           36px;
+  height:          36px;
   background:      transparent;
   border:          1px solid transparent;
   border-radius:   var(--radius-sm);
   color:           var(--text-tertiary);
   cursor:          pointer;
   transition:      background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
-  /* Good tap target on mobile */
-  min-width:       44px;
-  min-height:      44px;
+}
+/* Larger tap target on touch devices without expanding the visible size */
+@media (hover: none) {
+  .lcard-action-btn { width: 40px; height: 40px; }
 }
 .lcard-action-btn:hover              { background: var(--bg-overlay); border-color: var(--border-default); color: var(--text-primary); }
 .lcard-action-btn--danger:hover      { background: var(--danger-muted); border-color: rgba(239,68,68,0.2); color: var(--danger); }
