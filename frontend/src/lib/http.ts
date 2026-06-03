@@ -6,11 +6,24 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://192.168.1.100:5000/ap
 
 const api = axios.create({
   baseURL: API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
   timeout: 15_000,
 });
+
+// ─── Refresh state (prevent concurrent refresh races) ─────────────────────────
+
+let isRefreshing = false;
+let refreshQueue: Array<(token: string) => void> = [];
+
+function drainQueue(newToken: string) {
+  refreshQueue.forEach((resolve) => resolve(newToken));
+  refreshQueue = [];
+}
+
+function rejectQueue() {
+  refreshQueue.forEach((resolve) => resolve(""));
+  refreshQueue = [];
+}
 
 // ─── Request interceptor ──────────────────────────────────────────────────────
 
@@ -18,59 +31,100 @@ api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token");
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+      if (token) config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
   (error) => Promise.reject(error),
 );
 
-// ─── Response interceptor ────────────────────────────────────────────────────
+// ─── Response interceptor ─────────────────────────────────────────────────────
 
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<{ message?: string }>) => {
-    // Network/offline error
     if (!error.response) {
-      error.message = 'You are offline'
-      return Promise.reject(error)
+      error.message = "You are offline";
+      return Promise.reject(error);
     }
 
-    // Real unauthorized response
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+
+    // Attempt token refresh on 401, but not for the refresh endpoint itself
     if (
-      typeof window !== 'undefined' &&
+      error.response.status === 401 &&
+      !originalRequest._retry &&
+      typeof window !== "undefined" &&
       navigator.onLine &&
-      error.response.status === 401
+      !originalRequest.url?.includes("/auth/refresh")
     ) {
-      const { useAuthStore } = await import('@/store/authStore')
+      const storedRefreshToken = localStorage.getItem("refreshToken");
 
-      useAuthStore.getState().logout()
+      if (!storedRefreshToken) {
+        return doLogout(error);
+      }
 
-      window.location.href = '/login'
+      originalRequest._retry = true;
+
+      if (isRefreshing) {
+        // Another refresh is already in flight — queue this request
+        return new Promise((resolve, reject) => {
+          refreshQueue.push((newToken) => {
+            if (!newToken) return reject(error);
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            resolve(api(originalRequest));
+          });
+        });
+      }
+
+      isRefreshing = true;
+      try {
+        const { data } = await axios.post(`${API_URL}/auth/refresh`, {
+          refreshToken: storedRefreshToken,
+        });
+
+        const { accessToken, refreshToken: newRefreshToken } = data;
+
+        // Update store + localStorage
+        const { useAuthStore } = await import("@/store/authStore");
+        useAuthStore.getState().setAccessToken(accessToken, newRefreshToken);
+
+        isRefreshing = false;
+        drainQueue(accessToken);
+
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        return api(originalRequest);
+      } catch {
+        isRefreshing = false;
+        rejectQueue();
+        return doLogout(error);
+      }
     }
 
-    // Normalize backend error message
-    const serverMessage = error.response.data?.message
-
+    // Normalise backend error message
+    const serverMessage = error.response.data?.message;
     if (serverMessage && error.message !== serverMessage) {
-      error.message = serverMessage
+      error.message = serverMessage;
     }
 
-    return Promise.reject(error)
+    return Promise.reject(error);
+  },
+);
+
+async function doLogout(error: AxiosError) {
+  if (typeof window !== "undefined") {
+    const { useAuthStore } = await import("@/store/authStore");
+    useAuthStore.getState().logout();
+    window.location.href = "/login";
   }
-)
+  return Promise.reject(error);
+}
 
 export default api;
 
 // ─── Typed helper wrappers ────────────────────────────────────────────────────
-// Usage: const data = await get<Link[]>('/links')
 
-export async function get<T>(
-  url: string,
-  params?: Record<string, unknown>,
-): Promise<T> {
+export async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
   const res = await api.get<T>(url, { params });
   return res.data;
 }

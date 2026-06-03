@@ -7,16 +7,8 @@ export class AuthController {
     async register(req: Request, res: Response, next: NextFunction) {
         try {
             const { username, password, email } = req.body;
-
-            if (!username || !password) {
-                return res.status(400).json({ message: 'Username and password are required' });
-            }
-            if (password.length < 6) {
-                return res.status(400).json({ message: 'Password must be at least 6 characters' });
-            }
-
             const result = await authService.register(username, password, email);
-            res.status(201).json({ message: 'User registered successfully', user: result.user, token: result.token });
+            res.status(201).json({ message: 'User registered successfully', ...result });
         } catch (error) {
             if (error instanceof Error) {
                 if (error.message === 'Username already exists' || error.message === 'Email already in use') {
@@ -30,17 +22,40 @@ export class AuthController {
     async login(req: Request, res: Response, next: NextFunction) {
         try {
             const { username, password } = req.body;
-
-            if (!username || !password) {
-                return res.status(400).json({ message: 'Username and password are required' });
-            }
-
             const result = await authService.login(username, password);
-            res.json({ message: 'Login successful', user: result.user, token: result.token });
+            res.json({ message: 'Login successful', ...result });
         } catch (error) {
             if (error instanceof Error && error.message === 'Invalid credentials') {
                 return res.status(401).json({ message: error.message });
             }
+            next(error);
+        }
+    }
+
+    async refresh(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { refreshToken } = req.body;
+            if (!refreshToken) {
+                return res.status(400).json({ message: 'Refresh token is required' });
+            }
+            const result = await authService.refresh(refreshToken);
+            res.json(result);
+        } catch (error) {
+            if (error instanceof Error && error.message === 'Invalid refresh token') {
+                return res.status(401).json({ message: error.message });
+            }
+            next(error);
+        }
+    }
+
+    async logout(req: Request, res: Response, next: NextFunction) {
+        try {
+            const { refreshToken } = req.body;
+            if (refreshToken) {
+                await authService.logout(refreshToken);
+            }
+            res.json({ message: 'Logged out successfully' });
+        } catch (error) {
             next(error);
         }
     }
@@ -58,11 +73,7 @@ export class AuthController {
     async forgotPassword(req: Request, res: Response, next: NextFunction) {
         try {
             const { email } = req.body;
-            if (!email) {
-                return res.status(400).json({ message: 'Email is required' });
-            }
             await authService.forgotPassword(email);
-            // Always return 200 to prevent email enumeration
             res.json({ message: 'If an account with that email exists, a reset link has been sent.' });
         } catch (error) {
             next(error);
@@ -72,12 +83,6 @@ export class AuthController {
     async resetPassword(req: Request, res: Response, next: NextFunction) {
         try {
             const { token, password } = req.body;
-            if (!token || !password) {
-                return res.status(400).json({ message: 'Token and new password are required' });
-            }
-            if (password.length < 8) {
-                return res.status(400).json({ message: 'Password must be at least 8 characters' });
-            }
             await authService.resetPassword(token, password);
             res.json({ message: 'Password has been reset successfully' });
         } catch (error) {

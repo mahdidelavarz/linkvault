@@ -14,8 +14,8 @@ export const useLogin = () => {
     mutationFn: (credentials: LoginCredentials) =>
       post<AuthResponse>('/auth/login', credentials),
 
-    onSuccess: ({ user, token }) => {
-      setAuth(user, token)
+    onSuccess: ({ user, accessToken, refreshToken }) => {
+      setAuth(user, accessToken, refreshToken)
       router.push('/links')
     },
   })
@@ -31,8 +31,8 @@ export const useRegister = () => {
     mutationFn: (credentials: RegisterCredentials) =>
       post<AuthResponse>('/auth/register', credentials),
 
-    onSuccess: ({ user, token }) => {
-      setAuth(user, token)
+    onSuccess: ({ user, accessToken, refreshToken }) => {
+      setAuth(user, accessToken, refreshToken)
       router.push('/links')
     },
   })
@@ -65,10 +65,15 @@ export const useResetPassword = () => {
 // ─── useLogout ────────────────────────────────────────────────────────────────
 
 export const useLogout = () => {
-  const router = useRouter()
-  const logout = useAuthStore((s) => s.logout)
+  const router       = useRouter()
+  const logout       = useAuthStore((s) => s.logout)
+  const refreshToken = useAuthStore((s) => s.refreshToken)
 
   return () => {
+    // Fire-and-forget: revoke the refresh token on the server
+    if (refreshToken) {
+      post('/auth/logout', { refreshToken }).catch(() => {/* ignore */})
+    }
     logout()
     router.push('/login')
   }

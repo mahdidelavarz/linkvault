@@ -4,9 +4,11 @@ import { User } from '@/types/user';
 interface AuthState {
   user: User | null;
   token: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  setAuth: (user: User, token: string) => void;
+  setAuth: (user: User, accessToken: string, refreshToken: string) => void;
+  setAccessToken: (accessToken: string, refreshToken: string) => void;
   logout: () => void;
   setLoading: (loading: boolean) => void;
 }
@@ -14,51 +16,48 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
+  refreshToken: null,
   isAuthenticated: false,
   isLoading: true,
 
-  setAuth: (user: User, token: string) => {
-    localStorage.setItem('token', token);
+  setAuth: (user, accessToken, refreshToken) => {
+    localStorage.setItem('token', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('user', JSON.stringify(user));
-    set({
-      user,
-      token,
-      isAuthenticated: true,
-      isLoading: false,
-    });
+    set({ user, token: accessToken, refreshToken, isAuthenticated: true, isLoading: false });
+  },
+
+  setAccessToken: (accessToken, refreshToken) => {
+    localStorage.setItem('token', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+    set({ token: accessToken, refreshToken });
   },
 
   logout: () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
-    set({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      isLoading: false,
-    });
+    set({ user: null, token: null, refreshToken: null, isAuthenticated: false, isLoading: false });
   },
 
-  setLoading: (loading: boolean) => {
-    set({ isLoading: loading });
-  },
+  setLoading: (loading) => set({ isLoading: loading }),
 }));
 
-// Initialize store from localStorage
+// Restore from localStorage on page load
 if (typeof window !== 'undefined') {
   const token = localStorage.getItem('token');
+  const refreshToken = localStorage.getItem('refreshToken');
   const user = localStorage.getItem('user');
-  
+
   if (token && user) {
     useAuthStore.setState({
       user: JSON.parse(user),
       token,
+      refreshToken,
       isAuthenticated: true,
       isLoading: false,
     });
   } else {
-    useAuthStore.setState({
-      isLoading: false,
-    });
+    useAuthStore.setState({ isLoading: false });
   }
 }

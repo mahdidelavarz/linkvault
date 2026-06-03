@@ -22,6 +22,10 @@ export const resetPasswordSchema = z.object({
     password: z.string().min(8).regex(/[A-Z]/, 'Must contain uppercase').regex(/[0-9]/, 'Must contain a number'),
 });
 
+export const refreshTokenSchema = z.object({
+    refreshToken: z.string().min(1, 'Refresh token is required'),
+});
+
 // ─── Link ──────────────────────────────────────────────────────────────────────
 
 export const createLinkSchema = z.object({
