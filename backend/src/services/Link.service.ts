@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { AppDataSource } from '../config/database';
 import { Link } from '../entities/Link';
 import { Taggable } from '../entities/Taggable';
@@ -187,6 +188,50 @@ export class LinkService {
             
             await this.taggableRepository.save(taggablesToSave);
         }
+    }
+
+    async fetchMeta(url: string): Promise<{
+        title?: string;
+        description?: string;
+        favicon?: string;
+    }> {
+        const response = await axios.get(url, {
+            timeout: 8000,
+            headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LinkVault-Bot/1.0)' },
+            responseType: 'text',
+            maxRedirects: 5,
+        });
+
+        const html: string = response.data;
+
+        const meta = (name: string) => {
+            const r1 = html.match(new RegExp(`<meta[^>]+(?:name|property)=["']${name}["'][^>]+content=["']([^"']+)["']`, 'i'));
+            const r2 = html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:name|property)=["']${name}["']`, 'i'));
+            return (r1 || r2)?.[1]?.trim();
+        };
+
+        const rawTitle = meta('og:title') || html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim();
+        const description = meta('og:description') || meta('description');
+
+        // Favicon: check explicit <link rel="icon"> first, fall back to Google
+        const faviconHref = html.match(/<link[^>]+rel=["'](?:shortcut )?icon["'][^>]+href=["']([^"']+)["']/i)?.[1]
+            || html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["'](?:shortcut )?icon["']/i)?.[1];
+
+        let favicon: string | undefined;
+        if (faviconHref) {
+            try {
+                const base = new URL(url).origin;
+                favicon = faviconHref.startsWith('http') ? faviconHref
+                    : faviconHref.startsWith('/') ? `${base}${faviconHref}`
+                    : `${base}/${faviconHref}`;
+            } catch { /* ignore */ }
+        }
+
+        return {
+            title: rawTitle?.substring(0, 255),
+            description: description?.substring(0, 1000),
+            favicon,
+        };
     }
 
     private async loadTagsForLinks(links: Link[]): Promise<any[]> {

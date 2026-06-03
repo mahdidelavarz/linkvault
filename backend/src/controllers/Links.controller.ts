@@ -7,6 +7,23 @@ import { parseParamId } from '../utils/parsParamId';
 const linkService = new LinkService();
 
 export class LinkController {
+    fetchMeta = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const { url } = req.query;
+        if (!url || typeof url !== 'string') throw new HttpError(400, 'url query param is required');
+        try {
+            new URL(url); // validate
+        } catch {
+            throw new HttpError(400, 'Invalid URL');
+        }
+        try {
+            const meta = await linkService.fetchMeta(url);
+            res.json(meta);
+        } catch {
+            // Always return an empty object — the frontend gracefully handles missing meta
+            res.json({});
+        }
+    });
+
     findAll = asyncHandler(async (req: AuthRequest, res: Response) => {
         const userId = req.userId!;
         const { search, categoryId, isFavorite, tagIds, page, limit } = req.query;

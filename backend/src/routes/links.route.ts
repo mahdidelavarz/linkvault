@@ -10,6 +10,7 @@ const linkController = new LinkController();
 router.use(authMiddleware);
 
 router.get('/', linkController.findAll);
+router.get('/meta', linkController.fetchMeta);
 router.post('/', validate(createLinkSchema), linkController.create);
 router.get('/:id', linkController.findOne);
 router.put('/:id', validate(updateLinkSchema), linkController.update);

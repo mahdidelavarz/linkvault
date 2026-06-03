@@ -100,3 +100,13 @@ export const useToggleFavorite = () => {
         },
     });
 };
+
+// Fetch URL metadata (title, description, favicon) for auto-fill in LinkForm
+export type LinkMeta = { title?: string; description?: string; favicon?: string };
+
+export const useFetchLinkMeta = () => {
+    return async (url: string): Promise<LinkMeta> => {
+        const { data } = await api.get('/links/meta', { params: { url } });
+        return data as LinkMeta;
+    };
+};

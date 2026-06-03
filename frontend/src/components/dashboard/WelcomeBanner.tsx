@@ -1,27 +1,29 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
+
+const QUOTES = [
+  "Knowledge is power. Keep it organized! 🚀",
+  "Your digital brain, beautifully organized. 🧠",
+  "Every great project starts with a saved link. 🔗",
+  "Stay focused, stay organized. ✨",
+  "Your second brain is getting smarter! 💡",
+];
 
 export default function WelcomeBanner() {
   const user = useAuthStore((state) => state.user);
+  const [greeting, setGreeting] = useState("");
+  const [quote, setQuote] = useState("");
 
-  const getGreeting = () => {
+  useEffect(() => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
-  };
+    if (hour < 12) setGreeting("Good morning");
+    else if (hour < 18) setGreeting("Good afternoon");
+    else setGreeting("Good evening");
 
-  const getQuote = () => {
-    const quotes = [
-      "Knowledge is power. Keep it organized! 🚀",
-      "Your digital brain, beautifully organized. 🧠",
-      "Every great project starts with a saved link. 🔗",
-      "Stay focused, stay organized. ✨",
-      "Your second brain is getting smarter! 💡",
-    ];
-    return quotes[Math.floor(Math.random() * quotes.length)];
-  };
+    setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+  }, []);
 
   return (
     <>
@@ -29,9 +31,9 @@ export default function WelcomeBanner() {
       <div className="welcome-banner">
         <div className="welcome-banner-content">
           <h2 className="welcome-banner-greeting">
-            {getGreeting()}, {user?.username || "there"}! 👋
+            {greeting && `${greeting}, `}{user?.username || "there"}! 👋
           </h2>
-          <p className="welcome-banner-quote">{getQuote()}</p>
+          <p className="welcome-banner-quote">{quote}</p>
         </div>
         <div className="welcome-banner-icon" aria-hidden="true">
           🗂️

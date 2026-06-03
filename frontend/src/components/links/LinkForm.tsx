@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useState, useEffect, useRef } from "react";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { type Link, type CreateLinkDto } from "@/types/link";
-import { useCreateLink, useUpdateLink } from "@/hooks/useLinks";
+import { useCreateLink, useUpdateLink, useFetchLinkMeta } from "@/hooks/useLinks";
 import { useCategories } from "@/hooks/useCategories";
 import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/TextArea";
@@ -23,6 +23,7 @@ import {
   LucideLock,
   LucideMail,
   LucidePhone,
+  LucideSparkles,
   LucideStar,
   LucideType,
   LucideUser,
@@ -54,7 +55,12 @@ interface LinkFormProps {
 
 export default function LinkForm({ link, onClose }: LinkFormProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const [metaLoading, setMetaLoading] = useState(false);
+  const [autoFilled, setAutoFilled] = useState(false);
   const isEditing = !!link;
+  const fetchMeta = useFetchLinkMeta();
+  // Prevent fetching on initial edit-form population
+  const initialUrlRef = useRef(link?.url ?? "");
 
   const { data: categories } = useCategories();
   const createLink = useCreateLink();
@@ -68,11 +74,13 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
     handleSubmit,
     control,
     reset,
+    setValue,
+    getValues,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      url: "",
+      url: "https://",
       title: "",
       description: "",
       username: "",
@@ -85,9 +93,23 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
     },
   });
 
+  const urlValue = useWatch({ control, name: "url" });
+
+  const handleUrlPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pasted = e.clipboardData.getData("text").trim();
+    if (/^https?:\/\//i.test(pasted)) {
+      e.preventDefault();
+      // Normalise http → https and set the whole field
+      const normalized = pasted.replace(/^http:\/\//i, "https://");
+      setValue("url", normalized, { shouldValidate: true });
+    }
+    // No protocol → let it paste normally after the existing "https://"
+  };
+
   // Populate form when editing
   useEffect(() => {
     if (link) {
+      initialUrlRef.current = link.url;
       reset({
         url: link.url,
         title: link.title,
@@ -102,6 +124,34 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
       });
     }
   }, [link, reset]);
+
+  // Auto-fetch metadata when URL changes (debounced 600ms)
+  useEffect(() => {
+    if (!urlValue || urlValue === initialUrlRef.current) return;
+
+    try { new URL(urlValue); } catch { return; } // not yet a valid URL
+
+    setAutoFilled(false);
+    const timer = setTimeout(async () => {
+      setMetaLoading(true);
+      try {
+        const meta = await fetchMeta(urlValue);
+        let filled = false;
+        if (meta.title && !getValues("title")) {
+          setValue("title", meta.title, { shouldValidate: true });
+          filled = true;
+        }
+        if (meta.description && !getValues("description")) {
+          setValue("description", meta.description);
+          filled = true;
+        }
+        if (filled) setAutoFilled(true);
+      } catch { /* silent — user fills manually */ }
+      setMetaLoading(false);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [urlValue]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onSubmit = async (data: FormData) => {
     const payload: CreateLinkDto = {
@@ -123,6 +173,11 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
       /* error shown via Alert */
     }
   };
+
+  // Spinner SVG used as rightNode on URL input while fetching
+  const fetchingNode = metaLoading ? (
+    <span className="lform-meta-spinner" aria-label="Fetching page info…" />
+  ) : null;
 
   return (
     <>
@@ -152,16 +207,26 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
                   leftIcon={LucideGlobe}
                   error={errors.url?.message}
                   autoFocus
+                  rightNode={fetchingNode ?? undefined}
+                  onPaste={handleUrlPaste}
                   {...register("url")}
                 />
-                <Input
-                  label="Title"
-                  type="text"
-                  placeholder="My awesome link"
-                  leftIcon={LucideType}
-                  error={errors.title?.message}
-                  {...register("title")}
-                />
+                <div className="lform-title-wrap">
+                  <Input
+                    label="Title"
+                    type="text"
+                    placeholder="My awesome link"
+                    leftIcon={LucideType}
+                    error={errors.title?.message}
+                    {...register("title")}
+                  />
+                  {autoFilled && (
+                    <span className="lform-autofill-badge">
+                      <LucideSparkles width={10} />
+                      Auto-filled
+                    </span>
+                  )}
+                </div>
                 <Textarea
                   label="Description"
                   placeholder="Optional description…"
@@ -248,15 +313,11 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
                         type="checkbox"
                         checked={field.value}
                         onChange={(e) => field.onChange(e.target.checked)}
-                        style={{
-                          position: "absolute",
-                          opacity: 0,
-                          pointerEvents: "none",
-                        }}
+                        style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
                       />
                       <span className="lform-check-label">
                         <LucideStar width={13} style={{ color: "#fbbf24" }} />
-                       <span className="h-4"> Mark as favorite</span>
+                        <span className="h-4">Mark as favorite</span>
                       </span>
                     </label>
                   )}
@@ -334,7 +395,7 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
             <Button type="button" variant="ghost" onClick={onClose} className="shadow-sm shadow-slate-900">
               Cancel
             </Button>
-            <Button type="submit" isLoading={isLoading} fullWidth >
+            <Button type="submit" isLoading={isLoading} fullWidth>
               {isEditing ? "Save changes" : "Add link"}
             </Button>
           </div>
@@ -400,6 +461,33 @@ const CSS = `
 @media (max-width: 479px) {
   .lform-grid-2 { grid-template-columns: 1fr; }
 }
+
+/* Title row with auto-fill badge */
+.lform-title-wrap { position: relative; }
+.lform-autofill-badge {
+  display:      inline-flex;
+  align-items:  center;
+  gap:          4px;
+  margin-top:   4px;
+  font-size:    10px;
+  font-weight:  500;
+  color:        var(--text-accent);
+  opacity:      0.85;
+  animation:    fadeIn 0.2s ease;
+}
+
+/* Spinner on URL input while fetching meta */
+.lform-meta-spinner {
+  display:       block;
+  width:         14px;
+  height:        14px;
+  border:        2px solid var(--border-default);
+  border-top-color: var(--text-accent);
+  border-radius: 50%;
+  animation:     lform-spin 0.6s linear infinite;
+  flex-shrink:   0;
+}
+@keyframes lform-spin { to { transform: rotate(360deg); } }
 
 /* Select */
 .lform-field { display: flex; flex-direction: column; gap: 6px; }
@@ -502,5 +590,4 @@ const CSS = `
   bottom:         0;
   z-index:        10;
 }
-
 `;
