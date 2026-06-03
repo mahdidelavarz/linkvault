@@ -1,6 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/http';
 import { Prompt, CreatePromptDto, UpdatePromptDto } from '@/types/prompt';
+
+type Page<T> = { items: T[]; total: number; page: number; limit: number; hasMore: boolean };
 
 export const usePrompts = (filters?: {
   search?: string;
@@ -10,9 +12,9 @@ export const usePrompts = (filters?: {
   isFavorite?: boolean;
   tagIds?: number[];
 }) => {
-  return useQuery({
+  return useInfiniteQuery<Page<Prompt>>({
     queryKey: ['prompts', filters],
-    queryFn: async () => {
+    queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams();
       if (filters?.search) params.append('search', filters.search);
       if (filters?.categoryId) params.append('categoryId', filters.categoryId.toString());
@@ -20,10 +22,13 @@ export const usePrompts = (filters?: {
       if (filters?.targetAI) params.append('targetAI', filters.targetAI);
       if (filters?.isFavorite) params.append('isFavorite', 'true');
       if (filters?.tagIds) params.append('tagIds', filters.tagIds.join(','));
-
+      params.append('page', String(pageParam));
+      params.append('limit', '20');
       const { data } = await api.get(`/prompts?${params.toString()}`);
-      return data.prompts as Prompt[];
+      return data as Page<Prompt>;
     },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
   });
 };
 

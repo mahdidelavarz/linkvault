@@ -6,14 +6,14 @@ export class PromptService {
     private promptRepository = AppDataSource.getRepository(Prompt);
     private taggableRepository = AppDataSource.getRepository(Taggable);
 
-    async findAll(userId: number, filters?: {
-        search?: string;
-        categoryId?: number;
-        promptType?: string;
-        targetAI?: string;
-        isFavorite?: boolean;
-        tagIds?: number[];
-    }) {
+    async findAll(
+        userId: number,
+        filters?: { search?: string; categoryId?: number; promptType?: string; targetAI?: string; isFavorite?: boolean; tagIds?: number[] },
+        pagination = { page: 1, limit: 20 }
+    ) {
+        const { page, limit } = pagination;
+        const skip = (page - 1) * limit;
+
         const queryBuilder = this.promptRepository.createQueryBuilder('prompt')
             .leftJoinAndSelect('prompt.category', 'category')
             .where('prompt.userId = :userId', { userId });
@@ -24,30 +24,29 @@ export class PromptService {
                 { search: `%${filters.search}%` }
             );
         }
-
         if (filters?.categoryId) {
             queryBuilder.andWhere('prompt.categoryId = :categoryId', { categoryId: filters.categoryId });
         }
-
         if (filters?.promptType) {
             queryBuilder.andWhere('prompt.promptType = :promptType', { promptType: filters.promptType });
         }
-
         if (filters?.targetAI) {
             queryBuilder.andWhere('prompt.targetAI = :targetAI', { targetAI: filters.targetAI });
         }
-
         if (filters?.isFavorite !== undefined) {
             queryBuilder.andWhere('prompt.isFavorite = :isFavorite', { isFavorite: filters.isFavorite });
         }
 
-        const prompts = await queryBuilder
+        const [raw, total] = await queryBuilder
             .orderBy('prompt.isFavorite', 'DESC')
             .addOrderBy('prompt.usageCount', 'DESC')
             .addOrderBy('prompt.updatedAt', 'DESC')
-            .getMany();
+            .skip(skip)
+            .take(limit)
+            .getManyAndCount();
 
-        return await this.loadTagsForPrompts(prompts);
+        const items = await this.loadTagsForPrompts(raw);
+        return { items, total, page, limit, hasMore: skip + raw.length < total };
     }
 
     async findOne(id: number, userId: number) {

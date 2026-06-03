@@ -6,12 +6,14 @@ export class NoteService {
     private noteRepository = AppDataSource.getRepository(Note);
     private taggableRepository = AppDataSource.getRepository(Taggable);
 
-    async findAll(userId: number, filters?: {
-        search?: string;
-        categoryId?: number;
-        isPinned?: boolean;
-        tagIds?: number[];
-    }) {
+    async findAll(
+        userId: number,
+        filters?: { search?: string; categoryId?: number; isPinned?: boolean; tagIds?: number[] },
+        pagination = { page: 1, limit: 20 }
+    ) {
+        const { page, limit } = pagination;
+        const skip = (page - 1) * limit;
+
         const queryBuilder = this.noteRepository.createQueryBuilder('note')
             .leftJoinAndSelect('note.category', 'category')
             .where('note.userId = :userId', { userId });
@@ -22,20 +24,22 @@ export class NoteService {
                 { search: `%${filters.search}%` }
             );
         }
-
         if (filters?.categoryId) {
             queryBuilder.andWhere('note.categoryId = :categoryId', { categoryId: filters.categoryId });
         }
-
         if (filters?.isPinned !== undefined) {
             queryBuilder.andWhere('note.isPinned = :isPinned', { isPinned: filters.isPinned });
         }
 
-        const notes = await queryBuilder.orderBy('note.isPinned', 'DESC')
+        const [raw, total] = await queryBuilder
+            .orderBy('note.isPinned', 'DESC')
             .addOrderBy('note.updatedAt', 'DESC')
-            .getMany();
+            .skip(skip)
+            .take(limit)
+            .getManyAndCount();
 
-        return await this.loadTagsForNotes(notes);
+        const items = await this.loadTagsForNotes(raw);
+        return { items, total, page, limit, hasMore: skip + raw.length < total };
     }
 
     async findOne(id: number, userId: number) {

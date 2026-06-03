@@ -9,7 +9,7 @@ const infraService = new InfraService();
 export class InfraController {
     async findAll(req: AuthRequest, res: Response, next: NextFunction) {
         try {
-            const { search, infraType, categoryId, isFavorite, tagIds } = req.query;
+            const { search, infraType, categoryId, isFavorite, tagIds, page, limit } = req.query;
             const filters: any = {};
             if (search) filters.search = search;
             if (infraType) filters.infraType = infraType;
@@ -17,8 +17,13 @@ export class InfraController {
             if (isFavorite) filters.isFavorite = isFavorite === 'true';
             if (tagIds) filters.tagIds = (tagIds as string).split(',').map(Number);
 
-            const items = await infraService.findAll(req.userId!, filters);
-            res.json({ infrastructures: items });
+            const pagination = {
+                page: parseInt(page as string) || 1,
+                limit: Math.min(parseInt(limit as string) || 20, 100),
+            };
+
+            const result = await infraService.findAll(req.userId!, filters, pagination);
+            res.json(result);
         } catch (error) { next(error); }
     }
 

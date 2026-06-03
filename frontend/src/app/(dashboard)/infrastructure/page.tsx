@@ -1,7 +1,8 @@
 "use client";
 
-import { ComponentType, SVGProps, useState } from "react";
+import { ComponentType, SVGProps, useState, useCallback } from "react";
 import { useInfrastructures } from "@/hooks/useInfrastructure";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useCategories } from "@/hooks/useCategories";
 import {
   type Infrastructure,
@@ -52,12 +53,23 @@ export default function InfrastructurePage() {
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
   const { data: categories } = useCategories();
-  const { data: items, isLoading } = useInfrastructures({
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfrastructures({
     search: search || undefined,
     infraType: selectedType || undefined,
     categoryId: categoryId ? parseInt(categoryId) : undefined,
     isFavorite: showFavorites || undefined,
   });
+  const items = data?.pages.flatMap((p) => p.items) ?? [];
+  const total = data?.pages[0]?.total ?? 0;
+
+  const onReach = useCallback(() => { if (hasNextPage) fetchNextPage(); }, [hasNextPage, fetchNextPage]);
+  const sentinelRef = useInfiniteScroll(onReach, !!hasNextPage && !isLoading);
 
   const hasFilters = !!(search || selectedType || categoryId || showFavorites);
   const activeCount = [search, selectedType, categoryId, showFavorites].filter(
@@ -114,7 +126,7 @@ export default function InfrastructurePage() {
           <div>
             <h1 className="page-title">Infrastructure</h1>
             <p className="page-subtitle">
-              {isLoading ? "…" : `${items?.length ?? 0} configs`}
+              {isLoading ? "…" : `${total} configs`}
             </p>
           </div>
           <Button leftIcon={LucidePlus} onClick={openCreate}>
@@ -134,7 +146,7 @@ export default function InfrastructurePage() {
             onClick={() => setSelectedType("")}
           >
             All
-            {items && <span className="ip-type-tab-count">{items.length}</span>}
+            {total > 0 && <span className="ip-type-tab-count">{total}</span>}
           </button>
           {Object.entries(INFRA_TYPES).map(([key, { label }]) => {
             const count = typeCounts[key] ?? 0;
@@ -282,18 +294,26 @@ export default function InfrastructurePage() {
               <InfraSkeleton key={i} />
             ))}
           </div>
-        ) : items && items.length > 0 ? (
-          <div className="ip-grid">
-            {items.map((item) => (
-              <InfraCard
-                key={item.id}
-                item={item}
-                copiedId={copiedId}
-                onEdit={openEdit}
-                onCopy={handleCopy}
-              />
-            ))}
-          </div>
+        ) : items.length > 0 ? (
+          <>
+            <div className="ip-grid">
+              {items.map((item) => (
+                <InfraCard
+                  key={item.id}
+                  item={item}
+                  copiedId={copiedId}
+                  onEdit={openEdit}
+                  onCopy={handleCopy}
+                />
+              ))}
+            </div>
+            <div ref={sentinelRef} style={{ height: 1 }} />
+            {isFetchingNextPage && (
+              <div className="ip-grid">
+                {[...Array(3)].map((_, i) => <InfraSkeleton key={i} />)}
+              </div>
+            )}
+          </>
         ) : (
           <EmptyState
             hasFilters={hasFilters}

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useNotes, useNote } from "@/hooks/useNote";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useCategories } from "@/hooks/useCategories";
 import { type Note } from "@/types/note";
 import NoteCard from "@/components/notes/NoteCard";
@@ -30,13 +31,24 @@ export default function NotesPage() {
   // Mobile: show editor panel instead of list
   const [mobileView, setMobileView] = useState<"list" | "editor">("list");
 
+  const sidebarRef = useRef<HTMLElement>(null);
   const { data: categories } = useCategories();
-  const { data: notes, isLoading } = useNotes({
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useNotes({
     search: search || undefined,
     categoryId: categoryId ? parseInt(categoryId) : undefined,
     isPinned: showPinned || undefined,
   });
+  const notes = data?.pages.flatMap((p) => p.items) ?? [];
   const { data: selectedNote } = useNote(selectedId ?? 0);
+
+  const onReach = useCallback(() => { if (hasNextPage) fetchNextPage(); }, [hasNextPage, fetchNextPage]);
+  const sentinelRef = useInfiniteScroll(onReach, !!hasNextPage && !isLoading, sidebarRef.current);
 
   const hasFilters = !!(search || categoryId || showPinned);
   const clearFilters = () => {
@@ -82,6 +94,7 @@ export default function NotesPage() {
         <div className="notes-layout">
           {/* ── Sidebar (list) ── */}
           <aside
+            ref={sidebarRef}
             className={[
               "notes-sidebar",
               mobileView === "editor" ? "notes-sidebar--hidden" : "",
@@ -154,16 +167,20 @@ export default function NotesPage() {
             <div className="notes-list">
               {isLoading ? (
                 [...Array(5)].map((_, i) => <NoteCardSkeleton key={i} />)
-              ) : notes && notes.length > 0 ? (
-                notes.map((note) => (
-                  <NoteCard
-                    key={note.id}
-                    note={note}
-                    isActive={selectedId === note.id}
-                    onSelect={() => selectNote(note)}
-                    onEditDetails={() => openEditDetails(note)}
-                  />
-                ))
+              ) : notes.length > 0 ? (
+                <>
+                  {notes.map((note) => (
+                    <NoteCard
+                      key={note.id}
+                      note={note}
+                      isActive={selectedId === note.id}
+                      onSelect={() => selectNote(note)}
+                      onEditDetails={() => openEditDetails(note)}
+                    />
+                  ))}
+                  <div ref={sentinelRef} style={{ height: 1 }} />
+                  {isFetchingNextPage && [...Array(2)].map((_, i) => <NoteCardSkeleton key={i} />)}
+                </>
               ) : (
                 <div className="notes-empty-list">
                   {hasFilters ? (

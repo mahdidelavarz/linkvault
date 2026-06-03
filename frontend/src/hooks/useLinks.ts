@@ -1,26 +1,31 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/http';
 import { Link, CreateLinkDto, UpdateLinkDto } from '@/types/link';
 
-// Fetch all links
+export type Page<T> = { items: T[]; total: number; page: number; limit: number; hasMore: boolean };
+
+// Fetch all links (paginated)
 export const useLinks = (filters?: {
     search?: string;
     categoryId?: number;
     isFavorite?: boolean;
     tagIds?: number[];
 }) => {
-    return useQuery({
+    return useInfiniteQuery<Page<Link>>({
         queryKey: ['links', filters],
-        queryFn: async () => {
+        queryFn: async ({ pageParam }) => {
             const params = new URLSearchParams();
             if (filters?.search) params.append('search', filters.search);
             if (filters?.categoryId) params.append('categoryId', filters.categoryId.toString());
             if (filters?.isFavorite) params.append('isFavorite', 'true');
             if (filters?.tagIds) params.append('tagIds', filters.tagIds.join(','));
-
+            params.append('page', String(pageParam));
+            params.append('limit', '20');
             const { data } = await api.get(`/links?${params.toString()}`);
-            return data.links as Link[];
+            return data as Page<Link>;
         },
+        initialPageParam: 1,
+        getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
     });
 };
 

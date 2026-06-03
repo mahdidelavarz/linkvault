@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useLinks } from "@/hooks/useLinks";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useCategories } from "@/hooks/useCategories";
 import { type Link } from "@/types/link";
 import LinkCard from "@/components/links/LinkCard";
@@ -29,11 +30,22 @@ export default function LinksPage() {
   const [showFavorites, setShowFavorites] = useState(false);
 
   const { data: categories } = useCategories();
-  const { data: links, isLoading } = useLinks({
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useLinks({
     search: search || undefined,
     categoryId: categoryId ? parseInt(categoryId) : undefined,
     isFavorite: showFavorites || undefined,
   });
+  const links = data?.pages.flatMap((p) => p.items) ?? [];
+  const total = data?.pages[0]?.total ?? 0;
+
+  const onReach = useCallback(() => { if (hasNextPage) fetchNextPage(); }, [hasNextPage, fetchNextPage]);
+  const sentinelRef = useInfiniteScroll(onReach, !!hasNextPage && !isLoading);
 
   const hasFilters = !!(search || categoryId || showFavorites);
 
@@ -64,7 +76,7 @@ export default function LinksPage() {
           <div className="page-header-left">
             <h1 className="page-title">Links</h1>
             <p className="page-subtitle">
-              {isLoading ? "…" : `${links?.length ?? 0} saved`}
+              {isLoading ? "…" : `${total} saved`}
             </p>
           </div>
           <Button leftIcon={LucidePlus} onClick={openCreate}>
@@ -143,12 +155,20 @@ export default function LinksPage() {
               <LinkCardSkeleton key={i} />
             ))}
           </div>
-        ) : links && links.length > 0 ? (
-          <div className="links-grid">
-            {links.map((link) => (
-              <LinkCard key={link.id} link={link} onEdit={openEdit} />
-            ))}
-          </div>
+        ) : links.length > 0 ? (
+          <>
+            <div className="links-grid">
+              {links.map((link) => (
+                <LinkCard key={link.id} link={link} onEdit={openEdit} />
+              ))}
+            </div>
+            <div ref={sentinelRef} style={{ height: 1 }} />
+            {isFetchingNextPage && (
+              <div className="links-grid">
+                {[...Array(3)].map((_, i) => <LinkCardSkeleton key={i} />)}
+              </div>
+            )}
+          </>
         ) : (
           <EmptyState
             hasFilters={hasFilters}

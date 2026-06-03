@@ -1,6 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/http';
 import { Infrastructure, CreateInfraDto } from '@/types/infrastructure';
+
+type Page<T> = { items: T[]; total: number; page: number; limit: number; hasMore: boolean };
 
 export const useInfrastructures = (filters?: {
   search?: string;
@@ -9,19 +11,22 @@ export const useInfrastructures = (filters?: {
   isFavorite?: boolean;
   tagIds?: number[];
 }) => {
-  return useQuery({
+  return useInfiniteQuery<Page<Infrastructure>>({
     queryKey: ['infrastructure', filters],
-    queryFn: async () => {
+    queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams();
       if (filters?.search) params.append('search', filters.search);
       if (filters?.infraType) params.append('infraType', filters.infraType);
       if (filters?.categoryId) params.append('categoryId', filters.categoryId.toString());
       if (filters?.isFavorite) params.append('isFavorite', 'true');
       if (filters?.tagIds) params.append('tagIds', filters.tagIds.join(','));
-
+      params.append('page', String(pageParam));
+      params.append('limit', '20');
       const { data } = await api.get(`/infrastructure?${params.toString()}`);
-      return data.infrastructures as Infrastructure[];
+      return data as Page<Infrastructure>;
     },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
   });
 };
 

@@ -7,11 +7,14 @@ export class LinkService {
     private linkRepository = AppDataSource.getRepository(Link);
     private taggableRepository = AppDataSource.getRepository(Taggable);
 
-    async findAll(userId: number, filters?: {
-        search?: string;
-        categoryId?: number;
-        isFavorite?: boolean;
-    }) {
+    async findAll(
+        userId: number,
+        filters?: { search?: string; categoryId?: number; isFavorite?: boolean },
+        pagination = { page: 1, limit: 20 }
+    ) {
+        const { page, limit } = pagination;
+        const skip = (page - 1) * limit;
+
         const queryBuilder = this.linkRepository.createQueryBuilder('link')
             .leftJoinAndSelect('link.category', 'category')
             .where('link.userId = :userId', { userId });
@@ -22,18 +25,21 @@ export class LinkService {
                 { search: `%${filters.search}%` }
             );
         }
-
         if (filters?.categoryId) {
             queryBuilder.andWhere('link.categoryId = :categoryId', { categoryId: filters.categoryId });
         }
-
         if (filters?.isFavorite !== undefined) {
             queryBuilder.andWhere('link.isFavorite = :isFavorite', { isFavorite: filters.isFavorite });
         }
 
-        const links = await queryBuilder.orderBy('link.updatedAt', 'DESC').getMany();
-        
-        return await this.loadTagsForLinks(links);
+        const [raw, total] = await queryBuilder
+            .orderBy('link.updatedAt', 'DESC')
+            .skip(skip)
+            .take(limit)
+            .getManyAndCount();
+
+        const items = await this.loadTagsForLinks(raw);
+        return { items, total, page, limit, hasMore: skip + raw.length < total };
     }
 
     async findOne(id: number, userId: number) {

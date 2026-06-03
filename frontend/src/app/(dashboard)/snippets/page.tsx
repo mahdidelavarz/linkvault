@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useSnippets } from "@/hooks/useSnippet";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useCategories } from "@/hooks/useCategories";
 import {
   type Snippet,
@@ -67,13 +68,24 @@ export default function SnippetsPage() {
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
   const { data: categories } = useCategories();
-  const { data: snippets, isLoading } = useSnippets({
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useSnippets({
     search: search || undefined,
     categoryId: categoryId ? parseInt(categoryId) : undefined,
     snippetType: selectedType || undefined,
     language: selectedLang || undefined,
     isFavorite: showFavorites || undefined,
   });
+  const snippets = data?.pages.flatMap((p) => p.items) ?? [];
+  const total = data?.pages[0]?.total ?? 0;
+
+  const onReach = useCallback(() => { if (hasNextPage) fetchNextPage(); }, [hasNextPage, fetchNextPage]);
+  const sentinelRef = useInfiniteScroll(onReach, !!hasNextPage && !isLoading);
 
   const availableLanguages = useMemo(() => {
     if (!selectedType) return ALL_LANGUAGES;
@@ -140,7 +152,7 @@ export default function SnippetsPage() {
           <div>
             <h1 className="page-title">Snippets</h1>
             <p className="page-subtitle">
-              {isLoading ? "…" : `${snippets?.length ?? 0} snippets`}
+              {isLoading ? "…" : `${total} snippets`}
             </p>
           </div>
           <Button leftIcon={LucidePlus} onClick={openCreate}>
@@ -314,18 +326,26 @@ export default function SnippetsPage() {
               <SnippetSkeleton key={i} />
             ))}
           </div>
-        ) : snippets && snippets.length > 0 ? (
-          <div className="sp-grid">
-            {snippets.map((snippet) => (
-              <SnippetCard
-                key={snippet.id}
-                snippet={snippet}
-                copiedId={copiedId}
-                onEdit={openEdit}
-                onCopy={handleCopy}
-              />
-            ))}
-          </div>
+        ) : snippets.length > 0 ? (
+          <>
+            <div className="sp-grid">
+              {snippets.map((snippet) => (
+                <SnippetCard
+                  key={snippet.id}
+                  snippet={snippet}
+                  copiedId={copiedId}
+                  onEdit={openEdit}
+                  onCopy={handleCopy}
+                />
+              ))}
+            </div>
+            <div ref={sentinelRef} style={{ height: 1 }} />
+            {isFetchingNextPage && (
+              <div className="sp-grid">
+                {[...Array(3)].map((_, i) => <SnippetSkeleton key={i} />)}
+              </div>
+            )}
+          </>
         ) : (
           <EmptyState
             hasFilters={hasFilters}

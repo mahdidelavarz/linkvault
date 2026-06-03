@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { usePrompts } from "@/hooks/usePrompt";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useCategories } from "@/hooks/useCategories";
 import { type Prompt, PROMPT_TYPES } from "@/types/prompt";
 import PromptCard from "@/components/prompts/PromptCard";
@@ -30,12 +31,23 @@ export default function PromptsPage() {
   const [showFavorites, setShowFavorites] = useState(false);
 
   const { data: categories } = useCategories();
-  const { data: prompts, isLoading } = usePrompts({
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = usePrompts({
     search: search || undefined,
     categoryId: categoryId ? parseInt(categoryId) : undefined,
     promptType: selectedType || undefined,
     isFavorite: showFavorites || undefined,
   });
+  const prompts = data?.pages.flatMap((p) => p.items) ?? [];
+  const total = data?.pages[0]?.total ?? 0;
+
+  const onReach = useCallback(() => { if (hasNextPage) fetchNextPage(); }, [hasNextPage, fetchNextPage]);
+  const sentinelRef = useInfiniteScroll(onReach, !!hasNextPage && !isLoading);
 
   const hasFilters = !!(search || categoryId || selectedType || showFavorites);
 
@@ -67,7 +79,7 @@ export default function PromptsPage() {
           <div className="page-header-left">
             <h1 className="page-title">Prompts</h1>
             <p className="page-subtitle">
-              {isLoading ? "…" : `${prompts?.length ?? 0} saved`}
+              {isLoading ? "…" : `${total} saved`}
             </p>
           </div>
           <Button leftIcon={LucidePlus} onClick={openCreate}>
@@ -164,12 +176,20 @@ export default function PromptsPage() {
               <PromptCardSkeleton key={i} />
             ))}
           </div>
-        ) : prompts && prompts.length > 0 ? (
-          <div className="prompts-grid">
-            {prompts.map((prompt) => (
-              <PromptCard key={prompt.id} prompt={prompt} onEdit={openEdit} />
-            ))}
-          </div>
+        ) : prompts.length > 0 ? (
+          <>
+            <div className="prompts-grid">
+              {prompts.map((prompt) => (
+                <PromptCard key={prompt.id} prompt={prompt} onEdit={openEdit} />
+              ))}
+            </div>
+            <div ref={sentinelRef} style={{ height: 1 }} />
+            {isFetchingNextPage && (
+              <div className="prompts-grid">
+                {[...Array(3)].map((_, i) => <PromptCardSkeleton key={i} />)}
+              </div>
+            )}
+          </>
         ) : (
           <EmptyState
             hasFilters={hasFilters}

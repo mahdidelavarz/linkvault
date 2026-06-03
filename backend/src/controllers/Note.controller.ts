@@ -10,7 +10,7 @@ export class NoteController {
     async findAll(req: AuthRequest, res: Response, next: NextFunction) {
         try {
             const userId = req.userId!;
-            const { search, categoryId, isPinned, tagIds } = req.query;
+            const { search, categoryId, isPinned, tagIds, page, limit } = req.query;
 
             const filters: any = {};
             if (search) filters.search = search as string;
@@ -18,8 +18,13 @@ export class NoteController {
             if (isPinned) filters.isPinned = isPinned === 'true';
             if (tagIds) filters.tagIds = (tagIds as string).split(',').map(Number);
 
-            const notes = await noteService.findAll(userId, filters);
-            res.json({ notes });
+            const pagination = {
+                page: parseInt(page as string) || 1,
+                limit: Math.min(parseInt(limit as string) || 20, 100),
+            };
+
+            const result = await noteService.findAll(userId, filters, pagination);
+            res.json(result);
         } catch (error) {
             next(error);
         }

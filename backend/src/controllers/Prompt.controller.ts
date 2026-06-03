@@ -10,7 +10,7 @@ export class PromptController {
     async findAll(req: AuthRequest, res: Response, next: NextFunction) {
         try {
             const userId = req.userId!;
-            const { search, categoryId, promptType, targetAI, isFavorite, tagIds } = req.query;
+            const { search, categoryId, promptType, targetAI, isFavorite, tagIds, page, limit } = req.query;
 
             const filters: any = {};
             if (search) filters.search = search as string;
@@ -20,8 +20,13 @@ export class PromptController {
             if (isFavorite) filters.isFavorite = isFavorite === 'true';
             if (tagIds) filters.tagIds = (tagIds as string).split(',').map(Number);
 
-            const prompts = await promptService.findAll(userId, filters);
-            res.json({ prompts });
+            const pagination = {
+                page: parseInt(page as string) || 1,
+                limit: Math.min(parseInt(limit as string) || 20, 100),
+            };
+
+            const result = await promptService.findAll(userId, filters, pagination);
+            res.json(result);
         } catch (error) {
             next(error);
         }

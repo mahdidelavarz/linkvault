@@ -1,8 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/http';
 import { Snippet, CreateSnippetDto, UpdateSnippetDto } from '@/types/snippet';
 
-// Fetch all snippets
+type Page<T> = { items: T[]; total: number; page: number; limit: number; hasMore: boolean };
+
+// Fetch all snippets (paginated)
 export const useSnippets = (filters?: {
   search?: string;
   categoryId?: number;
@@ -11,9 +13,9 @@ export const useSnippets = (filters?: {
   isFavorite?: boolean;
   tagIds?: number[];
 }) => {
-  return useQuery({
+  return useInfiniteQuery<Page<Snippet>>({
     queryKey: ['snippets', filters],
-    queryFn: async () => {
+    queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams();
       if (filters?.search) params.append('search', filters.search);
       if (filters?.categoryId) params.append('categoryId', filters.categoryId.toString());
@@ -21,10 +23,13 @@ export const useSnippets = (filters?: {
       if (filters?.language) params.append('language', filters.language);
       if (filters?.isFavorite) params.append('isFavorite', 'true');
       if (filters?.tagIds) params.append('tagIds', filters.tagIds.join(','));
-
+      params.append('page', String(pageParam));
+      params.append('limit', '20');
       const { data } = await api.get(`/snippets?${params.toString()}`);
-      return data.snippets as Snippet[];
+      return data as Page<Snippet>;
     },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
   });
 };
 

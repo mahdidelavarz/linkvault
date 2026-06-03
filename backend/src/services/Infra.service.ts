@@ -6,13 +6,14 @@ export class InfraService {
     private infraRepository = AppDataSource.getRepository(Infrastructure);
     private taggableRepository = AppDataSource.getRepository(Taggable);
 
-    async findAll(userId: number, filters?: {
-        search?: string;
-        infraType?: string;
-        categoryId?: number;
-        isFavorite?: boolean;
-        tagIds?: number[];
-    }) {
+    async findAll(
+        userId: number,
+        filters?: { search?: string; infraType?: string; categoryId?: number; isFavorite?: boolean; tagIds?: number[] },
+        pagination = { page: 1, limit: 20 }
+    ) {
+        const { page, limit } = pagination;
+        const skip = (page - 1) * limit;
+
         const queryBuilder = this.infraRepository.createQueryBuilder('infra')
             .leftJoinAndSelect('infra.category', 'category')
             .where('infra.userId = :userId', { userId });
@@ -33,12 +34,15 @@ export class InfraService {
             queryBuilder.andWhere('infra.isFavorite = :isFavorite', { isFavorite: filters.isFavorite });
         }
 
-        const items = await queryBuilder
+        const [raw, total] = await queryBuilder
             .orderBy('infra.isFavorite', 'DESC')
             .addOrderBy('infra.updatedAt', 'DESC')
-            .getMany();
+            .skip(skip)
+            .take(limit)
+            .getManyAndCount();
 
-        return await this.loadTags(items);
+        const items = await this.loadTags(raw);
+        return { items, total, page, limit, hasMore: skip + raw.length < total };
     }
 
     async findOne(id: number, userId: number) {

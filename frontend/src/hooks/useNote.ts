@@ -1,27 +1,32 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/http';
 import { Note, CreateNoteDto, UpdateNoteDto } from '@/types/note';
 import { useCallback, useRef } from 'react';
 
-// Fetch all notes
+type Page<T> = { items: T[]; total: number; page: number; limit: number; hasMore: boolean };
+
+// Fetch all notes (paginated)
 export const useNotes = (filters?: {
   search?: string;
   categoryId?: number;
   isPinned?: boolean;
   tagIds?: number[];
 }) => {
-  return useQuery({
+  return useInfiniteQuery<Page<Note>>({
     queryKey: ['notes', filters],
-    queryFn: async () => {
+    queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams();
       if (filters?.search) params.append('search', filters.search);
       if (filters?.categoryId) params.append('categoryId', filters.categoryId.toString());
       if (filters?.isPinned) params.append('isPinned', 'true');
       if (filters?.tagIds) params.append('tagIds', filters.tagIds.join(','));
-
+      params.append('page', String(pageParam));
+      params.append('limit', '20');
       const { data } = await api.get(`/notes?${params.toString()}`);
-      return data.notes as Note[];
+      return data as Page<Note>;
     },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
   });
 };
 

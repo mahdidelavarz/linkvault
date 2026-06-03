@@ -6,14 +6,14 @@ export class SnippetService {
     private snippetRepository = AppDataSource.getRepository(Snippet);
     private taggableRepository = AppDataSource.getRepository(Taggable);
 
-    async findAll(userId: number, filters?: {
-        search?: string;
-        categoryId?: number;
-        language?: string;
-        isFavorite?: boolean;
-        tagIds?: number[];
-        snippetType?: string
-    }) {
+    async findAll(
+        userId: number,
+        filters?: { search?: string; categoryId?: number; language?: string; isFavorite?: boolean; tagIds?: number[]; snippetType?: string },
+        pagination = { page: 1, limit: 20 }
+    ) {
+        const { page, limit } = pagination;
+        const skip = (page - 1) * limit;
+
         const queryBuilder = this.snippetRepository.createQueryBuilder('snippet')
             .leftJoinAndSelect('snippet.category', 'category')
             .where('snippet.userId = :userId', { userId });
@@ -27,25 +27,25 @@ export class SnippetService {
         if (filters?.snippetType) {
             queryBuilder.andWhere('snippet.snippetType = :snippetType', { snippetType: filters.snippetType });
         }
-
         if (filters?.categoryId) {
             queryBuilder.andWhere('snippet.categoryId = :categoryId', { categoryId: filters.categoryId });
         }
-
         if (filters?.language) {
             queryBuilder.andWhere('snippet.language = :language', { language: filters.language });
         }
-
         if (filters?.isFavorite !== undefined) {
             queryBuilder.andWhere('snippet.isFavorite = :isFavorite', { isFavorite: filters.isFavorite });
         }
 
-        const snippets = await queryBuilder
+        const [raw, total] = await queryBuilder
             .orderBy('snippet.isFavorite', 'DESC')
             .addOrderBy('snippet.updatedAt', 'DESC')
-            .getMany();
+            .skip(skip)
+            .take(limit)
+            .getManyAndCount();
 
-        return await this.loadTagsForSnippets(snippets);
+        const items = await this.loadTagsForSnippets(raw);
+        return { items, total, page, limit, hasMore: skip + raw.length < total };
     }
 
     async findOne(id: number, userId: number) {

@@ -11,7 +11,7 @@ export class LinkController {
     async findAll(req: AuthRequest, res: Response, next: NextFunction) {
         try {
             const userId = req.userId!;
-            const { search, categoryId, isFavorite, tagIds } = req.query;
+            const { search, categoryId, isFavorite, tagIds, page, limit } = req.query;
 
             const filters: any = {};
             if (search) filters.search = search as string;
@@ -19,8 +19,13 @@ export class LinkController {
             if (isFavorite) filters.isFavorite = isFavorite === 'true';
             if (tagIds) filters.tagIds = (tagIds as string).split(',').map(Number);
 
-            const links = await linkService.findAll(userId, filters);
-            res.json({ links });
+            const pagination = {
+                page: parseInt(page as string) || 1,
+                limit: Math.min(parseInt(limit as string) || 20, 100),
+            };
+
+            const result = await linkService.findAll(userId, filters, pagination);
+            res.json(result);
         } catch (error) {
             next(error);
         }
