@@ -1,119 +1,76 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response } from 'express';
 import { LinkService } from '../services/Link.service';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { asyncHandler, HttpError } from '../middleware/asyncHandler';
 import { parseParamId } from '../utils/parsParamId';
-
-
 
 const linkService = new LinkService();
 
 export class LinkController {
-    async findAll(req: AuthRequest, res: Response, next: NextFunction) {
+    findAll = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const userId = req.userId!;
+        const { search, categoryId, isFavorite, tagIds, page, limit } = req.query;
+
+        const filters: any = {};
+        if (search) filters.search = search as string;
+        if (categoryId) filters.categoryId = parseInt(categoryId as string);
+        if (isFavorite) filters.isFavorite = isFavorite === 'true';
+        if (tagIds) filters.tagIds = (tagIds as string).split(',').map(Number);
+
+        const pagination = {
+            page: parseInt(page as string) || 1,
+            limit: Math.min(parseInt(limit as string) || 20, 100),
+        };
+
+        res.json(await linkService.findAll(userId, filters, pagination));
+    });
+
+    findOne = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const id = parseParamId(req.params.id)!;
+        const link = await linkService.findOne(id, req.userId!);
+        if (!link) throw new HttpError(404, 'Link not found');
+        res.json({ link });
+    });
+
+    create = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const linkData = {
+            ...req.body,
+            categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : undefined,
+        };
+        const link = await linkService.create(req.userId!, linkData);
+        res.status(201).json({ link });
+    });
+
+    update = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const id = parseParamId(req.params.id)!;
+        const linkData = {
+            ...req.body,
+            categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : undefined,
+        };
         try {
-            const userId = req.userId!;
-            const { search, categoryId, isFavorite, tagIds, page, limit } = req.query;
-
-            const filters: any = {};
-            if (search) filters.search = search as string;
-            if (categoryId) filters.categoryId = parseInt(categoryId as string);
-            if (isFavorite) filters.isFavorite = isFavorite === 'true';
-            if (tagIds) filters.tagIds = (tagIds as string).split(',').map(Number);
-
-            const pagination = {
-                page: parseInt(page as string) || 1,
-                limit: Math.min(parseInt(limit as string) || 20, 100),
-            };
-
-            const result = await linkService.findAll(userId, filters, pagination);
-            res.json(result);
-        } catch (error) {
-            next(error);
+            const link = await linkService.update(id, req.userId!, linkData);
+            res.json({ link });
+        } catch (e: any) {
+            throw e.message === 'Link not found' ? new HttpError(404, e.message) : e;
         }
-    }
+    });
 
-    async findOne(req: AuthRequest, res: Response, next: NextFunction) {
+    delete = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const id = parseParamId(req.params.id)!;
         try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
-
-                const link = await linkService.findOne(id, userId);
-                if (!link) {
-                    return res.status(404).json({ message: 'Link not found' });
-                }
-                res.json({ link });
-            }
-
-        } catch (error) {
-            next(error);
+            res.json(await linkService.delete(id, req.userId!));
+        } catch (e: any) {
+            throw e.message === 'Link not found' ? new HttpError(404, e.message) : e;
         }
-    }
+    });
 
-    // In LinkController.ts create and update methods:
-    async create(req: AuthRequest, res: Response, next: NextFunction) {
+    toggleFavorite = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const id = parseParamId(req.params.id)!;
         try {
-            const userId = req.userId!;
-            const linkData = {
-                ...req.body,
-                categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : undefined
-            };
-            const link = await linkService.create(userId, linkData);
-            res.status(201).json({ link });
-        } catch (error) {
-            next(error);
+            const link = await linkService.toggleFavorite(id, req.userId!);
+            res.json({ link });
+        } catch (e: any) {
+            throw e.message === 'Link not found' ? new HttpError(404, e.message) : e;
         }
-    }
-
-    async update(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            const linkData = {
-                ...req.body,
-                categoryId: req.body.categoryId ? parseInt(req.body.categoryId) : undefined
-            };
-            if (id) {
-                const link = await linkService.update(id, userId, linkData);
-                res.json({ link });
-            }
-
-        } catch (error) {
-            if (error instanceof Error && error.message === 'Link not found') {
-                return res.status(404).json({ message: error.message });
-            }
-            next(error);
-        }
-    }
-
-    async delete(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
-                const result = await linkService.delete(id, userId);
-                res.json(result);
-            }
-        } catch (error) {
-            if (error instanceof Error && error.message === 'Link not found') {
-                return res.status(404).json({ message: error.message });
-            }
-            next(error);
-        }
-    }
-
-    async toggleFavorite(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
-                const link = await linkService.toggleFavorite(id, userId);
-                res.json({ link });
-            }
-        } catch (error) {
-            if (error instanceof Error && error.message === 'Link not found') {
-                return res.status(404).json({ message: error.message });
-            }
-            next(error);
-        }
-    }
+    });
 }

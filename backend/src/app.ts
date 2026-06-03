@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { AppDataSource } from './config/database';
+import { initSearchIndexes } from './config/searchIndexes';
 import authRoutes from './routes/auth.route';
 import { errorHandler } from './middleware/errorHandler';
 import linkRoutes from './routes/links.route';
@@ -50,8 +51,13 @@ app.use(errorHandler);
 
 // Database connection
 AppDataSource.initialize()
-    .then(() => {
+    .then(async () => {
         console.log('Database connected successfully');
+        if (process.env.DB_SYNCHRONIZE !== 'true') {
+            await AppDataSource.runMigrations();
+            console.log('Migrations applied');
+        }
+        await initSearchIndexes();
     })
     .catch((error) => {
         console.error('Error connecting to database:', error);

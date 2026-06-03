@@ -1,6 +1,7 @@
 import { AppDataSource } from '../config/database';
 import { Note } from '../entities/Note';
 import { Taggable } from '../entities/Taggable';
+import { loadTagsForItems } from '../utils/tagLoader';
 
 export class NoteService {
     private noteRepository = AppDataSource.getRepository(Note);
@@ -165,23 +166,6 @@ export class NoteService {
     }
 
     private async loadTagsForNotes(notes: Note[]): Promise<any[]> {
-        const notesWithTags = [];
-
-        for (const note of notes) {
-            const taggables = await this.taggableRepository.find({
-                where: {
-                    taggableId: note.id,
-                    taggableType: 'note'
-                },
-                relations: ['tag']
-            });
-
-            notesWithTags.push({
-                ...note,
-                tags: taggables.map(t => t.tag)
-            });
-        }
-
-        return notesWithTags;
+        return loadTagsForItems(notes, 'note');
     }
 }

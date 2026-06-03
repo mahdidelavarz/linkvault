@@ -1,6 +1,7 @@
 import { AppDataSource } from '../config/database';
 import { Infrastructure } from '../entities/Infrastructure';
 import { Taggable } from '../entities/Taggable';
+import { loadTagsForItems } from '../utils/tagLoader';
 
 export class InfraService {
     private infraRepository = AppDataSource.getRepository(Infrastructure);
@@ -116,14 +117,6 @@ export class InfraService {
     }
 
     private async loadTags(items: Infrastructure[]): Promise<any[]> {
-        const result = [];
-        for (const item of items) {
-            const taggables = await this.taggableRepository.find({
-                where: { taggableId: item.id, taggableType: 'infrastructure' },
-                relations: ['tag']
-            });
-            result.push({ ...item, tags: taggables.map(t => t.tag) });
-        }
-        return result;
+        return loadTagsForItems(items, 'infrastructure');
     }
 }

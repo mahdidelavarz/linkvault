@@ -1,8 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { User } from './User';
 import { Category } from './Category';
 
 @Entity('prompts')
+@Index(['userId', 'updatedAt'])
 export class Prompt {
     @PrimaryGeneratedColumn()
     id!: number;
@@ -16,9 +17,11 @@ export class Prompt {
     @Column({ type: 'text', nullable: true })
     description?: string;
 
+    @Index()
     @Column({ type: 'varchar', length: 50, name: 'prompt_type' })
     promptType!: string;
 
+    @Index()
     @Column({ type: 'varchar', length: 50, nullable: true, name: 'target_ai' })
     targetAI?: string;
 
@@ -31,6 +34,7 @@ export class Prompt {
     @Column({ type: 'timestamp', nullable: true, name: 'last_used_at' })
     lastUsedAt?: Date;
 
+    @Index()
     @Column({ type: 'boolean', default: false, name: 'is_favorite' })
     isFavorite!: boolean;
 
@@ -38,6 +42,7 @@ export class Prompt {
     @JoinColumn({ name: 'category_id' })
     category?: Category;
 
+    @Index()
     @Column({ type: 'int', nullable: true, name: 'category_id' })
     categoryId?: number;
 
@@ -45,6 +50,7 @@ export class Prompt {
     @JoinColumn({ name: 'user_id' })
     user!: User;
 
+    @Index()
     @Column({ type: 'int', name: 'user_id' })
     userId!: number;
 

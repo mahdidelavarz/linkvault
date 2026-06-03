@@ -1,8 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { User } from './User';
 import { Category } from './Category';
 
 @Entity('snippets')
+@Index(['userId', 'updatedAt'])
 export class Snippet {
     @PrimaryGeneratedColumn()
     id!: number;
@@ -13,9 +14,11 @@ export class Snippet {
     @Column({ type: 'text' })
     content!: string;
 
+    @Index()
     @Column({ type: 'varchar', length: 50, default: 'txt' })
     language!: string;
 
+    @Index()
     @Column({ type: 'varchar', length: 50, default: 'code', name: 'snippet_type' })
     snippetType!: string;
 
@@ -25,6 +28,7 @@ export class Snippet {
     @Column({ type: 'simple-json', nullable: true })
     metadata?: any;
 
+    @Index()
     @Column({ type: 'boolean', default: false, name: 'is_favorite' })
     isFavorite!: boolean;
 
@@ -32,6 +36,7 @@ export class Snippet {
     @JoinColumn({ name: 'category_id' })
     category?: Category;
 
+    @Index()
     @Column({ type: 'int', nullable: true, name: 'category_id' })
     categoryId?: number;
 
@@ -39,6 +44,7 @@ export class Snippet {
     @JoinColumn({ name: 'user_id' })
     user!: User;
 
+    @Index()
     @Column({ type: 'int', name: 'user_id' })
     userId!: number;
 

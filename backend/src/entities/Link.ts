@@ -1,8 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { User } from './User';
 import { Category } from './Category';
 
 @Entity('links')
+@Index(['userId', 'updatedAt'])
 export class Link {
     @PrimaryGeneratedColumn()
     id!: number;
@@ -28,6 +29,7 @@ export class Link {
     @Column({ type: 'varchar', length: 20, nullable: true })
     phone?: string;
 
+    @Index()
     @Column({ type: 'boolean', default: false, name: 'is_favorite' })
     isFavorite!: boolean;
 
@@ -35,6 +37,7 @@ export class Link {
     @JoinColumn({ name: 'category_id' })
     category?: Category;
 
+    @Index()
     @Column({ type: 'int', nullable: true, name: 'category_id' })
     categoryId?: number;
 
@@ -42,6 +45,7 @@ export class Link {
     @JoinColumn({ name: 'user_id' })
     user!: User;
 
+    @Index()
     @Column({ type: 'int', name: 'user_id' })
     userId!: number;
 

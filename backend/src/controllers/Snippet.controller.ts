@@ -1,110 +1,66 @@
-import { Response, NextFunction } from 'express';
+import { Response } from 'express';
 import { SnippetService } from '../services/Snippet.service';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { asyncHandler, HttpError } from '../middleware/asyncHandler';
 import { parseParamId } from '../utils/parsParamId';
-
 
 const snippetService = new SnippetService();
 
 export class SnippetController {
-    async findAll(req: AuthRequest, res: Response, next: NextFunction) {
+    findAll = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const userId = req.userId!;
+        const { search, categoryId, language, isFavorite, tagIds, snippetType, page, limit } = req.query;
+
+        const filters: any = {};
+        if (search) filters.search = search as string;
+        if (categoryId) filters.categoryId = parseInt(categoryId as string);
+        if (language) filters.language = language as string;
+        if (isFavorite) filters.isFavorite = isFavorite === 'true';
+        if (tagIds) filters.tagIds = (tagIds as string).split(',').map(Number);
+        if (snippetType) filters.snippetType = snippetType as string;
+
+        const pagination = {
+            page: parseInt(page as string) || 1,
+            limit: Math.min(parseInt(limit as string) || 20, 100),
+        };
+
+        res.json(await snippetService.findAll(userId, filters, pagination));
+    });
+
+    findOne = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const snippet = await snippetService.findOne(parseParamId(req.params.id)!, req.userId!);
+        if (!snippet) throw new HttpError(404, 'Snippet not found');
+        res.json({ snippet });
+    });
+
+    create = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const snippet = await snippetService.create(req.userId!, req.body);
+        res.status(201).json({ snippet });
+    });
+
+    update = asyncHandler(async (req: AuthRequest, res: Response) => {
         try {
-            const userId = req.userId!;
-            const { search, categoryId, language, isFavorite, tagIds, snippetType, page, limit } = req.query;
-
-            const filters: any = {};
-            if (search) filters.search = search as string;
-            if (categoryId) filters.categoryId = parseInt(categoryId as string);
-            if (language) filters.language = language as string;
-            if (isFavorite) filters.isFavorite = isFavorite === 'true';
-            if (tagIds) filters.tagIds = (tagIds as string).split(',').map(Number);
-            if (snippetType) filters.snippetType = snippetType as string;
-
-            const pagination = {
-                page: parseInt(page as string) || 1,
-                limit: Math.min(parseInt(limit as string) || 20, 100),
-            };
-
-            const result = await snippetService.findAll(userId, filters, pagination);
-            res.json(result);
-        } catch (error) {
-            next(error);
+            const snippet = await snippetService.update(parseParamId(req.params.id)!, req.userId!, req.body);
+            res.json({ snippet });
+        } catch (e: any) {
+            throw e.message === 'Snippet not found' ? new HttpError(404, e.message) : e;
         }
-    }
+    });
 
-    async findOne(req: AuthRequest, res: Response, next: NextFunction) {
+    delete = asyncHandler(async (req: AuthRequest, res: Response) => {
         try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
-                const snippet = await snippetService.findOne(id, userId);
-
-                if (!snippet) {
-                    return res.status(404).json({ message: 'Snippet not found' });
-                }
-
-                res.json({ snippet });
-            }
-        } catch (error) {
-            next(error);
+            res.json(await snippetService.delete(parseParamId(req.params.id)!, req.userId!));
+        } catch (e: any) {
+            throw e.message === 'Snippet not found' ? new HttpError(404, e.message) : e;
         }
-    }
+    });
 
-    async create(req: AuthRequest, res: Response, next: NextFunction) {
+    toggleFavorite = asyncHandler(async (req: AuthRequest, res: Response) => {
         try {
-            const userId = req.userId!;
-            const snippet = await snippetService.create(userId, req.body);
-            res.status(201).json({ snippet });
-        } catch (error) {
-            next(error);
+            const snippet = await snippetService.toggleFavorite(parseParamId(req.params.id)!, req.userId!);
+            res.json({ snippet });
+        } catch (e: any) {
+            throw e.message === 'Snippet not found' ? new HttpError(404, e.message) : e;
         }
-    }
-
-    async update(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
-                const snippet = await snippetService.update(id, userId, req.body);
-                res.json({ snippet });
-            }
-        } catch (error) {
-            if (error instanceof Error && error.message === 'Snippet not found') {
-                return res.status(404).json({ message: error.message });
-            }
-            next(error);
-        }
-    }
-
-    async delete(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
-                const result = await snippetService.delete(id, userId);
-                res.json(result);
-            }
-        } catch (error) {
-            if (error instanceof Error && error.message === 'Snippet not found') {
-                return res.status(404).json({ message: error.message });
-            }
-            next(error);
-        }
-    }
-
-    async toggleFavorite(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
-                const snippet = await snippetService.toggleFavorite(id, userId);
-                res.json({ snippet });
-            }
-        } catch (error) {
-            if (error instanceof Error && error.message === 'Snippet not found') {
-                return res.status(404).json({ message: error.message });
-            }
-            next(error);
-        }
-    }
+    });
 }

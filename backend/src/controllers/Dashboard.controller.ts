@@ -1,26 +1,16 @@
-import { Response, NextFunction } from 'express';
+import { Response } from 'express';
 import { DashboardService } from '../services/Dashboard.service';
 import { AuthRequest } from '../middleware/auth.middleware';
-
+import { asyncHandler } from '../middleware/asyncHandler';
 
 const dashboardService = new DashboardService();
 
 export class DashboardController {
-    async getDashboard(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            const userId = req.userId!;
-            
-            const [stats, recentItems] = await Promise.all([
-                dashboardService.getStats(userId),
-                dashboardService.getRecentItems(userId)
-            ]);
-
-            res.json({
-                stats,
-                recentItems
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
+    getDashboard = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const [stats, recentItems] = await Promise.all([
+            dashboardService.getStats(req.userId!),
+            dashboardService.getRecentItems(req.userId!),
+        ]);
+        res.json({ stats, recentItems });
+    });
 }

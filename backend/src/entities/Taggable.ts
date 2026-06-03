@@ -1,11 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Tag } from './Tag';
 
 @Entity('taggables')
+@Index(['taggableId', 'taggableType'])
 export class Taggable {
     @PrimaryGeneratedColumn()
     id!: number;
 
+    @Index()
     @Column({ type: 'int', name: 'tag_id' })
     tagId!: number;
 

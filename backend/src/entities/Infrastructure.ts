@@ -1,8 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { User } from './User';
 import { Category } from './Category';
 
 @Entity('infrastructures')
+@Index(['userId', 'updatedAt'])
 export class Infrastructure {
     @PrimaryGeneratedColumn()
     id!: number;
@@ -10,6 +11,7 @@ export class Infrastructure {
     @Column({ type: 'varchar', length: 255 })
     title!: string;
 
+    @Index()
     @Column({ type: 'varchar', length: 50, name: 'infra_type' })
     infraType!: string;
 
@@ -22,6 +24,7 @@ export class Infrastructure {
     @Column({ type: 'simple-json', nullable: true })
     metadata?: any;
 
+    @Index()
     @Column({ type: 'boolean', default: false, name: 'is_favorite' })
     isFavorite!: boolean;
 
@@ -29,6 +32,7 @@ export class Infrastructure {
     @JoinColumn({ name: 'category_id' })
     category?: Category;
 
+    @Index()
     @Column({ type: 'int', nullable: true, name: 'category_id' })
     categoryId?: number;
 
@@ -36,6 +40,7 @@ export class Infrastructure {
     @JoinColumn({ name: 'user_id' })
     user!: User;
 
+    @Index()
     @Column({ type: 'int', name: 'user_id' })
     userId!: number;
 

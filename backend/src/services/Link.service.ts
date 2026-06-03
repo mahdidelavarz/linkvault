@@ -2,6 +2,7 @@ import { AppDataSource } from '../config/database';
 import { Link } from '../entities/Link';
 import { Taggable } from '../entities/Taggable';
 import { encrypt, decrypt } from '../utils/crypto';
+import { loadTagsForItems } from '../utils/tagLoader';
 
 export class LinkService {
     private linkRepository = AppDataSource.getRepository(Link);
@@ -189,24 +190,10 @@ export class LinkService {
     }
 
     private async loadTagsForLinks(links: Link[]): Promise<any[]> {
-        const linksWithTags = [];
-
-        for (const link of links) {
-            const taggables = await this.taggableRepository.find({
-                where: { 
-                    taggableId: link.id, 
-                    taggableType: 'link' 
-                },
-                relations: ['tag']
-            });
-
-            linksWithTags.push({
-                ...link,
-                passwordEncrypted: link.passwordEncrypted ? decrypt(link.passwordEncrypted) : link.passwordEncrypted,
-                tags: taggables.map(t => t.tag)
-            });
-        }
-
-        return linksWithTags;
+        const withTags = await loadTagsForItems(links, 'link');
+        return withTags.map(link => ({
+            ...link,
+            passwordEncrypted: link.passwordEncrypted ? decrypt(link.passwordEncrypted) : link.passwordEncrypted,
+        }));
     }
 }

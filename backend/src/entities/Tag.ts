@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { User } from './User';
 
 @Entity('tags')
@@ -13,6 +13,7 @@ export class Tag {
     @JoinColumn({ name: 'user_id' })
     user!: User;
 
+    @Index()
     @Column({ type: 'int', name: 'user_id' })
     userId!: number;
 }

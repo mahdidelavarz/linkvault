@@ -1,0 +1,117 @@
+import { z } from 'zod';
+
+// ─── Auth ──────────────────────────────────────────────────────────────────────
+
+export const registerSchema = z.object({
+    username: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_]+$/, 'Only letters, numbers and underscores'),
+    password: z.string().min(8).regex(/[A-Z]/, 'Must contain uppercase').regex(/[0-9]/, 'Must contain a number'),
+    email: z.email().optional(),
+});
+
+export const loginSchema = z.object({
+    username: z.string().min(1, 'Username is required'),
+    password: z.string().min(1, 'Password is required'),
+});
+
+export const forgotPasswordSchema = z.object({
+    email: z.email('Must be a valid email'),
+});
+
+export const resetPasswordSchema = z.object({
+    token: z.string().min(1, 'Token is required'),
+    password: z.string().min(8).regex(/[A-Z]/, 'Must contain uppercase').regex(/[0-9]/, 'Must contain a number'),
+});
+
+// ─── Link ──────────────────────────────────────────────────────────────────────
+
+export const createLinkSchema = z.object({
+    url: z.url('Must be a valid URL'),
+    title: z.string().min(1).max(255),
+    description: z.string().max(5000).optional(),
+    username: z.string().max(100).optional(),
+    password: z.string().max(255).optional(),
+    email: z.email().optional().or(z.literal('')),
+    phone: z.string().max(20).optional(),
+    isFavorite: z.boolean().optional(),
+    categoryId: z.number().int().positive().nullable().optional(),
+    tagIds: z.array(z.number().int().positive()).optional(),
+});
+
+export const updateLinkSchema = createLinkSchema.partial();
+
+// ─── Note ──────────────────────────────────────────────────────────────────────
+
+export const createNoteSchema = z.object({
+    title: z.string().min(1).max(255),
+    content: z.string().optional(),
+    isPinned: z.boolean().optional(),
+    categoryId: z.number().int().positive().nullable().optional(),
+    tagIds: z.array(z.number().int().positive()).optional(),
+});
+
+export const updateNoteSchema = createNoteSchema.partial();
+
+// ─── Snippet ───────────────────────────────────────────────────────────────────
+
+export const createSnippetSchema = z.object({
+    title: z.string().min(1).max(255),
+    content: z.string().min(1),
+    language: z.string().max(50).optional(),
+    snippetType: z.string().max(50).optional(),
+    description: z.string().max(2000).optional(),
+    metadata: z.any().optional(),
+    isFavorite: z.boolean().optional(),
+    categoryId: z.number().int().positive().nullable().optional(),
+    tagIds: z.array(z.number().int().positive()).optional(),
+});
+
+export const updateSnippetSchema = createSnippetSchema.partial();
+
+// ─── Prompt ────────────────────────────────────────────────────────────────────
+
+export const createPromptSchema = z.object({
+    title: z.string().min(1).max(255),
+    content: z.string().min(1),
+    description: z.string().max(2000).optional(),
+    promptType: z.string().max(50),
+    targetAI: z.string().max(50).optional(),
+    expectedOutput: z.string().optional(),
+    isFavorite: z.boolean().optional(),
+    categoryId: z.number().int().positive().nullable().optional(),
+    tagIds: z.array(z.number().int().positive()).optional(),
+});
+
+export const updatePromptSchema = createPromptSchema.partial();
+
+// ─── Infrastructure ────────────────────────────────────────────────────────────
+
+export const createInfraSchema = z.object({
+    title: z.string().min(1).max(255),
+    infraType: z.string().max(50),
+    content: z.string().min(1),
+    description: z.string().max(2000).optional(),
+    metadata: z.any().optional(),
+    isFavorite: z.boolean().optional(),
+    categoryId: z.number().int().positive().nullable().optional(),
+    tagIds: z.array(z.number().int().positive()).optional(),
+});
+
+export const updateInfraSchema = createInfraSchema.partial();
+
+// ─── Tag ───────────────────────────────────────────────────────────────────────
+
+export const createTagSchema = z.object({
+    name: z.string().min(1).max(50),
+    color: z.string().max(20).optional(),
+});
+
+export const updateTagSchema = createTagSchema.partial();
+
+// ─── Category ──────────────────────────────────────────────────────────────────
+
+export const createCategorySchema = z.object({
+    name: z.string().min(1).max(100),
+    parentId: z.number().int().positive().nullable().optional(),
+});
+
+export const updateCategorySchema = createCategorySchema.partial();

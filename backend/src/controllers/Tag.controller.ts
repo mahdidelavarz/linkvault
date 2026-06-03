@@ -1,85 +1,51 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response } from 'express';
 import { TagService } from '../services/Tag.service';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { asyncHandler, HttpError } from '../middleware/asyncHandler';
 import { parseParamId } from '../utils/parsParamId';
-
 
 const tagService = new TagService();
 
 export class TagController {
-    async findAll(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            const userId = req.userId!;
-            const tags = await tagService.findAll(userId);
-            res.json({ tags });
-        } catch (error) {
-            next(error);
-        }
-    }
+    findAll = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const tags = await tagService.findAll(req.userId!);
+        res.json({ tags });
+    });
 
-    async findOne(req: AuthRequest, res: Response, next: NextFunction) {
+    findOne = asyncHandler(async (req: AuthRequest, res: Response) => {
         try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
-                const tag = await tagService.findOne(id, userId);
-                res.json({ tag });
-            }
-        } catch (error) {
-            if (error instanceof Error && error.message === 'Tag not found') {
-                return res.status(404).json({ message: error.message });
-            }
-            next(error);
+            const tag = await tagService.findOne(parseParamId(req.params.id)!, req.userId!);
+            res.json({ tag });
+        } catch (e: any) {
+            throw e.message === 'Tag not found' ? new HttpError(404, e.message) : e;
         }
-    }
+    });
 
-    async create(req: AuthRequest, res: Response, next: NextFunction) {
+    create = asyncHandler(async (req: AuthRequest, res: Response) => {
         try {
-            const userId = req.userId!;
-            const tag = await tagService.create(userId, req.body);
+            const tag = await tagService.create(req.userId!, req.body);
             res.status(201).json({ tag });
-        } catch (error) {
-            if (error instanceof Error && error.message.includes('already exists')) {
-                return res.status(409).json({ message: error.message });
-            }
-            next(error);
+        } catch (e: any) {
+            throw e.message?.includes('already exists') ? new HttpError(409, e.message) : e;
         }
-    }
+    });
 
-    async update(req: AuthRequest, res: Response, next: NextFunction) {
+    update = asyncHandler(async (req: AuthRequest, res: Response) => {
         try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
-                const tag = await tagService.update(id, userId, req.body);
-                res.json({ tag });
-            }
-        } catch (error) {
-            if (error instanceof Error) {
-                if (error.message === 'Tag not found') {
-                    return res.status(404).json({ message: error.message });
-                }
-                if (error.message.includes('already exists')) {
-                    return res.status(409).json({ message: error.message });
-                }
-            }
-            next(error);
+            const tag = await tagService.update(parseParamId(req.params.id)!, req.userId!, req.body);
+            res.json({ tag });
+        } catch (e: any) {
+            if (e.message === 'Tag not found') throw new HttpError(404, e.message);
+            if (e.message?.includes('already exists')) throw new HttpError(409, e.message);
+            throw e;
         }
-    }
+    });
 
-    async delete(req: AuthRequest, res: Response, next: NextFunction) {
+    delete = asyncHandler(async (req: AuthRequest, res: Response) => {
         try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
-                const result = await tagService.delete(id, userId);
-                res.json(result);
-            }
-        } catch (error) {
-            if (error instanceof Error && error.message === 'Tag not found') {
-                return res.status(404).json({ message: error.message });
-            }
-            next(error);
+            res.json(await tagService.delete(parseParamId(req.params.id)!, req.userId!));
+        } catch (e: any) {
+            throw e.message === 'Tag not found' ? new HttpError(404, e.message) : e;
         }
-    }
+    });
 }

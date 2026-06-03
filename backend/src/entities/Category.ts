@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, OneToMany, JoinColumn, Index } from 'typeorm';
 import { User } from './User';
 import { Link } from './Link';
 import { Note } from './Note';
@@ -15,6 +15,7 @@ export class Category {
     @JoinColumn({ name: 'parent_id' })
     parent!: Category;
 
+    @Index()
     @Column({ type: 'int', nullable: true, name: 'parent_id' })
     parentId!: number;
 
@@ -31,6 +32,7 @@ export class Category {
     @JoinColumn({ name: 'user_id' })
     user!: User;
 
+    @Index()
     @Column({ type: 'int', name: 'user_id' })
     userId!: number;
 

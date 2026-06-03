@@ -1,8 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { User } from './User';
 import { Category } from './Category';
 
 @Entity('notes')
+@Index(['userId', 'updatedAt'])
 export class Note {
     @PrimaryGeneratedColumn()
     id!: number;
@@ -13,6 +14,7 @@ export class Note {
     @Column({ type: 'text', nullable: true })
     content!: string;
 
+    @Index()
     @Column({ type: 'boolean', default: false, name: 'is_pinned' })
     isPinned!: boolean;
 
@@ -20,6 +22,7 @@ export class Note {
     @JoinColumn({ name: 'category_id' })
     category!: Category;
 
+    @Index()
     @Column({ type: 'int', nullable: true, name: 'category_id' })
     categoryId!: number;
 
@@ -27,6 +30,7 @@ export class Note {
     @JoinColumn({ name: 'user_id' })
     user!: User;
 
+    @Index()
     @Column({ type: 'int', name: 'user_id' })
     userId!: number;
 

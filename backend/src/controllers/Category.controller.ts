@@ -1,95 +1,56 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response } from 'express';
 import { CategoryService } from '../services/Category.service';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { asyncHandler, HttpError } from '../middleware/asyncHandler';
 import { parseParamId } from '../utils/parsParamId';
-
 
 const categoryService = new CategoryService();
 
 export class CategoryController {
-    async findAll(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            const userId = req.userId!;
-            const categories = await categoryService.findAll(userId);
-            res.json({ categories });
-        } catch (error) {
-            next(error);
-        }
-    }
+    findAll = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const categories = await categoryService.findAll(req.userId!);
+        res.json({ categories });
+    });
 
-    async findOne(req: AuthRequest, res: Response, next: NextFunction) {
+    findOne = asyncHandler(async (req: AuthRequest, res: Response) => {
         try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
-                const category = await categoryService.findOne(id, userId);
-                res.json({ category });
-            }
-        } catch (error) {
-            if (error instanceof Error && error.message === 'Category not found') {
-                return res.status(404).json({ message: error.message });
-            }
-            next(error);
+            const category = await categoryService.findOne(parseParamId(req.params.id)!, req.userId!);
+            res.json({ category });
+        } catch (e: any) {
+            throw e.message === 'Category not found' ? new HttpError(404, e.message) : e;
         }
-    }
+    });
 
-    async create(req: AuthRequest, res: Response, next: NextFunction) {
+    create = asyncHandler(async (req: AuthRequest, res: Response) => {
         try {
-            const userId = req.userId!;
-            const category = await categoryService.create(userId, req.body);
+            const category = await categoryService.create(req.userId!, req.body);
             res.status(201).json({ category });
-        } catch (error) {
-            if (error instanceof Error && error.message.includes('already exists')) {
-                return res.status(409).json({ message: error.message });
-            }
-            next(error);
+        } catch (e: any) {
+            throw e.message?.includes('already exists') ? new HttpError(409, e.message) : e;
         }
-    }
+    });
 
-    async update(req: AuthRequest, res: Response, next: NextFunction) {
+    update = asyncHandler(async (req: AuthRequest, res: Response) => {
         try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
-                const category = await categoryService.update(id, userId, req.body);
-                res.json({ category });
-            }
-        } catch (error) {
-            if (error instanceof Error) {
-                if (error.message === 'Category not found') {
-                    return res.status(404).json({ message: error.message });
-                }
-                if (error.message === 'Category cannot be its own parent') {
-                    return res.status(400).json({ message: error.message });
-                }
-            }
-            next(error);
+            const category = await categoryService.update(parseParamId(req.params.id)!, req.userId!, req.body);
+            res.json({ category });
+        } catch (e: any) {
+            if (e.message === 'Category not found') throw new HttpError(404, e.message);
+            if (e.message === 'Category cannot be its own parent') throw new HttpError(400, e.message);
+            throw e;
         }
-    }
+    });
 
-    async delete(req: AuthRequest, res: Response, next: NextFunction) {
+    delete = asyncHandler(async (req: AuthRequest, res: Response) => {
         try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
-                const result = await categoryService.delete(id, userId);
-                res.json(result);
-            }
-        } catch (error) {
-            if (error instanceof Error && error.message === 'Category not found') {
-                return res.status(404).json({ message: error.message });
-            }
-            next(error);
+            res.json(await categoryService.delete(parseParamId(req.params.id)!, req.userId!));
+        } catch (e: any) {
+            throw e.message === 'Category not found' ? new HttpError(404, e.message) : e;
         }
-    }
+    });
 
-    async getTree(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            const userId = req.userId!;
-            const tree = await categoryService.getCategoryTree(userId);
-            res.json({ tree });
-        } catch (error) {
-            next(error);
-        }
-    }
+    getTree = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const tree = await categoryService.getCategoryTree(req.userId!);
+        res.json({ tree });
+    });
 }

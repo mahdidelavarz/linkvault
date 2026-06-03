@@ -105,18 +105,38 @@ export class CategoryService {
             throw new Error('Category not found');
         }
 
-        if (data.parentId && data.parentId === id) {
-            throw new Error('Category cannot be its own parent');
+        if (data.parentId !== undefined && data.parentId !== null) {
+            if (await this.wouldCreateCycle(id, data.parentId)) {
+                throw new Error('Category cannot be its own parent');
+            }
         }
 
         if (data.name) category.name = data.name;
-        if (data.parentId) {
-            category.parentId = data.parentId;
+        if (data.parentId !== undefined) {
+            category.parentId = data.parentId ?? undefined as any;
         }
 
         await this.categoryRepository.save(category);
 
         return await this.findOne(id, userId);
+    }
+
+    private async wouldCreateCycle(categoryId: number, newParentId: number): Promise<boolean> {
+        let current: number | null = newParentId;
+        const visited = new Set<number>();
+
+        while (current !== null && current !== undefined) {
+            if (current === categoryId) return true;
+            if (visited.has(current)) return false;
+            visited.add(current);
+
+            const row = await this.categoryRepository.findOne({
+                where: { id: current },
+                select: ['parentId'],
+            });
+            current = row?.parentId ?? null;
+        }
+        return false;
     }
 
     async delete(id: number, userId: number) {

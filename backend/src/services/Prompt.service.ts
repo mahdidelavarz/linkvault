@@ -1,6 +1,7 @@
 import { AppDataSource } from '../config/database';
 import { Prompt } from '../entities/Prompt';
 import { Taggable } from '../entities/Taggable';
+import { loadTagsForItems } from '../utils/tagLoader';
 
 export class PromptService {
     private promptRepository = AppDataSource.getRepository(Prompt);
@@ -195,23 +196,6 @@ export class PromptService {
     }
 
     private async loadTagsForPrompts(prompts: Prompt[]): Promise<any[]> {
-        const promptsWithTags = [];
-
-        for (const prompt of prompts) {
-            const taggables = await this.taggableRepository.find({
-                where: {
-                    taggableId: prompt.id,
-                    taggableType: 'prompt'
-                },
-                relations: ['tag']
-            });
-
-            promptsWithTags.push({
-                ...prompt,
-                tags: taggables.map(t => t.tag)
-            });
-        }
-
-        return promptsWithTags;
+        return loadTagsForItems(prompts, 'prompt');
     }
 }

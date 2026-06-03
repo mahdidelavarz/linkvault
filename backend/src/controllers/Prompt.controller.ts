@@ -1,128 +1,69 @@
-import { Response, NextFunction } from 'express';
+import { Response } from 'express';
 import { PromptService } from '../services/Prompt.service';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { asyncHandler, HttpError } from '../middleware/asyncHandler';
 import { parseParamId } from '../utils/parsParamId';
-
 
 const promptService = new PromptService();
 
+const notFound = (e: any) => { throw e.message === 'Prompt not found' ? new HttpError(404, e.message) : e; };
+
 export class PromptController {
-    async findAll(req: AuthRequest, res: Response, next: NextFunction) {
+    findAll = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const userId = req.userId!;
+        const { search, categoryId, promptType, targetAI, isFavorite, tagIds, page, limit } = req.query;
+
+        const filters: any = {};
+        if (search) filters.search = search as string;
+        if (categoryId) filters.categoryId = parseInt(categoryId as string);
+        if (promptType) filters.promptType = promptType as string;
+        if (targetAI) filters.targetAI = targetAI as string;
+        if (isFavorite) filters.isFavorite = isFavorite === 'true';
+        if (tagIds) filters.tagIds = (tagIds as string).split(',').map(Number);
+
+        const pagination = {
+            page: parseInt(page as string) || 1,
+            limit: Math.min(parseInt(limit as string) || 20, 100),
+        };
+
+        res.json(await promptService.findAll(userId, filters, pagination));
+    });
+
+    findOne = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const prompt = await promptService.findOne(parseParamId(req.params.id)!, req.userId!);
+        if (!prompt) throw new HttpError(404, 'Prompt not found');
+        res.json({ prompt });
+    });
+
+    create = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const prompt = await promptService.create(req.userId!, req.body);
+        res.status(201).json({ prompt });
+    });
+
+    update = asyncHandler(async (req: AuthRequest, res: Response) => {
         try {
-            const userId = req.userId!;
-            const { search, categoryId, promptType, targetAI, isFavorite, tagIds, page, limit } = req.query;
+            const prompt = await promptService.update(parseParamId(req.params.id)!, req.userId!, req.body);
+            res.json({ prompt });
+        } catch (e: any) { notFound(e); }
+    });
 
-            const filters: any = {};
-            if (search) filters.search = search as string;
-            if (categoryId) filters.categoryId = parseInt(categoryId as string);
-            if (promptType) filters.promptType = promptType as string;
-            if (targetAI) filters.targetAI = targetAI as string;
-            if (isFavorite) filters.isFavorite = isFavorite === 'true';
-            if (tagIds) filters.tagIds = (tagIds as string).split(',').map(Number);
-
-            const pagination = {
-                page: parseInt(page as string) || 1,
-                limit: Math.min(parseInt(limit as string) || 20, 100),
-            };
-
-            const result = await promptService.findAll(userId, filters, pagination);
-            res.json(result);
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async findOne(req: AuthRequest, res: Response, next: NextFunction) {
+    delete = asyncHandler(async (req: AuthRequest, res: Response) => {
         try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
+            res.json(await promptService.delete(parseParamId(req.params.id)!, req.userId!));
+        } catch (e: any) { notFound(e); }
+    });
 
-                const prompt = await promptService.findOne(id, userId);
-
-                if (!prompt) {
-                    return res.status(404).json({ message: 'Prompt not found' });
-                }
-
-                res.json({ prompt });
-            }
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    async create(req: AuthRequest, res: Response, next: NextFunction) {
+    toggleFavorite = asyncHandler(async (req: AuthRequest, res: Response) => {
         try {
-            const userId = req.userId!;
-            const prompt = await promptService.create(userId, req.body);
-            res.status(201).json({ prompt });
-        } catch (error) {
-            next(error);
-        }
-    }
+            const prompt = await promptService.toggleFavorite(parseParamId(req.params.id)!, req.userId!);
+            res.json({ prompt });
+        } catch (e: any) { notFound(e); }
+    });
 
-    async update(req: AuthRequest, res: Response, next: NextFunction) {
+    incrementUsage = asyncHandler(async (req: AuthRequest, res: Response) => {
         try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
-
-                const prompt = await promptService.update(id, userId, req.body);
-                res.json({ prompt });
-            }
-        } catch (error) {
-            if (error instanceof Error && error.message === 'Prompt not found') {
-                return res.status(404).json({ message: error.message });
-            }
-            next(error);
-        }
-    }
-
-    async delete(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
-                const result = await promptService.delete(id, userId);
-                res.json(result);
-            }
-        } catch (error) {
-            if (error instanceof Error && error.message === 'Prompt not found') {
-                return res.status(404).json({ message: error.message });
-            }
-            next(error);
-        }
-    }
-
-    async toggleFavorite(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
-                const prompt = await promptService.toggleFavorite(id, userId);
-                res.json({ prompt });
-            }
-        } catch (error) {
-            if (error instanceof Error && error.message === 'Prompt not found') {
-                return res.status(404).json({ message: error.message });
-            }
-            next(error);
-        }
-    }
-
-    async incrementUsage(req: AuthRequest, res: Response, next: NextFunction) {
-        try {
-            const userId = req.userId!;
-            const id = parseParamId(req.params.id);
-            if (id) {
-                const prompt = await promptService.incrementUsage(id, userId);
-                res.json({ prompt });
-            }
-        } catch (error) {
-            if (error instanceof Error && error.message === 'Prompt not found') {
-                return res.status(404).json({ message: error.message });
-            }
-            next(error);
-        }
-    }
+            const prompt = await promptService.incrementUsage(parseParamId(req.params.id)!, req.userId!);
+            res.json({ prompt });
+        } catch (e: any) { notFound(e); }
+    });
 }

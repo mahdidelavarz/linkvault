@@ -1,6 +1,7 @@
 import { AppDataSource } from '../config/database';
 import { Snippet } from '../entities/Snippet';
 import { Taggable } from '../entities/Taggable';
+import { loadTagsForItems } from '../utils/tagLoader';
 
 export class SnippetService {
     private snippetRepository = AppDataSource.getRepository(Snippet);
@@ -177,23 +178,6 @@ export class SnippetService {
     }
 
     private async loadTagsForSnippets(snippets: Snippet[]): Promise<any[]> {
-        const snippetsWithTags = [];
-
-        for (const snippet of snippets) {
-            const taggables = await this.taggableRepository.find({
-                where: {
-                    taggableId: snippet.id,
-                    taggableType: 'snippet'
-                },
-                relations: ['tag']
-            });
-
-            snippetsWithTags.push({
-                ...snippet,
-                tags: taggables.map(t => t.tag)
-            });
-        }
-
-        return snippetsWithTags;
+        return loadTagsForItems(snippets, 'snippet');
     }
 }
