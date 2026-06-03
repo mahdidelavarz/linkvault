@@ -180,7 +180,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const CSS = `
-.categories-page { display: flex; flex-direction: column;gap:10px; }
+.categories-page { display: flex; flex-direction: column; gap:10px; flex: 1; overflow-y: auto; padding: 15px 24px 24px; }
 
 /* Header */
 .page-header {

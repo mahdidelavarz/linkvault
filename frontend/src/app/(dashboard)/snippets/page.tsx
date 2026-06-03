@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useSnippets } from "@/hooks/useSnippet";
+import PageLayout from "@/components/layout/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import CardGrid from "@/components/shared/CardGrid";
@@ -139,8 +140,7 @@ export default function SnippetsPage() {
   return (
     <>
       <style>{CSS}</style>
-      <div className="sp-page">
-        {/* ── Header ── */}
+      <PageLayout top={<>
         <PageHeader
           title="Snippets"
           subtitle={isLoading ? "…" : `${total} snippets`}
@@ -305,6 +305,8 @@ export default function SnippetsPage() {
             </div>
           )}
         </div>
+      </>}
+      >
 
         {/* ── Grid ── */}
         {isLoading ? (
@@ -332,7 +334,7 @@ export default function SnippetsPage() {
             onClearFilters={clearFilters}
           />
         )}
-      </div>
+      </PageLayout>
 
       <Modal
         isOpen={formOpen}

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { usePrompts } from "@/hooks/usePrompt";
+import PageLayout from "@/components/layout/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import CardGrid from "@/components/shared/CardGrid";
@@ -75,8 +76,7 @@ export default function PromptsPage() {
   return (
     <>
       <style>{CSS}</style>
-      <div className="prompts-page">
-        {/* ── Header ── */}
+      <PageLayout top={<>
         <PageHeader
           title="Prompts"
           subtitle={isLoading ? "…" : `${total} saved`}
@@ -164,6 +164,7 @@ export default function PromptsPage() {
             </button>
           )}
         </div>
+      </>}>
 
         {/* ── Content ── */}
         {isLoading ? (
@@ -189,7 +190,7 @@ export default function PromptsPage() {
             onClearFilters={clearFilters}
           />
         )}
-      </div>
+      </PageLayout>
 
       <Modal
         isOpen={modalOpen}

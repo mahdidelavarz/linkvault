@@ -2,6 +2,7 @@
 
 import { ComponentType, SVGProps, useState, useCallback } from "react";
 import { useInfrastructures } from "@/hooks/useInfrastructure";
+import PageLayout from "@/components/layout/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import CardGrid from "@/components/shared/CardGrid";
@@ -113,8 +114,7 @@ export default function InfrastructurePage() {
   return (
     <>
       <style>{CSS}</style>
-      <div className="ip-page">
-        {/* ── Header ── */}
+      <PageLayout top={<>
         <PageHeader
           title="Infrastructure"
           subtitle={isLoading ? "…" : `${total} configs`}
@@ -273,6 +273,7 @@ export default function InfrastructurePage() {
             </div>
           )}
         </div>
+      </>}>
 
         {/* ── Grid ── */}
         {isLoading ? (
@@ -300,7 +301,7 @@ export default function InfrastructurePage() {
             onClearFilters={clearFilters}
           />
         )}
-      </div>
+      </PageLayout>
 
       <Modal
         isOpen={formOpen}

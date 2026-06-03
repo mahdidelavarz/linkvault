@@ -11,52 +11,49 @@ export default function DashboardLayout({
 }) {
   return (
     <div className="dashboard-layout">
+      {/* Header stays fixed at top — it's outside the scrollable body */}
       <Header />
 
       <div className="dashboard-layout-body">
+        {/* Sidebar is a flex child with no overflow — it never grows taller than the body */}
         <Sidebar />
 
+        {/* Only main-content scrolls */}
         <main className="main-content">
           {children}
         </main>
-
-        <BottomTabBar />
       </div>
+
+      {/* BottomTabBar is fixed-position on mobile — placing it outside body is fine */}
+      <BottomTabBar />
 
       <style jsx>{`
         .dashboard-layout {
-          display: flex;
+          display:        flex;
           flex-direction: column;
-          height: calc(100dvh - 60px);
-          background: var(--bg-base);
+          height:         100dvh;   /* Full viewport — header + body together fill it */
+          overflow:       hidden;   /* Nothing scrolls at this level */
+          background:     var(--bg-base);
         }
 
+        /* Header is a flex child here — it takes its natural height, then body fills the rest */
+
         .dashboard-layout-body {
-          display: flex;
-          flex: 1;
+          display:    flex;
+          flex:       1;
+          overflow:   hidden; /* Critical: contains the row so sidebar can't escape */
+          min-height: 0;      /* Flex shrink fix */
         }
 
         .main-content {
-          flex: 1;
-          min-width: 0;
-          padding-right: 24px;
-          padding-left: 24px;
+          flex:       1;
+          min-width:  0;
+          overflow:   hidden;   /* PageLayout controls its own scroll */
+          display:    flex;
+          flex-direction: column;
           background: var(--bg-base);
         }
 
-        @media (max-width: 639px) {
-          .main-content {
-            padding-right: 16px;
-            padding-left: 16px;
-          }
-        }
-
-        @media (max-width: 479px) {
-          .main-content {
-            padding-right: 12px;
-            padding-left: 12px;
-          }
-        }
       `}</style>
     </div>
   );

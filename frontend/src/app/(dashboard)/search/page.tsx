@@ -227,6 +227,9 @@ const CSS = `
   display:        flex;
   flex-direction: column;
   gap:            10px;
+  flex:           1;
+  overflow-y:     auto;
+  padding:        15px 24px 24px;
 }
 
 /* Header */

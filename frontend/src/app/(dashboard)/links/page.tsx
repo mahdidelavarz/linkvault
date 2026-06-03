@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useLinks, useDeleteLink, useUpdateLink } from "@/hooks/useLinks";
+import PageLayout from "@/components/layout/PageLayout";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useCategories } from "@/hooks/useCategories";
 import { useBulkSelection } from "@/hooks/useBulkSelection";
@@ -71,74 +72,67 @@ export default function LinksPage() {
   return (
     <>
       <style>{CSS}</style>
-      <div className="links-page">
-
-        {/* Header */}
-        <PageHeader
-          title="Links"
-          subtitle={isLoading ? "…" : `${total} saved`}
-          action={!bulk.isSelectMode && <Button leftIcon={LucidePlus} onClick={openCreate}>Add Link</Button>}
-        />
-
-        {/* Filter bar / Select bar */}
-        {bulk.isSelectMode ? (
-          <SelectBar
-            selectedCount={bulk.count}
-            totalCount={links.length}
-            isAllSelected={bulk.isAllSelected}
-            onToggleAll={bulk.toggleAll}
-            onCancel={bulk.exit}
-          />
-        ) : (
-          <div className="filters-bar">
-            <div className="filter-search-wrap">
-              <LucideSearch className="filter-search-icon" />
-              <input
-                className="filter-search" type="text" placeholder="Search links…"
-                value={search} onChange={(e) => setSearch(e.target.value)}
+      <PageLayout
+        top={
+          <>
+            <PageHeader
+              title="Links"
+              subtitle={isLoading ? "…" : `${total} saved`}
+              action={!bulk.isSelectMode && <Button leftIcon={LucidePlus} onClick={openCreate}>Add Link</Button>}
+            />
+            {bulk.isSelectMode ? (
+              <SelectBar
+                selectedCount={bulk.count}
+                totalCount={links.length}
+                isAllSelected={bulk.isAllSelected}
+                onToggleAll={bulk.toggleAll}
+                onCancel={bulk.exit}
               />
-              {search && (
-                <button className="filter-search-clear" onClick={() => setSearch("")} aria-label="Clear">
-                  <LucideX width={12} />
+            ) : (
+              <div className="filters-bar">
+                <div className="filter-search-wrap">
+                  <LucideSearch className="filter-search-icon" />
+                  <input
+                    className="filter-search" type="text" placeholder="Search links…"
+                    value={search} onChange={(e) => setSearch(e.target.value)}
+                  />
+                  {search && (
+                    <button className="filter-search-clear" onClick={() => setSearch("")} aria-label="Clear">
+                      <LucideX width={12} />
+                    </button>
+                  )}
+                </div>
+                <div className="filter-select-wrap">
+                  <LucideFolder className="filter-select-icon" />
+                  <select className="filter-select" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+                    <option value="">All categories</option>
+                    {categories?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <LucideChevronDown className="filter-select-chevron" />
+                </div>
+                <button
+                  className={["filter-toggle", showFavorites ? "filter-toggle--active" : ""].filter(Boolean).join(" ")}
+                  onClick={() => setShowFavorites((p) => !p)}
+                >
+                  <LucideStar width={14} /> Favorites
                 </button>
-              )}
-            </div>
-
-            <div className="filter-select-wrap">
-              <LucideFolder className="filter-select-icon" />
-              <select className="filter-select" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-                <option value="">All categories</option>
-                {categories?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <LucideChevronDown className="filter-select-chevron" />
-            </div>
-
-            <button
-              className={["filter-toggle", showFavorites ? "filter-toggle--active" : ""].filter(Boolean).join(" ")}
-              onClick={() => setShowFavorites((p) => !p)}
-            >
-              <LucideStar width={14} /> Favorites
-            </button>
-
-            {hasFilters && (
-              <button className="filter-clear" onClick={clearFilters}>
-                <LucideX width={13} /> Clear
-              </button>
+                {hasFilters && (
+                  <button className="filter-clear" onClick={clearFilters}>
+                    <LucideX width={13} /> Clear
+                  </button>
+                )}
+                {links.length > 0 && (
+                  <button className="filter-select-mode" onClick={bulk.enter}>
+                    <span className="scheck scheck--sm" /> Select
+                  </button>
+                )}
+              </div>
             )}
-
-            {links.length > 0 && (
-              <button className="filter-select-mode" onClick={bulk.enter}>
-                <span className="scheck scheck--sm" /> Select
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Content */}
+          </>
+        }
+      >
         {isLoading ? (
-          <CardGrid>
-            {[...Array(6)].map((_, i) => <LinkCardSkeleton key={i} />)}
-          </CardGrid>
+          <CardGrid>{[...Array(6)].map((_, i) => <LinkCardSkeleton key={i} />)}</CardGrid>
         ) : links.length > 0 ? (
           <>
             <CardGrid>
@@ -166,9 +160,8 @@ export default function LinksPage() {
             onClearFilters={clearFilters}
           />
         )}
-
         {bulk.count > 0 && <div style={{ height: 80 }} />}
-      </div>
+      </PageLayout>
 
       {/* Bulk bar */}
       <BulkActionBar

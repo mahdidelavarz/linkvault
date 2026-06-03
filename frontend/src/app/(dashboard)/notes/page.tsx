@@ -11,6 +11,7 @@ import NoteForm from "@/components/notes/NoteForm";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import PageHeader from "@/components/ui/PageHeader";
+import PageLayout from "@/components/layout/PageLayout";
 import {
   LucideArrowLeft,
   LucideChevronDown,
@@ -79,14 +80,16 @@ export default function NotesPage() {
   return (
     <>
       <style>{CSS}</style>
-      <div className="notes-page">
-        {/* ── Page header ── */}
-        <PageHeader
-          title="Notes"
-          subtitle="Markdown-powered, auto-save"
-          action={<Button leftIcon={LucidePlus} onClick={openCreate}>New Note</Button>}
-        />
-
+      <PageLayout
+        fullHeight
+        top={
+          <PageHeader
+            title="Notes"
+            subtitle="Markdown-powered, auto-save"
+            action={<Button leftIcon={LucidePlus} onClick={openCreate}>New Note</Button>}
+          />
+        }
+      >
         {/* ── Main layout: sidebar + editor ── */}
         <div className="notes-layout">
           {/* ── Sidebar (list) ── */}
@@ -236,7 +239,7 @@ export default function NotesPage() {
             )}
           </div>
         </div>
-      </div>
+      </PageLayout>
 
       <Modal
         isOpen={formOpen}
@@ -280,7 +283,7 @@ function NoteCardSkeleton() {
 }
 
 const CSS = `
-.notes-page   { display: flex; flex-direction: column; height: calc(100dvh - 58px); gap:10px; }
+/* notes-page wrapper removed — PageLayout handles height */
 
 /* ── Layout ── */
 .notes-layout {

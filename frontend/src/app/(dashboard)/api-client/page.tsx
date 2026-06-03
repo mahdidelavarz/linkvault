@@ -331,7 +331,7 @@ export default function ApiClientPage() {
 }
 
 const CSS = `
-.acp { display: flex; flex-direction: column; height: calc(100dvh - 56.5px); gap: 0; }
+.acp { display: flex; flex-direction: column; height: 100%; gap: 0; }
 
 /* Mobile top bar */
 .acp-mobile-bar {
