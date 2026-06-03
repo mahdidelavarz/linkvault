@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentType, SVGProps, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useInfrastructures } from "@/hooks/useInfrastructure";
 import PageLayout from "@/components/layout/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
@@ -17,34 +17,17 @@ import InfraCard from "@/components/infrastructure/InfraCard";
 import InfraForm from "@/components/infrastructure/InfraForm";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
-import Badge from "@/components/ui/Badge";
 import {
   LucideChevronDown,
-  LucideContainer,
   LucideDatabase,
   LucideFolder,
-  LucideKeyRound,
-  LucideNetwork,
   LucidePlus,
-  LucideRocket,
   LucideSearch,
-  LucideSettings,
   LucideSlidersHorizontal,
   LucideStar,
   LucideX,
 } from "@/Icons/Icons";
 import { LucideServer } from "../../../Icons/Icons";
-
-const INFRA_ICONS = {
-  env: LucideKeyRound,
-  server: LucideServer,
-  docker: LucideContainer,
-  deployment: LucideRocket,
-  database: LucideDatabase,
-  network: LucideNetwork,
-} as const;
-
-type InfraIconKey = keyof typeof INFRA_ICONS;
 
 export default function InfrastructurePage() {
   const [formOpen, setFormOpen] = useState(false);
@@ -100,16 +83,6 @@ export default function InfrastructurePage() {
   };
 
 
-  // Group items by type for the type quick-filter tabs
-  const typeCounts = items
-    ? Object.keys(INFRA_TYPES).reduce(
-        (acc, key) => {
-          acc[key] = items.filter((i) => i.infraType === key).length;
-          return acc;
-        },
-        {} as Record<string, number>,
-      )
-    : {};
 
   return (
     <>
@@ -120,51 +93,6 @@ export default function InfrastructurePage() {
           subtitle={isLoading ? "…" : `${total} configs`}
           action={<Button leftIcon={LucidePlus} onClick={openCreate}>New Config</Button>}
         />
-
-        {/* ── Type quick-tabs ── */}
-        <div className="ip-type-tabs">
-          <button
-            className={[
-              "ip-type-tab",
-              !selectedType ? "ip-type-tab--active" : "",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-            onClick={() => setSelectedType("")}
-          >
-            All
-            {total > 0 && <span className="ip-type-tab-count">{total}</span>}
-          </button>
-          {Object.entries(INFRA_TYPES).map(([key, { label }]) => {
-            const count = typeCounts[key] ?? 0;
-            if (!isLoading && count === 0) return null;
-            return (
-              <button
-                key={key}
-                className={[
-                  "ip-type-tab",
-                  selectedType === key ? "ip-type-tab--active" : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                onClick={() => setSelectedType(selectedType === key ? "" : key)}
-              >
-                {(() => {
-                  const Icon = INFRA_ICONS[key as InfraIconKey];
-                  return Icon ? (
-                    <Icon width={13} />
-                  ) : (
-                    <LucideSettings width={13} />
-                  );
-                })()}
-                {label}
-                {count > 0 && (
-                  <span className="ip-type-tab-count">{count}</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
 
         {/* ── Search + filters ── */}
         <div className="ip-filter-bar">
@@ -186,6 +114,22 @@ export default function InfrastructurePage() {
                   <LucideX width={12} />
                 </button>
               )}
+            </div>
+
+            {/* Type select */}
+            <div className="ip-select-wrap">
+              <LucideDatabase className="ip-select-icon" />
+              <select
+                className="ip-select"
+                value={selectedType}
+                onChange={(e) => setSelectedType(e.target.value)}
+              >
+                <option value="">All types</option>
+                {Object.entries(INFRA_TYPES).map(([key, { label }]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+              <LucideChevronDown className="ip-select-chevron" />
             </div>
 
             <button
@@ -368,44 +312,6 @@ function InfraSkeleton() {
 
 const CSS = `
 .ip-page   { display: flex; flex-direction: column; gap:10px; }
-
-/* Type tabs */
-.ip-type-tabs {
-  display:    flex;
-  gap:        4px;
-  flex-wrap:  wrap;
-  padding:    12px 14px;
-  background: var(--bg-surface);
-  border:     1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-}
-.ip-type-tab {
-  display:       flex;
-  align-items:   center;
-  gap:           6px;
-  height:        30px;
-  padding:       0 12px;
-  background:    transparent;
-  border:        1px solid transparent;
-  border-radius: var(--radius-md);
-  color:         var(--text-secondary);
-  font-size:     var(--text-sm);
-  font-family:   var(--font-sans);
-  font-weight:   500;
-  cursor:        pointer;
-  white-space:   nowrap;
-  min-height:    44px;
-  transition:    background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
-}
-.ip-type-tab:hover      { background: var(--bg-overlay); border-color: var(--border-default); color: var(--text-primary); }
-.ip-type-tab--active    { background: var(--accent-muted); border-color: var(--accent-border); color: var(--cyan-300); }
-.ip-type-tab-count {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 18px; height: 18px; padding: 0 5px;
-  background: var(--bg-overlay); border-radius: 99px;
-  font-size: 10px; font-weight: 700; color: var(--text-tertiary);
-}
-.ip-type-tab--active .ip-type-tab-count { background: var(--accent-border); color: var(--cyan-200); }
 
 /* Filter bar */
 .ip-filter-bar {

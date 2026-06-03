@@ -28,6 +28,7 @@ import {
   LucideFolder,
   LucideGlobe,
   LucideKeyRound,
+  LucideLayers,
   LucideLock,
   LucideNetwork,
   LucideRocket,
@@ -423,7 +424,7 @@ function TypeMetadata({
     return (
       <FormSelect
         label="Environment"
-        leftIcon="lucide:layers"
+        leftIcon={LucideLayers}
         optional
         {...register("metadata.environment")}
       >

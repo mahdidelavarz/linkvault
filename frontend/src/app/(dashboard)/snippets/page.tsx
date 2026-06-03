@@ -149,44 +149,45 @@ export default function SnippetsPage() {
 
         {/* ── Filter bar ── */}
         <div className="sp-filter-bar">
-          {/* Search — always visible */}
-          <div className="sp-search-wrap">
-            <LucideSearch className="sp-search-icon" />
-            <input
-              className="sp-search"
-              type="text"
-              placeholder="Search snippets…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            {search && (
-              <button
-                className="sp-search-clear"
-                onClick={() => setSearch("")}
-                aria-label="Clear"
-              >
-                <LucideX width={12} />
-              </button>
-            )}
-          </div>
+          {/* Search + toggle in one row */}
+          <div className="sp-top-row">
+            <div className="sp-search-wrap">
+              <LucideSearch className="sp-search-icon" />
+              <input
+                className="sp-search"
+                type="text"
+                placeholder="Search snippets…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              {search && (
+                <button
+                  className="sp-search-clear"
+                  onClick={() => setSearch("")}
+                  aria-label="Clear"
+                >
+                  <LucideX width={12} />
+                </button>
+              )}
+            </div>
 
-          {/* Mobile: toggle filters */}
-          <button
-            className={[
-              "sp-filter-toggle",
-              filtersExpanded ? "sp-filter-toggle--active" : "",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-            onClick={() => setFiltersExpanded((p) => !p)}
-            aria-expanded={filtersExpanded}
-          >
-            <LucideSlidersHorizontal width={14} />
-            Filters
-            {activeFilterCount > 0 && (
-              <span className="sp-filter-count">{activeFilterCount}</span>
-            )}
-          </button>
+            <button
+              className={[
+                "sp-filter-toggle",
+                filtersExpanded ? "sp-filter-toggle--active" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              onClick={() => setFiltersExpanded((p) => !p)}
+              aria-expanded={filtersExpanded}
+            >
+              <LucideSlidersHorizontal width={14} />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="sp-filter-count">{activeFilterCount}</span>
+              )}
+            </button>
+          </div>
 
           {/* Expandable filters */}
           <div

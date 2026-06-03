@@ -299,8 +299,14 @@ const CSS = `
   width: var(--sidebar-width-collapsed);
 }
 @media (min-width: 768px) and (max-width: 1023px) {
-  .sidebar-inner { width: var(--sidebar-width-collapsed); }
-  .sidebar-collapse-btn { display: none; }
+  /* Force collapsed appearance — hide all text, show icons only */
+  .sidebar-inner         { width: var(--sidebar-width-collapsed); }
+  .sidebar-collapse-btn  { display: none; }
+  .sidebar-logo-text     { display: none; }
+  .nav-section-label     { display: none; }
+  .nav-item-label        { display: none; }
+  .nav-item-dot          { display: none; }
+  .sidebar-username      { display: none; }
 }
 
 /* Logo */
@@ -351,7 +357,7 @@ const CSS = `
 .sidebar-collapse-btn:hover { background: var(--bg-overlay); color: var(--text-primary); }
 
 .sidebar-close-btn {
-  display:         none;f
+  display:         none;
   align-items:     center;
   justify-content: center;
   width:           32px;
