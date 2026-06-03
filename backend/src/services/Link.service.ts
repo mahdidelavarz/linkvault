@@ -1,6 +1,7 @@
 import { AppDataSource } from '../config/database';
 import { Link } from '../entities/Link';
 import { Taggable } from '../entities/Taggable';
+import { encrypt, decrypt } from '../utils/crypto';
 
 export class LinkService {
     private linkRepository = AppDataSource.getRepository(Link);
@@ -65,7 +66,7 @@ export class LinkService {
         link.title = data.title;
         link.description = data.description || '';
         link.username = data.username || '';
-        link.passwordEncrypted = data.password || '';
+        link.passwordEncrypted = data.password ? encrypt(data.password) : '';
         link.email = data.email || '';
         link.phone = data.phone || '';
         link.isFavorite = data.isFavorite || false;
@@ -108,7 +109,7 @@ export class LinkService {
         if (data.title !== undefined) link.title = data.title;
         if (data.description !== undefined) link.description = data.description;
         if (data.username !== undefined) link.username = data.username;
-        if (data.password !== undefined) link.passwordEncrypted = data.password;
+        if (data.password !== undefined) link.passwordEncrypted = data.password ? encrypt(data.password) : '';
         if (data.email !== undefined) link.email = data.email;
         if (data.phone !== undefined) link.phone = data.phone;
         if (data.isFavorite !== undefined) link.isFavorite = data.isFavorite;
@@ -195,6 +196,7 @@ export class LinkService {
 
             linksWithTags.push({
                 ...link,
+                passwordEncrypted: link.passwordEncrypted ? decrypt(link.passwordEncrypted) : link.passwordEncrypted,
                 tags: taggables.map(t => t.tag)
             });
         }

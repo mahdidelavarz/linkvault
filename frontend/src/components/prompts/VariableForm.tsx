@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { type PromptVariable } from "@/types/prompt";
 import Button from "@/components/ui/Button";
 import { LucideVariable, LucideX } from "@/Icons/Icons";
@@ -24,6 +24,18 @@ export default function VariableForm({
     return initial;
   });
 
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    const handleMouseDown = (e: MouseEvent) => {
+      if (formRef.current && !formRef.current.contains(e.target as Node)) {
+        onCancel();
+      }
+    };
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, [onCancel]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(values);
@@ -39,7 +51,7 @@ export default function VariableForm({
   return (
     <>
       <style>{CSS}</style>
-      <form onSubmit={handleSubmit} className="var-form">
+      <form onSubmit={handleSubmit} className="var-form" ref={formRef}>
         <div className="var-form-header">
           <LucideVariable width={14} />
           <span>Fill in Variables</span>
@@ -92,6 +104,8 @@ const CSS = `
   border:        1px solid var(--border-default);
   border-radius: var(--radius-md);
   padding:       14px;
+  max-height:    60dvh;
+  overflow-y:    auto;
 }
 .var-form-header {
   display:       flex;

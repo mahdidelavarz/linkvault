@@ -148,18 +148,20 @@ export default function SnippetForm({
   return (
     <>
       <style>{CSS}</style>
-      <form className="sform" onSubmit={handleSubmit(onSubmit)} noValidate>
-        {error && (
-          <Alert
-            type="error"
-            message={
-              error instanceof Error ? error.message : "Something went wrong"
-            }
-          />
-        )}
+      <div className="sform-wrapper">
+        <form className="sform" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="sform-top">
+          {error && (
+            <Alert
+              type="error"
+              message={
+                error instanceof Error ? error.message : "Something went wrong"
+              }
+            />
+          )}
 
-        {/* ── Tabs: Basic / Metadata ── */}
-        <div className="sform-tabs">
+          {/* ── Tabs: Basic / Metadata ── */}
+          <div className="sform-tabs">
           <button
             type="button"
             className={[
@@ -186,7 +188,10 @@ export default function SnippetForm({
             <LucideSettings2 width={14} />
             Details
           </button>
-        </div>
+          </div>
+          </div>
+
+          <div className="sform-content">
 
         {/* ══ Tab: Basic ══ */}
         {activeTab === "basic" && (
@@ -384,6 +389,8 @@ export default function SnippetForm({
           </div>
         )}
 
+          </div>
+
         {/* ── Footer ── */}
         <div className="sform-footer">
           <Button type="button" variant="ghost" onClick={onClose}>
@@ -406,6 +413,7 @@ export default function SnippetForm({
           </div>
         </div>
       </form>
+      </div>
     </>
   );
 }
@@ -537,7 +545,14 @@ function TypeMetadataFields({
 }
 
 const CSS = `
-.sform { display: flex; flex-direction: column; gap: 0; }
+.sform-wrapper {
+  height:         80dvh;
+  display:        flex;
+  flex-direction: column;
+}
+.sform { display: flex; flex-direction: column; gap: 0; height: 100%; overflow: hidden; }
+.sform-top { flex-shrink: 0; padding: 0 16px; }
+.sform-content { flex: 1; overflow-y: auto; padding: 0 16px; }
 
 /* Tabs */
 .sform-tabs {
@@ -545,7 +560,7 @@ const CSS = `
   gap:           4px;
   padding:       0 0 16px;
   border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 20px;
+  margin-bottom: 0;
 }
 .sform-tab {
   display:       flex;
@@ -567,7 +582,7 @@ const CSS = `
 .sform-tab--active  { background: var(--accent-muted); border-color: var(--accent-border); color: var(--cyan-300); }
 
 /* Panel */
-.sform-panel { display: flex; flex-direction: column; gap: 16px; }
+.sform-panel { display: flex; flex-direction: column; gap: 16px; padding: 16px 0; }
 
 /* Field */
 .sform-field { display: flex; flex-direction: column; gap: 6px; }
@@ -686,9 +701,14 @@ const CSS = `
   align-items:     center;
   justify-content: space-between;
   gap:             8px;
-  padding-top:     20px;
-  margin-top:      4px;
+  padding:         10px 16px;
   border-top:      1px solid var(--border-subtle);
+  background:      var(--bg-subtle);
+  border-radius:   20px;
+  flex-shrink:     0;
+  position:        sticky;
+  bottom:          0;
+  z-index:         10;
 }
 .sform-footer-right { display: flex; align-items: center; gap: 8px; }
 

@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { post } from '@/lib/http'
 import { useAuthStore } from '@/store/authStore'
-import type { AuthResponse, LoginCredentials, RegisterCredentials } from '@/types/user'
+import type { AuthResponse, LoginCredentials, RegisterCredentials, ForgotPasswordCredentials, ResetPasswordCredentials } from '@/types/user'
 
 // ─── useLogin ─────────────────────────────────────────────────────────────────
 
@@ -34,6 +34,30 @@ export const useRegister = () => {
     onSuccess: ({ user, token }) => {
       setAuth(user, token)
       router.push('/links')
+    },
+  })
+}
+
+// ─── useForgotPassword ────────────────────────────────────────────────────────
+
+export const useForgotPassword = () => {
+  return useMutation({
+    mutationFn: (credentials: ForgotPasswordCredentials) =>
+      post<{ message: string }>('/auth/forgot-password', credentials),
+  })
+}
+
+// ─── useResetPassword ─────────────────────────────────────────────────────────
+
+export const useResetPassword = () => {
+  const router = useRouter()
+
+  return useMutation({
+    mutationFn: (credentials: ResetPasswordCredentials) =>
+      post<{ message: string }>('/auth/reset-password', credentials),
+
+    onSuccess: () => {
+      router.push('/login')
     },
   })
 }

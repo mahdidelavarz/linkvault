@@ -108,3 +108,4 @@ netlify/
 
 # Git
 .gitignore.local
+dev_docs/

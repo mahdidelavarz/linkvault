@@ -1,6 +1,7 @@
 export interface User {
   id: number;
   username: string;
+  email?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -18,5 +19,15 @@ export interface LoginCredentials {
 
 export interface RegisterCredentials {
   username: string;
+  password: string;
+  email?: string;
+}
+
+export interface ForgotPasswordCredentials {
+  email: string;
+}
+
+export interface ResetPasswordCredentials {
+  token: string;
   password: string;
 }

@@ -346,9 +346,8 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
 
 const CSS = `
 .lform-wrapper {
-  position: relative;
-  height: 80dvh;
-  display: flex;
+  height:         80dvh;
+  display:        flex;
   flex-direction: column;
 }
 
@@ -491,17 +490,17 @@ const CSS = `
 
 /* Footer */
 .lform-footer {
-  display: flex;
+  display:        flex;
   justify-content: flex-end;
-  gap: 15px;
-  padding: 10px;
-  background: var(--bg-subtle);
-   border-radius: 20px;
-  border-top: 1px solid var(--border-subtle);
-  flex-shrink: 0;
-  position: sticky;
-  bottom: 0;
-  z-index: 10;
+  gap:            8px;
+  padding:        10px 16px;
+  background:     var(--bg-subtle);
+  border-radius:  20px;
+  border-top:     1px solid var(--border-subtle);
+  flex-shrink:    0;
+  position:       sticky;
+  bottom:         0;
+  z-index:        10;
 }
 
 `;

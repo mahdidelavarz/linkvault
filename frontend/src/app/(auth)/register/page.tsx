@@ -15,6 +15,7 @@ import {
   LucideEyeOff,
   LucideLock,
   LucideLockKeyhole,
+  LucideMail,
   LucideUser,
   LucideVault,
 } from "@/Icons/Icons";
@@ -29,6 +30,7 @@ const schema = z
       .max(32, "Username must be at most 32 characters")
       .regex(/^[a-zA-Z0-9_]+$/, "Only letters, numbers and underscores")
       .trim(),
+    email: z.string().email("Enter a valid email address").trim(),
     password: z
       .string()
       .min(8, "Password must be at least 8 characters")
@@ -149,6 +151,17 @@ export default function RegisterPage() {
               autoComplete="username"
               autoFocus
               {...register("username")}
+            />
+
+            <Input
+              label="Email"
+              type="email"
+              placeholder="Enter your email"
+              leftIcon={LucideMail}
+              hint="Used for password recovery"
+              error={errors.email?.message}
+              autoComplete="email"
+              {...register("email")}
             />
 
             <div className="auth-password-wrap">

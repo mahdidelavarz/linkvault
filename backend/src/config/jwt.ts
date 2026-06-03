@@ -1,8 +1,13 @@
-import dotenv from 'dotenv';
+import { loadEnv } from './env';
 
-dotenv.config();
+loadEnv();
+
+const secret = process.env.JWT_SECRET;
+if (!secret) {
+    throw new Error('JWT_SECRET environment variable is required. Set it before starting the server.');
+}
 
 export const jwtConfig = {
-    secret: process.env.JWT_SECRET || 'your-fallback-secret-key-change-in-production',
-    expiresIn: '24h' as const
+    secret,
+    expiresIn: (process.env.JWT_EXPIRES_IN || '24h') as string
 };

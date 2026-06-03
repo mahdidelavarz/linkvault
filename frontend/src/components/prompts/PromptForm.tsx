@@ -83,7 +83,9 @@ export default function PromptForm({ prompt, onClose }: PromptFormProps) {
   return (
     <>
       <style>{CSS}</style>
+      <div className="prompt-wrapper">
       <form onSubmit={handleSubmit} className="prompt-form">
+        <div className="prompt-content">
         {/* Title */}
         <div className="form-field">
           <label className="form-label" htmlFor="prompt-title">
@@ -278,6 +280,8 @@ export default function PromptForm({ prompt, onClose }: PromptFormProps) {
           <span>Mark as favorite</span>
         </label>
 
+        </div>
+
         {/* Actions */}
         <div className="form-actions">
           <Button type="button" variant="secondary" onClick={onClose}>
@@ -288,15 +292,31 @@ export default function PromptForm({ prompt, onClose }: PromptFormProps) {
           </Button>
         </div>
       </form>
+      </div>
     </>
   );
 }
 
 const CSS = `
+.prompt-wrapper {
+  height:         80dvh;
+  display:        flex;
+  flex-direction: column;
+}
 .prompt-form {
   display:        flex;
   flex-direction: column;
-  gap:            20px;
+  gap:            0;
+  height:         100%;
+  overflow:       hidden;
+}
+.prompt-content {
+  flex:       1;
+  overflow-y: auto;
+  padding:    16px 16px 0;
+  display:    flex;
+  flex-direction: column;
+  gap:        20px;
 }
 
 .form-field {
@@ -420,7 +440,13 @@ const CSS = `
   display:         flex;
   justify-content: flex-end;
   gap:             12px;
-  padding-top:     16px;
+  padding:         10px 16px;
   border-top:      1px solid var(--border-default);
+  background:      var(--bg-subtle);
+  border-radius:   20px;
+  flex-shrink:     0;
+  position:        sticky;
+  bottom:          0;
+  z-index:         10;
 }
 `;

@@ -160,7 +160,9 @@ export default function InfraForm({ item, onClose }: InfraFormProps) {
   return (
     <>
       <style>{CSS}</style>
+      <div className="iform-wrapper">
       <form className="iform" onSubmit={handleSubmit(onSubmit)} noValidate>
+        <div className="iform-content">
         {error && (
           <Alert
             type="error"
@@ -345,6 +347,8 @@ export default function InfraForm({ item, onClose }: InfraFormProps) {
           )}
         />
 
+        </div>
+
         {/* ── Footer ── */}
         <div className="iform-footer">
           <Button type="button" variant="ghost" onClick={onClose}>
@@ -355,6 +359,7 @@ export default function InfraForm({ item, onClose }: InfraFormProps) {
           </Button>
         </div>
       </form>
+      </div>
     </>
   );
 }
@@ -524,7 +529,13 @@ function TypeMetadata({
 }
 
 const CSS = `
-.iform { display: flex; flex-direction: column; gap: 16px; }
+.iform-wrapper {
+  height:         80dvh;
+  display:        flex;
+  flex-direction: column;
+}
+.iform { display: flex; flex-direction: column; gap: 0; height: 100%; overflow: hidden; }
+.iform-content { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
 
 /* Type grid */
 .iform-field { display: flex; flex-direction: column; gap: 6px; }
@@ -646,7 +657,19 @@ const CSS = `
 .iform-check-label { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-secondary); }
 
 /* Footer */
-.iform-footer { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; border-top: 1px solid var(--border-subtle); }
+.iform-footer {
+  display:      flex;
+  justify-content: flex-end;
+  gap:          8px;
+  padding:      10px 16px;
+  border-top:   1px solid var(--border-subtle);
+  background:   var(--bg-subtle);
+  border-radius: 20px;
+  flex-shrink:  0;
+  position:     sticky;
+  bottom:       0;
+  z-index:      10;
+}
 @media (max-width: 479px) {
   .iform-footer { flex-direction: column-reverse; }
   .iform-footer > * { width: 100%; }

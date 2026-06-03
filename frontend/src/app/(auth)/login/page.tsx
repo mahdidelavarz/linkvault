@@ -116,6 +116,12 @@ export default function LoginPage() {
               {...register("password")}
             />
 
+            <div className="auth-forgot-row">
+              <Link href="/forgot-password" className="auth-link auth-link--sm">
+                Forgot password?
+              </Link>
+            </div>
+
             <Button
               type="submit"
               fullWidth
@@ -236,6 +242,13 @@ const CSS = `
   transition:      color var(--transition-fast);
 }
 .auth-eye-btn:hover { color: var(--text-primary); }
+
+.auth-forgot-row {
+  display:         flex;
+  justify-content: flex-end;
+  margin-top:      -4px;
+}
+.auth-link--sm { font-size: var(--text-xs); }
 
 /* Footer */
 .auth-footer-text {
