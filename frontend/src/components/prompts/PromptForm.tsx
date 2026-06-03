@@ -12,6 +12,7 @@ import {
 import { useCreatePrompt, useUpdatePrompt } from "@/hooks/usePrompt";
 import { useCategories } from "@/hooks/useCategories";
 import { extractVariables } from "@/lib/promptUtils";
+import FormLayout from "@/components/layout/FormLayout";
 import Button from "@/components/ui/Button";
 import TagSelector from "@/components/tags/TagSelector";
 import {
@@ -83,9 +84,18 @@ export default function PromptForm({ prompt, onClose }: PromptFormProps) {
   return (
     <>
       <style>{CSS}</style>
-      <div className="prompt-wrapper">
-      <form onSubmit={handleSubmit} className="prompt-form">
-        <div className="prompt-content">
+      <FormLayout
+        onSubmit={handleSubmit}
+        footer={
+          <>
+            <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+            <Button type="submit" isLoading={isLoading}>
+              {isEditing ? "Update Prompt" : "Create Prompt"}
+            </Button>
+          </>
+        }
+      >
+        <div className="pf-fields">
         {/* Title */}
         <div className="form-field">
           <label className="form-label" htmlFor="prompt-title">
@@ -281,42 +291,17 @@ export default function PromptForm({ prompt, onClose }: PromptFormProps) {
         </label>
 
         </div>
-
-        {/* Actions */}
-        <div className="form-actions">
-          <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" isLoading={isLoading}>
-            {isEditing ? "Update Prompt" : "Create Prompt"}
-          </Button>
-        </div>
-      </form>
-      </div>
+      </FormLayout>
     </>
   );
 }
 
 const CSS = `
-.prompt-wrapper {
-  height:         80dvh;
+.pf-fields {
   display:        flex;
   flex-direction: column;
-}
-.prompt-form {
-  display:        flex;
-  flex-direction: column;
-  gap:            0;
-  height:         100%;
-  overflow:       hidden;
-}
-.prompt-content {
-  flex:       1;
-  overflow-y: auto;
-  padding:    16px 16px 0;
-  display:    flex;
-  flex-direction: column;
-  gap:        20px;
+  gap:            20px;
+  padding:        8px 0;
 }
 
 .form-field {
@@ -436,17 +421,4 @@ const CSS = `
   cursor: pointer;
 }
 
-.form-actions {
-  display:         flex;
-  justify-content: flex-end;
-  gap:             12px;
-  padding:         10px 16px;
-  border-top:      1px solid var(--border-default);
-  background:      var(--bg-subtle);
-  border-radius:   20px;
-  flex-shrink:     0;
-  position:        sticky;
-  bottom:          0;
-  z-index:         10;
-}
 `;

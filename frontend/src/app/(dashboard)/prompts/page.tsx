@@ -2,6 +2,9 @@
 
 import { useState, useCallback } from "react";
 import { usePrompts } from "@/hooks/usePrompt";
+import PageHeader from "@/components/ui/PageHeader";
+import EmptyState from "@/components/ui/EmptyState";
+import CardGrid from "@/components/shared/CardGrid";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useCategories } from "@/hooks/useCategories";
 import { type Prompt, PROMPT_TYPES } from "@/types/prompt";
@@ -15,7 +18,6 @@ import {
   LucideMessageSquare,
   LucidePlus,
   LucideSearch,
-  LucideSearchX,
   LucideStar,
   LucideX,
 } from "@/Icons/Icons";
@@ -75,17 +77,11 @@ export default function PromptsPage() {
       <style>{CSS}</style>
       <div className="prompts-page">
         {/* ── Header ── */}
-        <div className="page-header">
-          <div className="page-header-left">
-            <h1 className="page-title">Prompts</h1>
-            <p className="page-subtitle">
-              {isLoading ? "…" : `${total} saved`}
-            </p>
-          </div>
-          <Button leftIcon={LucidePlus} onClick={openCreate}>
-            New Prompt
-          </Button>
-        </div>
+        <PageHeader
+          title="Prompts"
+          subtitle={isLoading ? "…" : `${total} saved`}
+          action={<Button leftIcon={LucidePlus} onClick={openCreate}>New Prompt</Button>}
+        />
 
         {/* ── Filters ── */}
         <div className="filters-bar">
@@ -171,30 +167,26 @@ export default function PromptsPage() {
 
         {/* ── Content ── */}
         {isLoading ? (
-          <div className="prompts-grid">
-            {[...Array(4)].map((_, i) => (
-              <PromptCardSkeleton key={i} />
-            ))}
-          </div>
+          <CardGrid minCardWidth={380}>{[...Array(4)].map((_, i) => <PromptCardSkeleton key={i} />)}</CardGrid>
         ) : prompts.length > 0 ? (
           <>
-            <div className="prompts-grid">
-              {prompts.map((prompt) => (
-                <PromptCard key={prompt.id} prompt={prompt} onEdit={openEdit} />
-              ))}
-            </div>
+            <CardGrid minCardWidth={380}>
+              {prompts.map((prompt) => <PromptCard key={prompt.id} prompt={prompt} onEdit={openEdit} />)}
+            </CardGrid>
             <div ref={sentinelRef} style={{ height: 1 }} />
             {isFetchingNextPage && (
-              <div className="prompts-grid">
-                {[...Array(3)].map((_, i) => <PromptCardSkeleton key={i} />)}
-              </div>
+              <CardGrid minCardWidth={380}>{[...Array(3)].map((_, i) => <PromptCardSkeleton key={i} />)}</CardGrid>
             )}
           </>
         ) : (
           <EmptyState
+            icon={LucideMessageSquare}
+            title="No prompts yet"
+            subtitle="Save your first AI prompt to get started"
+            action={<Button leftIcon={LucidePlus} onClick={openCreate}>Create your first prompt</Button>}
             hasFilters={hasFilters}
-            onAdd={openCreate}
-            onClear={clearFilters}
+            filteredTitle="No prompts found"
+            onClearFilters={clearFilters}
           />
         )}
       </div>
@@ -262,58 +254,12 @@ function PromptCardSkeleton() {
   );
 }
 
-// ─── Empty state ──────────────────────────────────────────────────────────────
-
-function EmptyState({
-  hasFilters,
-  onAdd,
-  onClear,
-}: {
-  hasFilters: boolean;
-  onAdd: () => void;
-  onClear: () => void;
-}) {
-  return (
-    <div className="empty-state">
-      <div className="empty-icon">
-        {hasFilters ? <LucideSearchX width={28} /> : <LucideMessageSquare width={28} />}
-      </div>
-      <p className="empty-title">
-        {hasFilters ? "No prompts found" : "No prompts yet"}
-      </p>
-      <p className="empty-subtitle">
-        {hasFilters
-          ? "Try adjusting your filters"
-          : "Save your first AI prompt to get started"}
-      </p>
-      {hasFilters ? (
-        <Button variant="secondary" onClick={onClear}>
-          Clear filters
-        </Button>
-      ) : (
-        <Button leftIcon={LucidePlus} onClick={onAdd}>
-          Create your first prompt
-        </Button>
-      )}
-    </div>
-  );
-}
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const CSS = `
 .prompts-page { display: flex; flex-direction: column; gap:10px;}
 
-/* Header */
-.page-header {
-  display:         flex;
-  align-items:     center;
-  justify-content: space-between;
-  padding:15px 10px 0px 10px;
-  flex-wrap:       wrap;
-}
-.page-title    { font-size: var(--text-2xl); font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
-.page-subtitle { font-size: var(--text-sm);  color: var(--text-tertiary); margin-top: 2px; }
 
 /* Filters */
 .filters-bar {
@@ -458,16 +404,6 @@ const CSS = `
 }
 .filter-clear:hover { color: var(--danger); background: var(--danger-muted); }
 
-/* Grid */
-.prompts-grid {
-  display:               grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-  gap:                   16px;
-}
-@media (max-width: 767px) {
-  .prompts-grid { grid-template-columns: 1fr; }
-}
-
 /* Skeleton card */
 .prompt-skeleton {
   background:    var(--bg-surface);
@@ -482,30 +418,4 @@ const CSS = `
   margin-bottom: 14px;
 }
 
-/* Empty state */
-.empty-state {
-  display:         flex;
-  flex-direction:  column;
-  align-items:     center;
-  justify-content: center;
-  gap:             12px;
-  padding:         64px 24px;
-  background:      var(--bg-surface);
-  border:          1px solid var(--border-default);
-  border-radius:   var(--radius-lg);
-  text-align:      center;
-}
-.empty-icon {
-  display:         flex;
-  align-items:     center;
-  justify-content: center;
-  width:           56px;
-  height:          56px;
-  background:      var(--bg-overlay);
-  border:          1px solid var(--border-default);
-  border-radius:   var(--radius-lg);
-  color:           var(--text-tertiary);
-}
-.empty-title    { font-size: var(--text-lg); font-weight: 600; color: var(--text-primary); }
-.empty-subtitle { font-size: var(--text-sm); color: var(--text-tertiary); }
 `;

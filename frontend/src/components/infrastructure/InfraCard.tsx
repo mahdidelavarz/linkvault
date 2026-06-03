@@ -7,10 +7,12 @@ import {
   useDeleteInfrastructure,
 } from "@/hooks/useInfrastructure";
 import Badge from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
+import FavoriteButton from "@/components/shared/FavoriteButton";
+import CopyButton from "@/components/shared/CopyButton";
+import ActionButtons from "@/components/shared/ActionButtons";
+import TagSection from "@/components/shared/TagSection";
+import ConfirmDeleteModal from "@/components/shared/ConfirmDeleteModal";
 import {
-  LucideCheck,
   LucideChevronDown,
   LucideChevronUp,
   LucideContainer,
@@ -64,17 +66,10 @@ function maskEnvLine(line: string) {
 
 interface InfraCardProps {
   item: Infrastructure;
-  copiedId: number | null;
   onEdit: (item: Infrastructure) => void;
-  onCopy: (content: string, id: number) => void;
 }
 
-export default function InfraCard({
-  item,
-  copiedId,
-  onEdit,
-  onCopy,
-}: InfraCardProps) {
+export default function InfraCard({ item, onEdit }: InfraCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [revealed, setRevealed] = useState(false);
@@ -82,7 +77,6 @@ export default function InfraCard({
   const toggleFav = useToggleInfraFavorite();
   const deleteInfra = useDeleteInfrastructure();
 
-  const isCopied = copiedId === item.id;
   const typeConfig = INFRA_TYPES[item.infraType];
   const Icon = INFRA_ICONS[item.infraType as InfraIconKey] ?? (
     <LucideSettings />
@@ -138,18 +132,11 @@ export default function InfraCard({
             </div>
           </div>
 
-          <button
-            className={["ic-fav", item.isFavorite ? "ic-fav--active" : ""]
-              .filter(Boolean)
-              .join(" ")}
-            onClick={() => toggleFav.mutate(item.id)}
-            aria-label={
-              item.isFavorite ? "Remove favorite" : "Add to favorites"
-            }
-            disabled={toggleFav.isPending}
-          >
-            <LucideStar width={14} />
-          </button>
+          <FavoriteButton
+            active={item.isFavorite}
+            pending={toggleFav.isPending}
+            onToggle={() => toggleFav.mutate(item.id)}
+          />
         </div>
 
         {/* ── Description ── */}
@@ -205,95 +192,25 @@ export default function InfraCard({
         </div>
 
         {/* ── Tags ── */}
-        {item.category || (item.tags && item.tags.length > 0) ? (
-          <div className="ic-tags">
-            {item.category && (
-              <Badge variant="default" icon={LucideFolder} size="sm">
-                {item.category.name}
-              </Badge>
-            )}
-            {item.tags?.slice(0, 3).map((tag: any) => (
-              <Badge key={tag.id} variant="default" size="sm">
-                {tag.name}
-              </Badge>
-            ))}
-            {item.tags && item.tags.length > 3 && (
-              <span className="ic-tags-more">+{item.tags.length - 3}</span>
-            )}
-          </div>
-        ) : null}
+        <TagSection tags={item.tags} category={item.category} />
 
         {/* ── Footer: copy + actions ── */}
         <div className="ic-footer">
-          <button
-            className={["ic-copy-btn", isCopied ? "ic-copy-btn--copied" : ""]
-              .filter(Boolean)
-              .join(" ")}
-            onClick={() => onCopy(item.content, item.id)}
-            aria-label="Copy to clipboard"
-          >
-            {isCopied ? <LucideCheck width={14} /> : <LucideCopy width={14} />}
-
-            {isCopied ? "Copied!" : "Copy"}
-          </button>
-
-          <div className="ic-actions">
-            <button
-              className="ic-action-btn"
-              onClick={() => onEdit(item)}
-              aria-label="Edit"
-              title="Edit"
-            >
-              <LucidePencil width={14} />
-            </button>
-            <button
-              className="ic-action-btn ic-action-btn--danger"
-              onClick={() => setConfirmDelete(true)}
-              aria-label="Delete"
-              title="Delete"
-            >
-              <LucideTrash2 width={14} />
-            </button>
-          </div>
-
+          <CopyButton text={item.content} label="Copy" />
+          <ActionButtons onEdit={() => onEdit(item)} onDelete={() => setConfirmDelete(true)} />
           <span className="ic-date">
-            {new Date(item.updatedAt).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-            })}
+            {new Date(item.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
           </span>
         </div>
       </div>
 
-      {/* Delete confirm */}
-      <Modal
+      <ConfirmDeleteModal
         isOpen={confirmDelete}
         onClose={() => setConfirmDelete(false)}
-        title="Delete config"
-        size="sm"
-      >
-        <div className="ic-confirm">
-          <p className="ic-confirm-text">
-            Delete <strong>{item.title}</strong>? This cannot be undone.
-          </p>
-          <div className="ic-confirm-actions">
-            <Button variant="secondary" onClick={() => setConfirmDelete(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="danger"
-              isLoading={deleteInfra.isPending}
-              onClick={() =>
-                deleteInfra.mutate(item.id, {
-                  onSuccess: () => setConfirmDelete(false),
-                })
-              }
-            >
-              Delete
-            </Button>
-          </div>
-        </div>
-      </Modal>
+        itemName={item.title}
+        isLoading={deleteInfra.isPending}
+        onConfirm={() => deleteInfra.mutate(item.id, { onSuccess: () => setConfirmDelete(false) })}
+      />
     </>
   );
 }

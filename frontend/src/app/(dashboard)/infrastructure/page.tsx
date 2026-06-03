@@ -2,6 +2,9 @@
 
 import { ComponentType, SVGProps, useState, useCallback } from "react";
 import { useInfrastructures } from "@/hooks/useInfrastructure";
+import PageHeader from "@/components/ui/PageHeader";
+import EmptyState from "@/components/ui/EmptyState";
+import CardGrid from "@/components/shared/CardGrid";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useCategories } from "@/hooks/useCategories";
 import {
@@ -50,7 +53,6 @@ export default function InfrastructurePage() {
   const [categoryId, setCategoryId] = useState("");
   const [showFavorites, setShowFavorites] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const [copiedId, setCopiedId] = useState<number | null>(null);
 
   const { data: categories } = useCategories();
   const {
@@ -96,15 +98,6 @@ export default function InfrastructurePage() {
     setEditingItem(null);
   };
 
-  const handleCopy = async (content: string, id: number) => {
-    try {
-      await navigator.clipboard.writeText(content);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch {
-      /* silently fail */
-    }
-  };
 
   // Group items by type for the type quick-filter tabs
   const typeCounts = items
@@ -122,17 +115,11 @@ export default function InfrastructurePage() {
       <style>{CSS}</style>
       <div className="ip-page">
         {/* ── Header ── */}
-        <div className="ip-header">
-          <div>
-            <h1 className="page-title">Infrastructure</h1>
-            <p className="page-subtitle">
-              {isLoading ? "…" : `${total} configs`}
-            </p>
-          </div>
-          <Button leftIcon={LucidePlus} onClick={openCreate}>
-            New Config
-          </Button>
-        </div>
+        <PageHeader
+          title="Infrastructure"
+          subtitle={isLoading ? "…" : `${total} configs`}
+          action={<Button leftIcon={LucidePlus} onClick={openCreate}>New Config</Button>}
+        />
 
         {/* ── Type quick-tabs ── */}
         <div className="ip-type-tabs">
@@ -289,36 +276,28 @@ export default function InfrastructurePage() {
 
         {/* ── Grid ── */}
         {isLoading ? (
-          <div className="ip-grid">
-            {[...Array(6)].map((_, i) => (
-              <InfraSkeleton key={i} />
-            ))}
-          </div>
+          <CardGrid>{[...Array(6)].map((_, i) => <InfraSkeleton key={i} />)}</CardGrid>
         ) : items.length > 0 ? (
           <>
-            <div className="ip-grid">
+            <CardGrid>
               {items.map((item) => (
-                <InfraCard
-                  key={item.id}
-                  item={item}
-                  copiedId={copiedId}
-                  onEdit={openEdit}
-                  onCopy={handleCopy}
-                />
+                <InfraCard key={item.id} item={item} onEdit={openEdit} />
               ))}
-            </div>
+            </CardGrid>
             <div ref={sentinelRef} style={{ height: 1 }} />
             {isFetchingNextPage && (
-              <div className="ip-grid">
-                {[...Array(3)].map((_, i) => <InfraSkeleton key={i} />)}
-              </div>
+              <CardGrid>{[...Array(3)].map((_, i) => <InfraSkeleton key={i} />)}</CardGrid>
             )}
           </>
         ) : (
           <EmptyState
+            icon={LucideServer}
+            title="No configs yet"
+            subtitle="Store your first infrastructure config"
+            action={<Button leftIcon={LucidePlus} onClick={openCreate}>New Config</Button>}
             hasFilters={hasFilters}
-            onAdd={openCreate}
-            onClear={clearFilters}
+            filteredTitle="No configs found"
+            onClearFilters={clearFilters}
           />
         )}
       </div>
@@ -385,48 +364,9 @@ function InfraSkeleton() {
   );
 }
 
-function EmptyState({
-  hasFilters,
-  onAdd,
-  onClear,
-}: {
-  hasFilters: boolean;
-  onAdd: () => void;
-  onClear: () => void;
-}) {
-  return (
-    <div className="ip-empty">
-      <div className="ip-empty-icon">
-        {hasFilters ? <LucideX width={28} /> : <LucideServer width={28} />}
-      </div>
-      <p className="ip-empty-title">
-        {hasFilters ? "No configs found" : "No configs yet"}
-      </p>
-      <p className="ip-empty-sub">
-        {hasFilters
-          ? "Try adjusting your filters"
-          : "Store your first infrastructure config"}
-      </p>
-      {hasFilters ? (
-        <Button variant="secondary" onClick={onClear}>
-          Clear filters
-        </Button>
-      ) : (
-        <Button leftIcon={LucidePlus} onClick={onAdd}>
-          New Config
-        </Button>
-      )}
-    </div>
-  );
-}
 
 const CSS = `
 .ip-page   { display: flex; flex-direction: column; gap:10px; }
-.page-title    { font-size: var(--text-2xl); font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
-.page-subtitle { font-size: var(--text-sm); color: var(--text-tertiary); margin-top: 2px;  }
-
-/* Header */
-.ip-header { display: flex; align-items: center; justify-content: space-between; padding:15px 10px 0px 10px; flex-wrap: wrap; }
 
 /* Type tabs */
 .ip-type-tabs {
@@ -557,33 +497,9 @@ const CSS = `
 .ip-chip:hover      { background: var(--danger-muted); border-color: rgba(239,68,68,0.2); color: var(--danger); }
 .ip-chip--star      { background: var(--warning-muted); border-color: rgba(245,158,11,0.2); color: #fbbf24; }
 
-/* Grid */
-.ip-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
-}
-@media (max-width: 639px) { .ip-grid { grid-template-columns: 1fr; gap: 12px; } }
-
 /* Skeleton */
 .ip-skeleton {
   padding: 16px; background: var(--bg-surface);
   border: 1px solid var(--border-default); border-radius: var(--radius-lg);
 }
-
-/* Empty */
-.ip-empty {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 12px; padding: 64px 24px;
-  background: var(--bg-surface); border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg); text-align: center;
-}
-.ip-empty-icon {
-  display: flex; align-items: center; justify-content: center;
-  width: 56px; height: 56px;
-  background: var(--bg-overlay); border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg); color: var(--text-tertiary);
-}
-.ip-empty-title { font-size: var(--text-lg); font-weight: 600; color: var(--text-primary); }
-.ip-empty-sub   { font-size: var(--text-sm); color: var(--text-tertiary); }
 `;

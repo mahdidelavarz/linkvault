@@ -17,6 +17,7 @@ import {
 import { useCategories } from "@/hooks/useCategories";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
+import FormLayout from "@/components/layout/FormLayout";
 import Alert from "@/components/ui/Alert";
 import TagSelector from "@/components/tags/TagSelector";
 import {
@@ -160,8 +161,18 @@ export default function InfraForm({ item, onClose }: InfraFormProps) {
   return (
     <>
       <style>{CSS}</style>
-      <div className="iform-wrapper">
-      <form className="iform" onSubmit={handleSubmit(onSubmit)} noValidate>
+      <FormLayout
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+        footer={
+          <>
+            <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+            <Button type="submit" isLoading={isLoading}>
+              {isEditing ? "Save changes" : "Create config"}
+            </Button>
+          </>
+        }
+      >
         <div className="iform-content">
         {error && (
           <Alert
@@ -349,17 +360,7 @@ export default function InfraForm({ item, onClose }: InfraFormProps) {
 
         </div>
 
-        {/* ── Footer ── */}
-        <div className="iform-footer">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button type="submit" isLoading={isLoading}>
-            {isEditing ? "Save changes" : "Create config"}
-          </Button>
-        </div>
-      </form>
-      </div>
+      </FormLayout>
     </>
   );
 }
@@ -529,13 +530,7 @@ function TypeMetadata({
 }
 
 const CSS = `
-.iform-wrapper {
-  height:         80dvh;
-  display:        flex;
-  flex-direction: column;
-}
-.iform { display: flex; flex-direction: column; gap: 0; height: 100%; overflow: hidden; }
-.iform-content { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+.iform-content { display: flex; flex-direction: column; gap: 16px; padding: 8px 0; }
 
 /* Type grid */
 .iform-field { display: flex; flex-direction: column; gap: 6px; }
@@ -656,22 +651,4 @@ const CSS = `
 .iform-check--on { background: var(--accent); border-color: var(--accent); color: white; }
 .iform-check-label { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-secondary); }
 
-/* Footer */
-.iform-footer {
-  display:      flex;
-  justify-content: flex-end;
-  gap:          8px;
-  padding:      10px 16px;
-  border-top:   1px solid var(--border-subtle);
-  background:   var(--bg-subtle);
-  border-radius: 20px;
-  flex-shrink:  0;
-  position:     sticky;
-  bottom:       0;
-  z-index:      10;
-}
-@media (max-width: 479px) {
-  .iform-footer { flex-direction: column-reverse; }
-  .iform-footer > * { width: 100%; }
-}
 `;

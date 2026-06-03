@@ -3,21 +3,18 @@
 import { useState } from "react";
 import { type Link as LinkType } from "@/types/link";
 import { useToggleFavorite, useDeleteLink } from "@/hooks/useLinks";
-import Button from "@/components/ui/Button";
-import Badge from "@/components/ui/Badge";
-import Modal from "@/components/ui/Modal";
+import FavoriteButton from "@/components/shared/FavoriteButton";
+import ActionButtons from "@/components/shared/ActionButtons";
+import TagSection from "@/components/shared/TagSection";
+import ConfirmDeleteModal from "@/components/shared/ConfirmDeleteModal";
 import {
   LucideCheck,
   LucideExternalLink,
   LucideEye,
   LucideEyeOff,
-  LucideFolder,
   LucideLock,
   LucideMail,
-  LucidePencil,
   LucidePhone,
-  LucideStar,
-  LucideTrash2,
   LucideUser,
 } from "@/Icons/Icons";
 
@@ -30,11 +27,8 @@ interface LinkCardProps {
 }
 
 export default function LinkCard({
-  link,
-  onEdit,
-  isSelectMode = false,
-  isSelected = false,
-  onToggleSelect,
+  link, onEdit,
+  isSelectMode = false, isSelected = false, onToggleSelect,
 }: LinkCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -50,114 +44,68 @@ export default function LinkCard({
   const faviconUrl = `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`;
   const hasCredentials = link.username || link.email || link.phone || link.passwordEncrypted;
 
-  const handleCardClick = () => {
-    if (isSelectMode) onToggleSelect?.(link.id);
-  };
+  const handleCardClick = () => { if (isSelectMode) onToggleSelect?.(link.id); };
 
   return (
     <>
       <style>{CSS}</style>
 
-      {/* Outer wrapper handles selection click; role/aria make it accessible */}
       <div
-        className={[
-          "lcard",
-          isSelectMode ? "lcard--selectable" : "",
-          isSelected  ? "lcard--selected"  : "",
-        ].filter(Boolean).join(" ")}
+        className={["lcard", isSelectMode ? "lcard--selectable" : "", isSelected ? "lcard--selected" : ""].filter(Boolean).join(" ")}
         onClick={handleCardClick}
         role={isSelectMode ? "checkbox" : undefined}
         aria-checked={isSelectMode ? isSelected : undefined}
         tabIndex={isSelectMode ? 0 : undefined}
         onKeyDown={isSelectMode ? (e) => { if (e.key === " " || e.key === "Enter") handleCardClick(); } : undefined}
       >
-        {/* ── Selection checkbox ── */}
+        {/* Selection checkbox */}
         {isSelectMode && (
           <div className={["lcard-checkbox", isSelected ? "lcard-checkbox--checked" : ""].filter(Boolean).join(" ")}>
             {isSelected && <LucideCheck width={10} />}
           </div>
         )}
 
-        {/* ── Top row ── */}
+        {/* Top row */}
         <div className="lcard-top">
           <div className="lcard-favicon">
-            <img
-              src={faviconUrl}
-              alt=""
-              width={16}
-              height={16}
-              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-            />
+            <img src={faviconUrl} alt="" width={16} height={16}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
           </div>
-
           <div className="lcard-info">
-            <button
-              className="lcard-title"
+            <button className="lcard-title"
               onClick={(e) => {
                 if (isSelectMode) { e.stopPropagation(); onToggleSelect?.(link.id); return; }
                 window.open(link.url, "_blank", "noopener,noreferrer");
               }}
-            >
-              {link.title}
-            </button>
-            <a
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="lcard-url"
-              title={link.url}
+            >{link.title}</button>
+            <a href={link.url} target="_blank" rel="noopener noreferrer" className="lcard-url" title={link.url}
               onClick={(e) => { if (isSelectMode) e.preventDefault(); }}
-            >
-              {hostname}
-            </a>
+            >{hostname}</a>
           </div>
-
-          {/* Favorite — hidden while in select mode */}
           {!isSelectMode && (
-            <button
-              className={["lcard-fav", link.isFavorite ? "lcard-fav--active" : ""].filter(Boolean).join(" ")}
-              onClick={(e) => { e.stopPropagation(); toggleFavorite.mutate(link.id); }}
-              aria-label={link.isFavorite ? "Remove favorite" : "Add favorite"}
-              disabled={toggleFavorite.isPending}
-            >
-              <LucideStar width={15} />
-            </button>
+            <FavoriteButton
+              active={link.isFavorite}
+              pending={toggleFavorite.isPending}
+              onToggle={() => toggleFavorite.mutate(link.id)}
+            />
           )}
         </div>
 
-        {/* ── Description ── */}
+        {/* Description */}
         {link.description && <p className="lcard-desc">{link.description}</p>}
 
-        {/* ── Credentials ── */}
+        {/* Credentials */}
         {hasCredentials && (
           <div className="lcard-creds">
-            {link.username && (
-              <div className="lcard-cred-row">
-                <LucideUser width={12} />
-                <span>{link.username}</span>
-              </div>
-            )}
-            {link.email && (
-              <div className="lcard-cred-row">
-                <LucideMail width={12} />
-                <span>{link.email}</span>
-              </div>
-            )}
-            {link.phone && (
-              <div className="lcard-cred-row">
-                <LucidePhone width={12} />
-                <span>{link.phone}</span>
-              </div>
-            )}
+            {link.username && <div className="lcard-cred-row"><LucideUser width={12} /><span>{link.username}</span></div>}
+            {link.email    && <div className="lcard-cred-row"><LucideMail width={12} /><span>{link.email}</span></div>}
+            {link.phone    && <div className="lcard-cred-row"><LucidePhone width={12} /><span>{link.phone}</span></div>}
             {link.passwordEncrypted && (
               <div className="lcard-cred-row">
                 <LucideLock width={12} />
-                <span className="lcard-password">
-                  {showPassword ? link.passwordEncrypted : "••••••••"}
-                </span>
+                <span className="lcard-password">{showPassword ? link.passwordEncrypted : "••••••••"}</span>
                 {!isSelectMode && (
-                  <button
-                    className="lcard-eye"
+                  <button className="lcard-eye"
                     onClick={(e) => { e.stopPropagation(); setShowPassword((p) => !p); }}
                     aria-label={showPassword ? "Hide" : "Show"}
                   >
@@ -169,144 +117,69 @@ export default function LinkCard({
           </div>
         )}
 
-        {/* ── Tags & category ── */}
-        {(link.category || (link.tags && link.tags.length > 0)) && (
-          <div className="lcard-tags">
-            {link.category && (
-              <Badge variant="cyan" icon={LucideFolder} size="sm">{link.category.name}</Badge>
-            )}
-            {link.tags?.map((tag: any) => (
-              <Badge key={tag.id} variant="default" size="sm">{tag.name}</Badge>
-            ))}
-          </div>
-        )}
+        {/* Tags & category */}
+        <TagSection tags={link.tags} category={link.category} />
 
-        {/* ── Footer — hidden in select mode ── */}
+        {/* Footer */}
         {!isSelectMode && (
           <div className="lcard-footer">
             <span className="lcard-date">
-              {new Date(link.updatedAt).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
+              {new Date(link.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
             </span>
-            <div className="lcard-actions">
-              <button
-                className="lcard-action-btn"
-                onClick={(e) => { e.stopPropagation(); window.open(link.url, "_blank", "noopener,noreferrer"); }}
-                aria-label="Open link"
-              >
-                <LucideExternalLink width={14} />
-              </button>
-              <button
-                className="lcard-action-btn"
-                onClick={(e) => { e.stopPropagation(); onEdit(link); }}
-                aria-label="Edit"
-              >
-                <LucidePencil width={14} />
-              </button>
-              <button
-                className="lcard-action-btn lcard-action-btn--danger"
-                onClick={(e) => { e.stopPropagation(); setConfirmDelete(true); }}
-                aria-label="Delete"
-              >
-                <LucideTrash2 width={14} />
-              </button>
-            </div>
+            <ActionButtons
+              onEdit={() => onEdit(link)}
+              onDelete={() => setConfirmDelete(true)}
+              extra={
+                <button className="ab-btn"
+                  onClick={(e) => { e.stopPropagation(); window.open(link.url, "_blank", "noopener,noreferrer"); }}
+                  aria-label="Open link" type="button"
+                >
+                  <LucideExternalLink width={14} />
+                </button>
+              }
+            />
           </div>
         )}
       </div>
 
-      {/* ── Delete confirm modal ── */}
-      <Modal isOpen={confirmDelete} onClose={() => setConfirmDelete(false)} title="Delete link" size="sm">
-        <div className="lcard-confirm">
-          <p className="lcard-confirm-text">
-            Are you sure you want to delete <strong>{link.title}</strong>? This cannot be undone.
-          </p>
-          <div className="lcard-confirm-actions">
-            <Button variant="secondary" onClick={() => setConfirmDelete(false)}>Cancel</Button>
-            <Button
-              variant="danger"
-              isLoading={deleteLink.isPending}
-              onClick={() => deleteLink.mutate(link.id, { onSuccess: () => setConfirmDelete(false) })}
-            >
-              Delete
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      <ConfirmDeleteModal
+        isOpen={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        itemName={link.title}
+        isLoading={deleteLink.isPending}
+        onConfirm={() => deleteLink.mutate(link.id, { onSuccess: () => setConfirmDelete(false) })}
+      />
     </>
   );
 }
 
 const CSS = `
 .lcard {
-  display:        flex;
-  flex-direction: column;
-  gap:            12px;
-  padding:        14px 16px;
-  background:     var(--bg-surface);
-  border:         1px solid var(--border-default);
-  border-radius:  var(--radius-lg);
-  transition:     border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
-  width:          100%;
-  min-width:      0;
-  overflow:       hidden;
-  box-sizing:     border-box;
-  position:       relative;
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-lg);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+  width: 100%; min-width: 0; overflow: hidden; box-sizing: border-box; position: relative;
 }
-.lcard:hover {
-  border-color: var(--border-strong);
-  box-shadow:   var(--shadow-md);
-}
-@media (max-width: 479px) {
-  .lcard { padding: 12px; gap: 10px; }
-}
+.lcard:hover { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
+@media (max-width: 479px) { .lcard { padding: 12px; gap: 10px; } }
 
-/* Select mode states */
-.lcard--selectable {
-  cursor:     pointer;
-  user-select: none;
-}
+.lcard--selectable { cursor: pointer; user-select: none; }
 .lcard--selectable:active { opacity: 0.85; }
-.lcard--selected {
-  border-color: var(--accent-border);
-  background:   var(--accent-muted);
-  box-shadow:   0 0 0 1px var(--accent-border);
-}
+.lcard--selected { border-color: var(--accent-border); background: var(--accent-muted); box-shadow: 0 0 0 1px var(--accent-border); }
 
-/* Checkbox overlay (top-left corner) */
 .lcard-checkbox {
-  position:        absolute;
-  top:             10px;
-  left:            10px;
-  display:         flex;
-  align-items:     center;
-  justify-content: center;
-  width:           20px;
-  height:          20px;
-  border:          2px solid var(--border-strong);
-  border-radius:   var(--radius-sm);
-  background:      var(--bg-surface);
-  z-index:         2;
-  transition:      background var(--transition-fast), border-color var(--transition-fast);
-  pointer-events:  none;
+  position: absolute; top: 10px; left: 10px;
+  display: flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px;
+  border: 2px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--bg-surface); z-index: 2; pointer-events: none;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
 }
-.lcard-checkbox--checked {
-  background:    var(--accent);
-  border-color:  var(--accent);
-  color:         #fff;
-}
-
-/* Shift top row to the right when checkbox is shown */
+.lcard-checkbox--checked { background: var(--accent); border-color: var(--accent); color: #fff; }
 .lcard--selectable .lcard-top { padding-left: 28px; }
-@media (max-width: 479px) {
-  .lcard--selectable .lcard-top { padding-left: 26px; }
-}
 
-/* Top row */
-.lcard-top { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+.lcard-top    { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
 .lcard-favicon {
   display: flex; align-items: center; justify-content: center;
   width: 30px; height: 30px; min-width: 30px;
@@ -315,8 +188,7 @@ const CSS = `
 }
 .lcard-info  { flex: 1; min-width: 0; overflow: hidden; }
 .lcard-title {
-  display: block; width: 100%;
-  font-size: var(--text-sm); font-weight: 600; color: var(--text-primary);
+  display: block; width: 100%; font-size: var(--text-sm); font-weight: 600; color: var(--text-primary);
   text-align: left; background: none; border: none; cursor: pointer; padding: 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   font-family: var(--font-sans); transition: color var(--transition-fast); line-height: 1.4;
@@ -329,41 +201,21 @@ const CSS = `
 }
 .lcard-url:hover { color: var(--text-accent); }
 
-.lcard-fav {
-  display: flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; min-width: 28px;
-  background: transparent; border: none; border-radius: var(--radius-sm);
-  color: var(--text-tertiary); cursor: pointer; flex-shrink: 0;
-  transition: color var(--transition-fast), transform var(--transition-fast);
-}
-.lcard-fav:hover    { color: #fbbf24; transform: scale(1.15); }
-.lcard-fav--active  { color: #fbbf24; }
-.lcard-fav:disabled { opacity: 0.5; pointer-events: none; }
-
-/* Description */
 .lcard-desc {
   font-size: var(--text-xs); color: var(--text-secondary); line-height: var(--leading-snug);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   overflow: hidden; word-break: break-word;
 }
 
-/* Credentials */
 .lcard-creds {
-  display: flex; flex-direction: column; gap: 5px;
-  padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 5px; padding: 10px 12px;
   background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
   overflow: hidden; min-width: 0;
 }
 @media (max-width: 479px) { .lcard-creds { padding: 8px 10px; } }
-
-.lcard-cred-row {
-  display: flex; align-items: center; gap: 7px;
-  font-size: var(--text-xs); color: var(--text-secondary); min-width: 0;
-}
+.lcard-cred-row { display: flex; align-items: center; gap: 7px; font-size: var(--text-xs); color: var(--text-secondary); min-width: 0; }
 .lcard-cred-row svg  { color: var(--text-tertiary); flex-shrink: 0; }
-.lcard-cred-row span {
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1;
-}
+.lcard-cred-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
 .lcard-password { font-family: var(--font-mono); letter-spacing: 0.05em; }
 .lcard-eye {
   display: flex; align-items: center; background: transparent; border: none;
@@ -372,35 +224,12 @@ const CSS = `
 }
 .lcard-eye:hover { color: var(--text-primary); }
 
-/* Tags */
-.lcard-tags { display: flex; flex-wrap: wrap; gap: 5px; }
-
-/* Footer */
 .lcard-footer {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 8px; padding-top: 10px; border-top: 1px solid var(--border-subtle); margin-top: auto;
-  min-width: 0;
+  gap: 8px; padding-top: 10px; border-top: 1px solid var(--border-subtle); margin-top: auto; min-width: 0;
 }
 .lcard-date {
   font-size: var(--text-xs); color: var(--text-tertiary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex-shrink: 1;
 }
-.lcard-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
-
-.lcard-action-btn {
-  display: flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px;
-  background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm);
-  color: var(--text-tertiary); cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
-}
-@media (hover: none) { .lcard-action-btn { width: 40px; height: 40px; } }
-.lcard-action-btn:hover          { background: var(--bg-overlay); border-color: var(--border-default); color: var(--text-primary); }
-.lcard-action-btn--danger:hover  { background: var(--danger-muted); border-color: rgba(239,68,68,0.2); color: var(--danger); }
-
-/* Confirm modal */
-.lcard-confirm         { display: flex; flex-direction: column; gap: 20px; }
-.lcard-confirm-text    { font-size: var(--text-sm); color: var(--text-secondary); line-height: var(--leading-relaxed); }
-.lcard-confirm-text strong { color: var(--text-primary); }
-.lcard-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
 `;

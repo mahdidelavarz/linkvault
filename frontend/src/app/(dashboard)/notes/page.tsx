@@ -10,6 +10,7 @@ import NoteEditor from "@/components/notes/NoteEditor";
 import NoteForm from "@/components/notes/NoteForm";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import PageHeader from "@/components/ui/PageHeader";
 import {
   LucideArrowLeft,
   LucideChevronDown,
@@ -80,15 +81,11 @@ export default function NotesPage() {
       <style>{CSS}</style>
       <div className="notes-page">
         {/* ── Page header ── */}
-        <div className="notes-header">
-          <div>
-            <h1 className="page-title">Notes</h1>
-            <p className="page-subtitle">Markdown-powered, auto-save</p>
-          </div>
-          <Button leftIcon={LucidePlus} onClick={openCreate}>
-            New Note
-          </Button>
-        </div>
+        <PageHeader
+          title="Notes"
+          subtitle="Markdown-powered, auto-save"
+          action={<Button leftIcon={LucidePlus} onClick={openCreate}>New Note</Button>}
+        />
 
         {/* ── Main layout: sidebar + editor ── */}
         <div className="notes-layout">
@@ -284,9 +281,6 @@ function NoteCardSkeleton() {
 
 const CSS = `
 .notes-page   { display: flex; flex-direction: column; height: calc(100dvh - 58px); gap:10px; }
-.notes-header { display: flex; align-items: center; justify-content: space-between;  padding:15px 10px 0px 10px; flex-shrink: 0; }
-.page-title   { font-size: var(--text-2xl); font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
-.page-subtitle{ font-size: var(--text-sm); color: var(--text-tertiary); margin-top: 2px; }
 
 /* ── Layout ── */
 .notes-layout {

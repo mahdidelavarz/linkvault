@@ -17,6 +17,7 @@ import RequestBuilder    from '@/components/api-client/RequestBuilder'
 import ResponseViewer    from '@/components/api-client/ResponseViewer'
 import Button            from '@/components/ui/Button'
 import Modal             from '@/components/ui/Modal'
+import FormLayout        from '@/components/layout/FormLayout'
 import Input             from '@/components/ui/Input'
 import Textarea          from '@/components/ui/TextArea'
 import Alert             from '@/components/ui/Alert'
@@ -227,8 +228,19 @@ export default function ApiClientPage() {
         title={selectedEndpoint ? 'Update Endpoint' : 'Save Endpoint'}
         size="md"
       >
-        <form className="save-form" onSubmit={handleSubmit(onSave)} noValidate>
-
+        <FormLayout
+          compact
+          onSubmit={handleSubmit(onSave)}
+          noValidate
+          footer={
+            <>
+              <Button type="button" variant="ghost" onClick={() => setSaveOpen(false)}>Cancel</Button>
+              <Button type="submit" isLoading={createEndpoint.isPending || updateEndpoint.isPending}>
+                {selectedEndpoint ? 'Update' : 'Save Endpoint'}
+              </Button>
+            </>
+          }
+        >
           {(createEndpoint.isError || updateEndpoint.isError) && (
             <Alert type="error" message="Failed to save endpoint. Please try again." />
           )}
@@ -299,14 +311,7 @@ export default function ApiClientPage() {
               </label>
             )}
           />
-
-          <div className="save-form-footer">
-            <Button type="button" variant="ghost" onClick={() => setSaveOpen(false)}>Cancel</Button>
-            <Button type="submit" isLoading={createEndpoint.isPending || updateEndpoint.isPending}>
-              {selectedEndpoint ? 'Update' : 'Save Endpoint'}
-            </Button>
-          </div>
-        </form>
+        </FormLayout>
       </Modal>
 
       {/* ── Delete confirm ── */}
@@ -381,7 +386,6 @@ const CSS = `
 }
 
 /* Save form */
-.save-form       { display: flex; flex-direction: column; gap: 14px; }
 .save-form-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 479px) { .save-form-grid { grid-template-columns: 1fr; } }
 .save-form-field { display: flex; flex-direction: column; gap: 6px; }
@@ -397,11 +401,6 @@ const CSS = `
 }
 .sf-check-box--on { background: var(--accent); border-color: var(--accent); color: white; }
 .save-form-check-label { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-secondary); }
-.save-form-footer { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; border-top: 1px solid var(--border-subtle); }
-@media (max-width: 479px) {
-  .save-form-footer { flex-direction: column-reverse; }
-  .save-form-footer > * { width: 100%; }
-}
 
 /* Delete confirm */
 .del-confirm         { display: flex; flex-direction: column; gap: 20px; }

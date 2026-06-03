@@ -14,6 +14,7 @@ import {
 import { getLanguageName, detectLanguage } from "@/lib/languageDetector";
 import { useCreateSnippet, useUpdateSnippet } from "@/hooks/useSnippet";
 import { useCategories } from "@/hooks/useCategories";
+import FormLayout from "@/components/layout/FormLayout";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
@@ -148,9 +149,27 @@ export default function SnippetForm({
   return (
     <>
       <style>{CSS}</style>
-      <div className="sform-wrapper">
-        <form className="sform" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <div className="sform-top">
+      <FormLayout
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+        footerJustify="between"
+        footer={
+          <>
+            <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+            <div className="sform-footer-right">
+              {activeTab === "basic" && (
+                <Button type="button" variant="secondary" rightIcon={LucideArrowRight} onClick={() => setActiveTab("meta")}>
+                  Details
+                </Button>
+              )}
+              <Button type="submit" isLoading={isLoading}>
+                {isEditing ? "Save changes" : "Create snippet"}
+              </Button>
+            </div>
+          </>
+        }
+      >
+        <div className="sform-top">
           {error && (
             <Alert
               type="error"
@@ -391,29 +410,7 @@ export default function SnippetForm({
 
           </div>
 
-        {/* ── Footer ── */}
-        <div className="sform-footer">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <div className="sform-footer-right">
-            {activeTab === "basic" && (
-              <Button
-                type="button"
-                variant="secondary"
-                rightIcon={LucideArrowRight}
-                onClick={() => setActiveTab("meta")}
-              >
-                Details
-              </Button>
-            )}
-            <Button type="submit" isLoading={isLoading}>
-              {isEditing ? "Save changes" : "Create snippet"}
-            </Button>
-          </div>
-        </div>
-      </form>
-      </div>
+      </FormLayout>
     </>
   );
 }
@@ -545,14 +542,8 @@ function TypeMetadataFields({
 }
 
 const CSS = `
-.sform-wrapper {
-  height:         80dvh;
-  display:        flex;
-  flex-direction: column;
-}
-.sform { display: flex; flex-direction: column; gap: 0; height: 100%; overflow: hidden; }
-.sform-top { flex-shrink: 0; padding: 0 16px; }
-.sform-content { flex: 1; overflow-y: auto; padding: 0 16px; }
+.sform-top { flex-shrink: 0; }
+.sform-content { flex: 1; overflow-y: auto; }
 
 /* Tabs */
 .sform-tabs {
@@ -695,27 +686,5 @@ const CSS = `
 .sform-check--on { background: var(--accent); border-color: var(--accent); color: white; }
 .sform-check-label { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-secondary); }
 
-/* Footer */
-.sform-footer {
-  display:         flex;
-  align-items:     center;
-  justify-content: space-between;
-  gap:             8px;
-  padding:         10px 16px;
-  border-top:      1px solid var(--border-subtle);
-  background:      var(--bg-subtle);
-  border-radius:   20px;
-  flex-shrink:     0;
-  position:        sticky;
-  bottom:          0;
-  z-index:         10;
-}
 .sform-footer-right { display: flex; align-items: center; gap: 8px; }
-
-@media (max-width: 479px) {
-  .sform-footer { flex-wrap: wrap; }
-  .sform-footer > *,
-  .sform-footer-right { width: 100%; }
-  .sform-footer-right { flex-direction: column; }
-}
 `;

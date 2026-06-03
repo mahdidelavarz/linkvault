@@ -5,9 +5,12 @@ import { type Snippet, SNIPPET_TYPES } from '@/types/snippet'
 import { getLanguageName }             from '@/lib/languageDetector'
 import { useToggleSnippetFavorite, useDeleteSnippet } from '@/hooks/useSnippet'
 import Badge  from '@/components/ui/Badge'
-import Button from '@/components/ui/Button'
-import Modal  from '@/components/ui/Modal'
-import { LucideCheck, LucideChevronDown, LucideChevronUp, LucideCopy, LucideFolder, LucidePencil, LucideStar, LucideTrash2 } from '@/Icons/Icons'
+import FavoriteButton from '@/components/shared/FavoriteButton'
+import CopyButton from '@/components/shared/CopyButton'
+import ActionButtons from '@/components/shared/ActionButtons'
+import TagSection from '@/components/shared/TagSection'
+import ConfirmDeleteModal from '@/components/shared/ConfirmDeleteModal'
+import { LucideChevronDown, LucideChevronUp, LucideFolder } from '@/Icons/Icons'
 
 const LANG_COLORS: Record<string, string> = {
   js: 'orange', jsx: 'orange', ts: 'cyan', tsx: 'cyan',
@@ -18,20 +21,17 @@ const LANG_COLORS: Record<string, string> = {
 }
 
 interface SnippetCardProps {
-  snippet:  Snippet
-  copiedId: number | null
-  onEdit:   (s: Snippet) => void
-  onCopy:   (s: Snippet) => void
+  snippet: Snippet
+  onEdit:  (s: Snippet) => void
 }
 
-export default function SnippetCard({ snippet, copiedId, onEdit, onCopy }: SnippetCardProps) {
+export default function SnippetCard({ snippet, onEdit }: SnippetCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [expanded,      setExpanded]      = useState(false)
 
   const toggleFav  = useToggleSnippetFavorite()
   const deleteSnip = useDeleteSnippet()
 
-  const isCopied   = copiedId === snippet.id
   const typeConfig = SNIPPET_TYPES[snippet.snippetType]
   const langName   = getLanguageName(snippet.language)
   const langColor  = (LANG_COLORS[snippet.language] ?? 'default') as any
@@ -51,14 +51,11 @@ export default function SnippetCard({ snippet, copiedId, onEdit, onCopy }: Snipp
           <div className="sc-title-row">
             <div className="sc-type-dot" title={typeConfig?.label} />
             <h3 className="sc-title">{snippet.title}</h3>
-            <button
-              className={['sc-fav', snippet.isFavorite ? 'sc-fav--active' : ''].filter(Boolean).join(' ')}
-              onClick={() => toggleFav.mutate(snippet.id)}
-              aria-label={snippet.isFavorite ? 'Remove favorite' : 'Add favorite'}
-              disabled={toggleFav.isPending}
-            >
-              <LucideStar width={14} />
-            </button>
+            <FavoriteButton
+              active={snippet.isFavorite}
+              pending={toggleFav.isPending}
+              onToggle={() => toggleFav.mutate(snippet.id)}
+            />
           </div>
 
           <div className="sc-meta">
@@ -96,72 +93,25 @@ export default function SnippetCard({ snippet, copiedId, onEdit, onCopy }: Snipp
         </div>
 
         {/* ── Tags ── */}
-        {snippet.tags && snippet.tags.length > 0 && (
-          <div className="sc-tags">
-            {snippet.tags.slice(0, 4).map((tag: any) => (
-              <Badge key={tag.id} variant="default" size="sm">{tag.name}</Badge>
-            ))}
-            {snippet.tags.length > 4 && (
-              <span className="sc-tags-more">+{snippet.tags.length - 4}</span>
-            )}
-          </div>
-        )}
+        <TagSection tags={snippet.tags} />
 
         {/* ── Footer: copy + actions ── */}
         <div className="sc-footer">
-          {/* Copy — primary action, most prominent */}
-          <button
-            className={['sc-copy-btn', isCopied ? 'sc-copy-btn--copied' : ''].filter(Boolean).join(' ')}
-            onClick={() => onCopy(snippet)}
-            aria-label="Copy to clipboard"
-          >
-            {isCopied ? <LucideCheck width={14}/> : <LucideCopy width={14}/>}
-            {isCopied ? 'Copied!' : 'Copy'}
-          </button>
-
-          <div className="sc-actions">
-            <button
-              className="sc-action-btn"
-              onClick={() => onEdit(snippet)}
-              aria-label="Edit snippet"
-              title="Edit"
-            >
-              <LucidePencil width={14} />
-            </button>
-            <button
-              className="sc-action-btn sc-action-btn--danger"
-              onClick={() => setConfirmDelete(true)}
-              aria-label="Delete snippet"
-              title="Delete"
-            >
-              <LucideTrash2 width={14} />
-            </button>
-          </div>
-
+          <CopyButton text={snippet.content} label="Copy" />
+          <ActionButtons onEdit={() => onEdit(snippet)} onDelete={() => setConfirmDelete(true)} />
           <span className="sc-date">
             {new Date(snippet.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
         </div>
       </div>
 
-      {/* Delete confirm */}
-      <Modal isOpen={confirmDelete} onClose={() => setConfirmDelete(false)} title="Delete snippet" size="sm">
-        <div className="sc-confirm">
-          <p className="sc-confirm-text">
-            Delete <strong>{snippet.title}</strong>? This cannot be undone.
-          </p>
-          <div className="sc-confirm-actions">
-            <Button variant="secondary" onClick={() => setConfirmDelete(false)}>Cancel</Button>
-            <Button
-              variant="danger"
-              isLoading={deleteSnip.isPending}
-              onClick={() => deleteSnip.mutate(snippet.id, { onSuccess: () => setConfirmDelete(false) })}
-            >
-              Delete
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      <ConfirmDeleteModal
+        isOpen={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        itemName={snippet.title}
+        isLoading={deleteSnip.isPending}
+        onConfirm={() => deleteSnip.mutate(snippet.id, { onSuccess: () => setConfirmDelete(false) })}
+      />
     </>
   )
 }
@@ -202,18 +152,6 @@ const CSS = `
   overflow:      hidden;
   text-overflow: ellipsis;
 }
-.sc-fav {
-  display: flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px;
-  background: transparent; border: none;
-  color: var(--text-tertiary); cursor: pointer;
-  border-radius: var(--radius-sm);
-  transition: color var(--transition-fast), transform var(--transition-fast);
-  flex-shrink: 0;
-}
-.sc-fav:hover    { color: #fbbf24; transform: scale(1.15); }
-.sc-fav--active  { color: #fbbf24; }
-.sc-fav:disabled { opacity: 0.5; pointer-events: none; }
 
 .sc-meta {
   display:     flex;
@@ -301,10 +239,6 @@ const CSS = `
 }
 .sc-expand-btn:hover { color: var(--text-primary); background: var(--bg-subtle); }
 
-/* Tags */
-.sc-tags      { display: flex; flex-wrap: wrap; gap: 5px; }
-.sc-tags-more { font-size: var(--text-xs); color: var(--text-tertiary); align-self: center; }
-
 /* Footer */
 .sc-footer {
   display:         flex;
@@ -314,55 +248,6 @@ const CSS = `
   border-top:      1px solid var(--border-subtle);
 }
 
-/* Copy button — the star of the show */
-.sc-copy-btn {
-  display:       flex;
-  align-items:   center;
-  gap:           6px;
-  height:        34px;
-  padding:       0 14px;
-  background:    var(--bg-overlay);
-  border:        1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  color:         var(--text-secondary);
-  font-size:     var(--text-sm);
-  font-family:   var(--font-sans);
-  font-weight:   500;
-  cursor:        pointer;
-  transition:    background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
-  /* Good tap target */
-  min-height:    44px;
-}
-.sc-copy-btn:hover {
-  background:   var(--accent-muted);
-  border-color: var(--border-focus);
-  color:        var(--cyan-300);
-}
-.sc-copy-btn--copied {
-  background:   var(--success-muted);
-  border-color: rgba(16,185,129,0.3);
-  color:        #34d399;
-}
-
 .sc-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
-.sc-action-btn {
-  display: flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px;
-  background: transparent; border: 1px solid transparent;
-  border-radius: var(--radius-md); color: var(--text-tertiary);
-  cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
-  /* Good tap target */
-  min-width: 44px; min-height: 44px;
-}
-.sc-action-btn:hover              { background: var(--bg-overlay); border-color: var(--border-default); color: var(--text-primary); }
-.sc-action-btn--danger:hover      { background: var(--danger-muted); border-color: rgba(239,68,68,0.2); color: var(--danger); }
-
 .sc-date { font-size: var(--text-xs); color: var(--text-tertiary); white-space: nowrap; }
-
-/* Confirm */
-.sc-confirm         { display: flex; flex-direction: column; gap: 20px; }
-.sc-confirm-text    { font-size: var(--text-sm); color: var(--text-secondary); line-height: var(--leading-relaxed); }
-.sc-confirm-text strong { color: var(--text-primary); }
-.sc-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
 `

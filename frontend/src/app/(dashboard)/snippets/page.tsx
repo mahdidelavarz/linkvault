@@ -2,6 +2,9 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useSnippets } from "@/hooks/useSnippet";
+import PageHeader from "@/components/ui/PageHeader";
+import EmptyState from "@/components/ui/EmptyState";
+import CardGrid from "@/components/shared/CardGrid";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useCategories } from "@/hooks/useCategories";
 import {
@@ -65,7 +68,6 @@ export default function SnippetsPage() {
   const [selectedLang, setSelectedLang] = useState("");
   const [showFavorites, setShowFavorites] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const [copiedId, setCopiedId] = useState<number | null>(null);
 
   const { data: categories } = useCategories();
   const {
@@ -133,32 +135,17 @@ export default function SnippetsPage() {
     setEditingSnippet(null);
   };
 
-  const handleCopy = async (snippet: Snippet) => {
-    try {
-      await navigator.clipboard.writeText(snippet.content);
-      setCopiedId(snippet.id);
-      setTimeout(() => setCopiedId(null), 2000);
-    } catch {
-      /* silently fail */
-    }
-  };
 
   return (
     <>
       <style>{CSS}</style>
       <div className="sp-page">
         {/* ── Header ── */}
-        <div className="sp-header">
-          <div>
-            <h1 className="page-title">Snippets</h1>
-            <p className="page-subtitle">
-              {isLoading ? "…" : `${total} snippets`}
-            </p>
-          </div>
-          <Button leftIcon={LucidePlus} onClick={openCreate}>
-            New Snippet
-          </Button>
-        </div>
+        <PageHeader
+          title="Snippets"
+          subtitle={isLoading ? "…" : `${total} snippets`}
+          action={<Button leftIcon={LucidePlus} onClick={openCreate}>New Snippet</Button>}
+        />
 
         {/* ── Filter bar ── */}
         <div className="sp-filter-bar">
@@ -321,36 +308,28 @@ export default function SnippetsPage() {
 
         {/* ── Grid ── */}
         {isLoading ? (
-          <div className="sp-grid">
-            {[...Array(6)].map((_, i) => (
-              <SnippetSkeleton key={i} />
-            ))}
-          </div>
+          <CardGrid minCardWidth={320}>{[...Array(6)].map((_, i) => <SnippetSkeleton key={i} />)}</CardGrid>
         ) : snippets.length > 0 ? (
           <>
-            <div className="sp-grid">
+            <CardGrid minCardWidth={320}>
               {snippets.map((snippet) => (
-                <SnippetCard
-                  key={snippet.id}
-                  snippet={snippet}
-                  copiedId={copiedId}
-                  onEdit={openEdit}
-                  onCopy={handleCopy}
-                />
+                <SnippetCard key={snippet.id} snippet={snippet} onEdit={openEdit} />
               ))}
-            </div>
+            </CardGrid>
             <div ref={sentinelRef} style={{ height: 1 }} />
             {isFetchingNextPage && (
-              <div className="sp-grid">
-                {[...Array(3)].map((_, i) => <SnippetSkeleton key={i} />)}
-              </div>
+              <CardGrid minCardWidth={320}>{[...Array(3)].map((_, i) => <SnippetSkeleton key={i} />)}</CardGrid>
             )}
           </>
         ) : (
           <EmptyState
+            icon={LucideCodeXml}
+            title="No snippets yet"
+            subtitle="Save your first reusable snippet"
+            action={<Button leftIcon={LucidePlus} onClick={openCreate}>New Snippet</Button>}
             hasFilters={hasFilters}
-            onAdd={openCreate}
-            onClear={clearFilters}
+            filteredTitle="No snippets found"
+            onClearFilters={clearFilters}
           />
         )}
       </div>
@@ -417,48 +396,9 @@ function SnippetSkeleton() {
   );
 }
 
-function EmptyState({
-  hasFilters,
-  onAdd,
-  onClear,
-}: {
-  hasFilters: boolean;
-  onAdd: () => void;
-  onClear: () => void;
-}) {
-  return (
-    <div className="sp-empty">
-      <div className="sp-empty-icon">
-        {hasFilters ? <LucideX width={28} /> : <LucideCodeXml width={28} />}
-      </div>
-      <p className="sp-empty-title">
-        {hasFilters ? "No snippets found" : "No snippets yet"}
-      </p>
-      <p className="sp-empty-sub">
-        {hasFilters
-          ? "Try adjusting your filters"
-          : "Save your first reusable snippet"}
-      </p>
-      {hasFilters ? (
-        <Button variant="secondary" onClick={onClear}>
-          Clear filters
-        </Button>
-      ) : (
-        <Button leftIcon={LucidePlus} onClick={onAdd}>
-          New Snippet
-        </Button>
-      )}
-    </div>
-  );
-}
 
 const CSS = `
 .sp-page   { display: flex; flex-direction: column; gap:10px; }
-.page-title    { font-size: var(--text-2xl); font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
-.page-subtitle { font-size: var(--text-sm); color: var(--text-tertiary); margin-top: 2px; }
-
-/* Header */
-.sp-header { display: flex; align-items: center; justify-content: space-between;  padding:15px 10px 0px 10px; flex-wrap: wrap; }
 
 /* Filter bar */
 .sp-filter-bar {
@@ -634,34 +574,10 @@ const CSS = `
 .sp-chip:hover      { background: var(--danger-muted); border-color: rgba(239,68,68,0.2); color: var(--danger); }
 .sp-chip--star      { background: var(--warning-muted); border-color: rgba(245,158,11,0.2); color: #fbbf24; }
 
-/* Grid */
-.sp-grid {
-  display:               grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap:                   16px;
-}
-@media (max-width: 639px) { .sp-grid { grid-template-columns: 1fr; gap: 12px; } }
-
 /* Skeleton */
 .sp-skeleton {
   padding: 16px;
   background: var(--bg-surface); border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
 }
-
-/* Empty */
-.sp-empty {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 12px; padding: 64px 24px;
-  background: var(--bg-surface); border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg); text-align: center;
-}
-.sp-empty-icon {
-  display: flex; align-items: center; justify-content: center;
-  width: 56px; height: 56px;
-  background: var(--bg-overlay); border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg); color: var(--text-tertiary);
-}
-.sp-empty-title { font-size: var(--text-lg); font-weight: 600; color: var(--text-primary); }
-.sp-empty-sub   { font-size: var(--text-sm); color: var(--text-tertiary); }
 `;
