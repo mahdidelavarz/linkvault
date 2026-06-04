@@ -31,6 +31,11 @@ export class NoteService {
         if (filters?.isPinned !== undefined) {
             queryBuilder.andWhere('note.isPinned = :isPinned', { isPinned: filters.isPinned });
         }
+        if (filters?.tagIds && filters.tagIds.length > 0) {
+            const noteIds = await this.getItemIdsByTags('note', filters.tagIds);
+            if (noteIds.length === 0) return { items: [], total: 0, page, limit, hasMore: false };
+            queryBuilder.andWhere('note.id IN (:...noteIds)', { noteIds });
+        }
 
         const [raw, total] = await queryBuilder
             .orderBy('note.isPinned', 'DESC')
@@ -140,6 +145,13 @@ export class NoteService {
         await this.noteRepository.save(note);
 
         return await this.findOne(id, userId);
+    }
+
+    private async getItemIdsByTags(type: string, tagIds: number[]): Promise<number[]> {
+        const taggables = await this.taggableRepository.find({ where: { taggableType: type } });
+        return taggables
+            .filter(t => tagIds.map(Number).includes(Number(t.tagId)))
+            .map(t => t.taggableId);
     }
 
     private async syncTags(noteId: number, tagIds: number[]) {

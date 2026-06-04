@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { usePrompts } from "@/hooks/usePrompt";
+import { useState, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { usePrompts, usePrompt } from "@/hooks/usePrompt";
 import PageLayout from "@/components/layout/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
@@ -19,21 +20,38 @@ import {
   LucideMessageSquare,
   LucidePlus,
   LucideSearch,
+  LucideSlidersHorizontal,
   LucideStar,
   LucideX,
 } from "@/Icons/Icons";
+import TagSelector from "@/components/tags/TagSelector";
+import { useTags } from "@/hooks/useTag";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PromptsPage() {
+  const searchParams   = useSearchParams();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [showFavorites, setShowFavorites] = useState(false);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
+
+  // P1-6: Deep-link from search — ?open=<id> opens that prompt's form directly
+  const openParam = searchParams.get("open");
+  const { data: openPrompt } = usePrompt(openParam ? parseInt(openParam) : 0);
+  useEffect(() => {
+    if (openPrompt) {
+      setEditingPrompt(openPrompt);
+      setModalOpen(true);
+    }
+  }, [openPrompt]);
 
   const { data: categories } = useCategories();
+  const { data: allTags }    = useTags();
   const {
     data,
     isLoading,
@@ -45,6 +63,7 @@ export default function PromptsPage() {
     categoryId: categoryId ? parseInt(categoryId) : undefined,
     promptType: selectedType || undefined,
     isFavorite: showFavorites || undefined,
+    tagIds: selectedTagIds.length ? selectedTagIds : undefined,
   });
   const prompts = data?.pages.flatMap((p) => p.items) ?? [];
   const total = data?.pages[0]?.total ?? 0;
@@ -52,7 +71,8 @@ export default function PromptsPage() {
   const onReach = useCallback(() => { if (hasNextPage) fetchNextPage(); }, [hasNextPage, fetchNextPage]);
   const sentinelRef = useInfiniteScroll(onReach, !!hasNextPage && !isLoading);
 
-  const hasFilters = !!(search || categoryId || selectedType || showFavorites);
+  const hasFilters = !!(search || categoryId || selectedType || showFavorites || selectedTagIds.length);
+  const activeFilterCount = [categoryId, selectedType, showFavorites, selectedTagIds.length].filter(Boolean).length;
 
   const openCreate = () => {
     setEditingPrompt(null);
@@ -71,6 +91,7 @@ export default function PromptsPage() {
     setCategoryId("");
     setSelectedType("");
     setShowFavorites(false);
+    setSelectedTagIds([]);
   };
 
   return (
@@ -85,83 +106,94 @@ export default function PromptsPage() {
 
         {/* ── Filters ── */}
         <div className="filters-bar">
-          {/* Search */}
-          <div className="filter-search-wrap">
-            <LucideSearch className="filter-search-icon" />
-            <input
-              className="filter-search"
-              type="text"
-              placeholder="Search prompts…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            {search && (
-              <button
-                className="filter-search-clear"
-                onClick={() => setSearch("")}
-                aria-label="Clear"
-              >
-                <LucideX width={12} />
-              </button>
-            )}
-          </div>
+          {/* Top row: search + filter toggle */}
+          <div className="filter-top-row">
+            <div className="filter-search-wrap">
+              <LucideSearch className="filter-search-icon" />
+              <input
+                className="filter-search"
+                type="text"
+                placeholder="Search prompts…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              {search && (
+                <button className="filter-search-clear" onClick={() => setSearch("")} aria-label="Clear">
+                  <LucideX width={12} />
+                </button>
+              )}
+            </div>
 
-          {/* Type select */}
-          <div className="filter-select-wrap">
-            <LucideMessageSquare className="filter-select-icon" />
-            <select
-              className="filter-select"
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
+            <button
+              className={["filter-toggle-btn", filtersExpanded ? "filter-toggle-btn--active" : ""].filter(Boolean).join(" ")}
+              onClick={() => setFiltersExpanded((p) => !p)}
             >
-              <option value="">All Types</option>
-              {Object.entries(PROMPT_TYPES).map(([key, { label }]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <LucideChevronDown className="filter-select-chevron" />
-          </div>
-
-          {/* Category select */}
-          <div className="filter-select-wrap">
-            <LucideFolder className="filter-select-icon" />
-            <select
-              className="filter-select"
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-            >
-              <option value="">All categories</option>
-              {categories?.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <LucideChevronDown className="filter-select-chevron" />
-          </div>
-
-          {/* Favorites toggle */}
-          <button
-            className={[
-              "filter-toggle",
-              showFavorites ? "filter-toggle--active" : "",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-            onClick={() => setShowFavorites((p) => !p)}
-          >
-            <LucideStar width={14} />
-            Favorites
-          </button>
-
-          {/* Clear */}
-          {hasFilters && (
-            <button className="filter-clear" onClick={clearFilters}>
-              <LucideX width={13} />
-              Clear
+              <LucideSlidersHorizontal width={14} />
+              Filters
+              {activeFilterCount > 0 && <span className="filter-count">{activeFilterCount}</span>}
             </button>
+          </div>
+
+          {/* Expandable filters */}
+          {filtersExpanded && (
+            <div className="filter-expanded">
+              {/* Type select */}
+              <div className="filter-select-wrap">
+                <LucideMessageSquare className="filter-select-icon" />
+                <select className="filter-select" value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
+                  <option value="">All Types</option>
+                  {Object.entries(PROMPT_TYPES).map(([key, { label }]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+                <LucideChevronDown className="filter-select-chevron" />
+              </div>
+
+              {/* Category select */}
+              <div className="filter-select-wrap">
+                <LucideFolder className="filter-select-icon" />
+                <select className="filter-select" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+                  <option value="">All categories</option>
+                  {categories?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <LucideChevronDown className="filter-select-chevron" />
+              </div>
+
+              {/* Tags */}
+              <TagSelector selectedTagIds={selectedTagIds} onChange={setSelectedTagIds} variant="filter" />
+
+              {/* Favorites */}
+              <button
+                className={["filter-toggle", showFavorites ? "filter-toggle--active" : ""].filter(Boolean).join(" ")}
+                onClick={() => setShowFavorites((p) => !p)}
+              >
+                <LucideStar width={14} />
+                Favorites
+              </button>
+
+              {/* Clear */}
+              {hasFilters && (
+                <button className="filter-clear" onClick={clearFilters}>
+                  <LucideX width={13} />
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Active tag chips */}
+          {selectedTagIds.length > 0 && (
+            <div className="filter-tag-chips">
+              {selectedTagIds.map((tid) => {
+                const tag = allTags?.find((t) => t.id === tid);
+                if (!tag) return null;
+                return (
+                  <button key={tid} className="filter-chip" onClick={() => setSelectedTagIds((p) => p.filter((id) => id !== tid))}>
+                    #{tag.name} <LucideX width={10} />
+                  </button>
+                );
+              })}
+            </div>
           )}
         </div>
       </>}>
@@ -264,14 +296,55 @@ const CSS = `
 
 /* Filters */
 .filters-bar {
+  display:        flex;
+  flex-direction: column;
+  gap:            8px;
+  padding:        14px 16px;
+  background:     var(--bg-surface);
+  border:         1px solid var(--border-default);
+  border-radius:  var(--radius-lg);
+}
+.filter-top-row {
   display:     flex;
   align-items: center;
   gap:         8px;
+}
+.filter-toggle-btn {
+  display:       flex;
+  align-items:   center;
+  gap:           6px;
+  height:        34px;
+  padding:       0 12px;
+  background:    var(--bg-subtle);
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color:         var(--text-secondary);
+  font-size:     var(--text-sm);
+  font-family:   var(--font-sans);
+  font-weight:   500;
+  cursor:        pointer;
+  white-space:   nowrap;
+  transition:    background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+.filter-toggle-btn:hover { background: var(--bg-overlay); border-color: var(--border-strong); }
+.filter-toggle-btn--active { background: var(--accent-muted); border-color: var(--accent-border); color: var(--accent); }
+.filter-count {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           18px;
+  height:          18px;
+  background:      var(--accent);
+  color:           #fff;
+  border-radius:   50%;
+  font-size:       10px;
+  font-weight:     600;
+}
+.filter-expanded {
+  display:     flex;
   flex-wrap:   wrap;
-  padding:     14px 16px;
-  background:  var(--bg-surface);
-  border:      1px solid var(--border-default);
-  border-radius: var(--radius-lg);
+  align-items: center;
+  gap:         8px;
 }
 
 /* Search */
@@ -404,6 +477,17 @@ const CSS = `
   white-space: nowrap;
 }
 .filter-clear:hover { color: var(--danger); background: var(--danger-muted); }
+
+/* Tag chips row */
+.filter-tag-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.filter-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 26px; padding: 0 10px;
+  background: var(--accent-muted); border: 1px solid var(--accent-border); border-radius: var(--radius-full);
+  color: var(--accent); font-size: var(--text-xs); font-family: var(--font-sans); font-weight: 500;
+  cursor: pointer; transition: background var(--transition-fast);
+}
+.filter-chip:hover { background: var(--accent); color: #fff; }
 
 /* Skeleton card */
 .prompt-skeleton {

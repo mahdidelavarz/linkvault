@@ -43,10 +43,13 @@ export class ApiService {
         const collection = await this.collectionRepository.findOne({ where: { id, userId } });
         if (!collection) throw new Error('Collection not found');
 
-        await this.endpointRepository.update(
-            { collectionId: id, userId },
-            { collectionId: undefined as any }
-        );
+        // Must use QueryBuilder — repository.update() silently ignores undefined/null values
+        await this.endpointRepository
+            .createQueryBuilder()
+            .update()
+            .set({ collectionId: null as any })
+            .where('collectionId = :id AND userId = :userId', { id, userId })
+            .execute();
 
         await this.collectionRepository.remove(collection);
         return { message: 'Collection deleted' };

@@ -227,10 +227,12 @@ const CSS = `
   display:        flex;
   flex-direction: column;
   gap:            10px;
-  flex:           1;
-  overflow-y:     auto;
-  padding:        15px 24px 24px;
+  height:         100%;
+  overflow:       hidden;
+  padding:        15px 24px 0;
 }
+.page-header      { flex-shrink: 0; }
+.search-input-wrap { flex-shrink: 0; }
 
 /* Header */
 .page-header {
@@ -320,29 +322,39 @@ const CSS = `
   .search-input { padding-right: 16px; font-size: var(--text-base); height: 46px; }
 }
 
-/* Body */
+/* Body — fills remaining space, clips overflow so only the inner panels scroll */
 .search-body {
-  display: flex;
-  gap:     20px;
-  align-items: flex-start;
+  display:    flex;
+  gap:        20px;
+  flex:       1;
+  min-height: 0;
+  overflow:   hidden;
+  padding-bottom: 24px;
 }
 @media (max-width: 1023px) {
-  .search-body { flex-direction: column; }
+  .search-body { flex-direction: column; overflow-y: auto; }
 }
 
-/* Filters */
+/* Filters — sticky on desktop, full-width on mobile */
 .search-filters {
-  width:       240px;
+  width:      240px;
   flex-shrink: 0;
+  height:     100%;
+  overflow-y: auto;
 }
 @media (max-width: 1023px) {
-  .search-filters { width: 100%; }
+  .search-filters { width: 100%; height: auto; overflow: visible; }
 }
 
-/* Results */
+/* Results — only this panel scrolls on desktop */
 .search-results {
-  flex:      1;
-  min-width: 0;
+  flex:       1;
+  min-width:  0;
+  height:     100%;
+  overflow-y: auto;
+}
+@media (max-width: 1023px) {
+  .search-results { height: auto; overflow: visible; }
 }
 
 /* Loading */

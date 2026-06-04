@@ -37,6 +37,11 @@ export class SnippetService {
         if (filters?.isFavorite !== undefined) {
             queryBuilder.andWhere('snippet.isFavorite = :isFavorite', { isFavorite: filters.isFavorite });
         }
+        if (filters?.tagIds && filters.tagIds.length > 0) {
+            const snippetIds = await this.getItemIdsByTags('snippet', filters.tagIds);
+            if (snippetIds.length === 0) return { items: [], total: 0, page, limit, hasMore: false };
+            queryBuilder.andWhere('snippet.id IN (:...snippetIds)', { snippetIds });
+        }
 
         const [raw, total] = await queryBuilder
             .orderBy('snippet.isFavorite', 'DESC')
@@ -154,6 +159,13 @@ export class SnippetService {
         await this.snippetRepository.save(snippet);
 
         return await this.findOne(id, userId);
+    }
+
+    private async getItemIdsByTags(type: string, tagIds: number[]): Promise<number[]> {
+        const taggables = await this.taggableRepository.find({ where: { taggableType: type } });
+        return taggables
+            .filter(t => tagIds.map(Number).includes(Number(t.tagId)))
+            .map(t => t.taggableId);
     }
 
     private async syncTags(snippetId: number, tagIds: number[]) {

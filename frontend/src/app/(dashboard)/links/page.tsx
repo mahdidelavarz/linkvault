@@ -22,9 +22,12 @@ import {
   LucideLink2,
   LucidePlus,
   LucideSearch,
+  LucideSlidersHorizontal,
   LucideStar,
   LucideX,
 } from "@/Icons/Icons";
+import TagSelector from "@/components/tags/TagSelector";
+import { useTags } from "@/hooks/useTag";
 
 export default function LinksPage() {
   const [modalOpen, setModalOpen] = useState(false);
@@ -32,16 +35,20 @@ export default function LinksPage() {
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [showFavorites, setShowFavorites] = useState(false);
-  const [isBulkProcessing, setIsBulkProcessing] = useState(false);
+  const [isBulkProcessing,  setIsBulkProcessing]  = useState(false);
+  const [selectedTagIds,    setSelectedTagIds]    = useState<number[]>([]);
+  const [filtersExpanded,   setFiltersExpanded]   = useState(false);
 
   const deleteLink = useDeleteLink();
   const updateLink = useUpdateLink();
   const { data: categories } = useCategories();
+  const { data: allTags }    = useTags();
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useLinks({
     search: search || undefined,
     categoryId: categoryId ? parseInt(categoryId) : undefined,
     isFavorite: showFavorites || undefined,
+    tagIds: selectedTagIds.length ? selectedTagIds : undefined,
   });
   const links = data?.pages.flatMap((p) => p.items) ?? [];
   const total = data?.pages[0]?.total ?? 0;
@@ -51,12 +58,13 @@ export default function LinksPage() {
   const onReach = useCallback(() => { if (hasNextPage) fetchNextPage(); }, [hasNextPage, fetchNextPage]);
   const sentinelRef = useInfiniteScroll(onReach, !!hasNextPage && !isLoading);
 
-  const hasFilters = !!(search || categoryId || showFavorites);
+  const hasFilters = !!(search || categoryId || showFavorites || selectedTagIds.length);
+  const activeFilterCount = [categoryId, showFavorites, selectedTagIds.length].filter(Boolean).length;
 
   const openCreate = () => { bulk.exit(); setEditingLink(null); setModalOpen(true); };
   const openEdit   = (link: Link) => { setEditingLink(link); setModalOpen(true); };
   const closeModal = () => { setModalOpen(false); setEditingLink(null); };
-  const clearFilters = () => { setSearch(""); setCategoryId(""); setShowFavorites(false); };
+  const clearFilters = () => { setSearch(""); setCategoryId(""); setShowFavorites(false); setSelectedTagIds([]); };
 
   const handleBulkDelete = async () => {
     setIsBulkProcessing(true);
@@ -90,41 +98,74 @@ export default function LinksPage() {
               />
             ) : (
               <div className="filters-bar">
-                <div className="filter-search-wrap">
-                  <LucideSearch className="filter-search-icon" />
-                  <input
-                    className="filter-search" type="text" placeholder="Search links…"
-                    value={search} onChange={(e) => setSearch(e.target.value)}
-                  />
-                  {search && (
-                    <button className="filter-search-clear" onClick={() => setSearch("")} aria-label="Clear">
-                      <LucideX width={12} />
+                {/* Top row: search + filter toggle + select */}
+                <div className="filter-top-row">
+                  <div className="filter-search-wrap">
+                    <LucideSearch className="filter-search-icon" />
+                    <input
+                      className="filter-search" type="text" placeholder="Search links…"
+                      value={search} onChange={(e) => setSearch(e.target.value)}
+                    />
+                    {search && (
+                      <button className="filter-search-clear" onClick={() => setSearch("")} aria-label="Clear">
+                        <LucideX width={12} />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    className={["filter-toggle-btn", filtersExpanded ? "filter-toggle-btn--active" : ""].filter(Boolean).join(" ")}
+                    onClick={() => setFiltersExpanded((p) => !p)}
+                  >
+                    <LucideSlidersHorizontal width={14} />
+                    Filters
+                    {activeFilterCount > 0 && <span className="filter-count">{activeFilterCount}</span>}
+                  </button>
+                  {links.length > 0 && (
+                    <button className="filter-select-mode" onClick={bulk.enter}>
+                      <span className="scheck scheck--sm" /> Select
                     </button>
                   )}
                 </div>
-                <div className="filter-select-wrap">
-                  <LucideFolder className="filter-select-icon" />
-                  <select className="filter-select" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-                    <option value="">All categories</option>
-                    {categories?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                  <LucideChevronDown className="filter-select-chevron" />
-                </div>
-                <button
-                  className={["filter-toggle", showFavorites ? "filter-toggle--active" : ""].filter(Boolean).join(" ")}
-                  onClick={() => setShowFavorites((p) => !p)}
-                >
-                  <LucideStar width={14} /> Favorites
-                </button>
-                {hasFilters && (
-                  <button className="filter-clear" onClick={clearFilters}>
-                    <LucideX width={13} /> Clear
-                  </button>
+
+                {/* Expandable filters */}
+                {filtersExpanded && (
+                  <div className="filter-expanded">
+                    <div className="filter-select-wrap">
+                      <LucideFolder className="filter-select-icon" />
+                      <select className="filter-select" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+                        <option value="">All categories</option>
+                        {categories?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                      <LucideChevronDown className="filter-select-chevron" />
+                    </div>
+                    <TagSelector selectedTagIds={selectedTagIds} onChange={setSelectedTagIds} variant="filter" />
+                    <button
+                      className={["filter-toggle", showFavorites ? "filter-toggle--active" : ""].filter(Boolean).join(" ")}
+                      onClick={() => setShowFavorites((p) => !p)}
+                    >
+                      <LucideStar width={14} /> Favorites
+                    </button>
+                    {hasFilters && (
+                      <button className="filter-clear" onClick={clearFilters}>
+                        <LucideX width={13} /> Clear
+                      </button>
+                    )}
+                  </div>
                 )}
-                {links.length > 0 && (
-                  <button className="filter-select-mode" onClick={bulk.enter}>
-                    <span className="scheck scheck--sm" /> Select
-                  </button>
+
+                {/* Active tag chips */}
+                {selectedTagIds.length > 0 && (
+                  <div className="filter-tag-chips">
+                    {selectedTagIds.map((tid) => {
+                      const tag = allTags?.find((t) => t.id === tid);
+                      if (!tag) return null;
+                      return (
+                        <button key={tid} className="filter-chip" onClick={() => setSelectedTagIds((p) => p.filter((id) => id !== tid))}>
+                          #{tag.name} <LucideX width={10} />
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             )}
@@ -201,10 +242,34 @@ const CSS = `
 .links-page { display: flex; flex-direction: column; gap: 10px; }
 
 .filters-bar {
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  display: flex; flex-direction: column; gap: 8px;
   padding: 14px 16px; background: var(--bg-surface);
   border: 1px solid var(--border-default); border-radius: var(--radius-lg);
 }
+.filter-top-row { display: flex; align-items: center; gap: 8px; }
+.filter-toggle-btn {
+  display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px;
+  background: var(--bg-subtle); border: 1px solid var(--border-default); border-radius: var(--radius-md);
+  color: var(--text-secondary); font-size: var(--text-sm); font-family: var(--font-sans); font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+.filter-toggle-btn:hover { background: var(--bg-overlay); border-color: var(--border-strong); }
+.filter-toggle-btn--active { background: var(--accent-muted); border-color: var(--accent-border); color: var(--accent); }
+.filter-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; background: var(--accent); color: #fff;
+  border-radius: 50%; font-size: 10px; font-weight: 600;
+}
+.filter-expanded { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.filter-tag-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.filter-chip {
+  display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 10px;
+  background: var(--accent-muted); border: 1px solid var(--accent-border); border-radius: var(--radius-full);
+  color: var(--accent); font-size: var(--text-xs); font-family: var(--font-sans); font-weight: 500;
+  cursor: pointer; transition: background var(--transition-fast);
+}
+.filter-chip:hover { background: var(--accent); color: #fff; }
 .filter-search-wrap { position: relative; flex: 1; min-width: 140px; display: flex; align-items: center; }
 .filter-search-icon { position: absolute; left: 10px; width: 14px; height: 14px; color: var(--text-tertiary); pointer-events: none; }
 .filter-search {

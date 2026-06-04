@@ -1,25 +1,26 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { useSnippets } from "@/hooks/useSnippet";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { useSnippets, useSnippet } from "@/hooks/useSnippet";
 import PageLayout from "@/components/layout/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import CardGrid from "@/components/shared/CardGrid";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useCategories } from "@/hooks/useCategories";
+import { useTags } from "@/hooks/useTag";
+import TagSelector from "@/components/tags/TagSelector";
 import {
   type Snippet,
   SNIPPET_TYPES,
   TYPE_LANGUAGES,
   type SnippetType,
 } from "@/types/snippet";
-import { getLanguageName } from "@/lib/languageDetector";
 import SnippetCard from "@/components/snippets/SnippetCard";
 import SnippetForm from "@/components/snippets/SnippetForm";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
-import Badge from "@/components/ui/Badge";
 import {
   LucideChevronDown,
   LucideCodeXml,
@@ -61,6 +62,7 @@ const ALL_LANGUAGES: Record<string, string> = {
 };
 
 export default function SnippetsPage() {
+  const searchParams   = useSearchParams();
   const [formOpen, setFormOpen] = useState(false);
   const [editingSnippet, setEditingSnippet] = useState<Snippet | null>(null);
   const [search, setSearch] = useState("");
@@ -68,9 +70,21 @@ export default function SnippetsPage() {
   const [selectedType, setSelectedType] = useState("");
   const [selectedLang, setSelectedLang] = useState("");
   const [showFavorites, setShowFavorites] = useState(false);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
+  // P1-6: Deep-link from search — ?open=<id> opens that snippet's form directly
+  const openParam = searchParams.get("open");
+  const { data: openSnippet } = useSnippet(openParam ? parseInt(openParam) : 0);
+  useEffect(() => {
+    if (openSnippet) {
+      setEditingSnippet(openSnippet);
+      setFormOpen(true);
+    }
+  }, [openSnippet]);
+
   const { data: categories } = useCategories();
+  const { data: allTags }    = useTags();
   const {
     data,
     isLoading,
@@ -83,6 +97,7 @@ export default function SnippetsPage() {
     snippetType: selectedType || undefined,
     language: selectedLang || undefined,
     isFavorite: showFavorites || undefined,
+    tagIds: selectedTagIds.length ? selectedTagIds : undefined,
   });
   const snippets = data?.pages.flatMap((p) => p.items) ?? [];
   const total = data?.pages[0]?.total ?? 0;
@@ -100,19 +115,11 @@ export default function SnippetsPage() {
   }, [selectedType]);
 
   const hasFilters = !!(
-    search ||
-    categoryId ||
-    selectedType ||
-    selectedLang ||
-    showFavorites
+    search || categoryId || selectedType || selectedLang || showFavorites || selectedTagIds.length
   );
 
   const activeFilterCount = [
-    search,
-    categoryId,
-    selectedType,
-    selectedLang,
-    showFavorites,
+    search, categoryId, selectedType, selectedLang, showFavorites, selectedTagIds.length,
   ].filter(Boolean).length;
 
   const clearFilters = () => {
@@ -121,6 +128,7 @@ export default function SnippetsPage() {
     setSelectedType("");
     setSelectedLang("");
     setShowFavorites(false);
+    setSelectedTagIds([]);
   };
 
   const openCreate = () => {
@@ -252,6 +260,13 @@ export default function SnippetsPage() {
               <LucideChevronDown className="sp-select-chevron" />
             </div>
 
+            {/* Tags */}
+            <TagSelector
+              selectedTagIds={selectedTagIds}
+              onChange={setSelectedTagIds}
+              variant="filter"
+            />
+
             {/* Favorites */}
             <button
               className={[
@@ -296,13 +311,19 @@ export default function SnippetsPage() {
                 </button>
               )}
               {showFavorites && (
-                <button
-                  className="sp-chip sp-chip--star"
-                  onClick={() => setShowFavorites(false)}
-                >
+                <button className="sp-chip sp-chip--star" onClick={() => setShowFavorites(false)}>
                   Favorites <LucideX width={10} />
                 </button>
               )}
+              {selectedTagIds.map((tid) => {
+                const tag = allTags?.find((t) => t.id === tid);
+                if (!tag) return null;
+                return (
+                  <button key={tid} className="sp-chip" onClick={() => setSelectedTagIds((prev) => prev.filter((id) => id !== tid))}>
+                    #{tag.name} <LucideX width={10} />
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

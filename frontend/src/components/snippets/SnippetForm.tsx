@@ -11,7 +11,7 @@ import {
   TYPE_LANGUAGES,
   type SnippetType,
 } from "@/types/snippet";
-import { getLanguageName, detectLanguage } from "@/lib/languageDetector";
+import { getLanguageName, detectLanguage, detectSnippetType } from "@/lib/languageDetector";
 import { useCreateSnippet, useUpdateSnippet } from "@/hooks/useSnippet";
 import { useCategories } from "@/hooks/useCategories";
 import FormLayout from "@/components/layout/FormLayout";
@@ -100,8 +100,9 @@ export default function SnippetForm({
   const watchedLang = watch("language");
   const watchedContent = watch("content");
 
-  // Auto-detect language from content
+  // Auto-detect language + type from content
   const detectedLang = watchedContent ? detectLanguage(watchedContent) : null;
+  const detectedType = watchedContent ? detectSnippetType(watchedContent) : null;
 
   // Available languages for current type
   const typeLangs = TYPE_LANGUAGES[watchedType] ?? [];
@@ -194,6 +195,9 @@ export default function SnippetForm({
           >
             <LucideFileCode2 width={14} />
             Content
+            {(errors.title || errors.content) && (
+              <span className="sform-tab-error-dot" aria-label="Tab has errors" />
+            )}
           </button>
           <button
             type="button"
@@ -255,7 +259,7 @@ export default function SnippetForm({
                   </option>
                 ))}
               </FormSelect>
-              {detectedLang && detectedLang !== watchedLang && (
+              {detectedLang && detectedLang !== watchedLang && typeLangs.includes(detectedLang) && (
                 <button
                   type="button"
                   className="sform-detect-hint"
@@ -263,8 +267,17 @@ export default function SnippetForm({
                 >
                   <LucideZap width={12} />
                   Auto-detected:{" "}
-                  <strong>{getLanguageName(detectedLang)}</strong> — click to
-                  apply
+                  <strong>{getLanguageName(detectedLang)}</strong> — click to apply
+                </button>
+              )}
+              {detectedType && detectedType !== watchedType && (
+                <button
+                  type="button"
+                  className="sform-detect-hint"
+                  onClick={() => handleTypeChange(detectedType as SnippetType)}
+                >
+                  <LucideZap width={12} />
+                  Detected type: <strong>{SNIPPET_TYPES[detectedType as SnippetType]?.label ?? detectedType}</strong> — click to apply
                 </button>
               )}
             </div>
@@ -572,6 +585,14 @@ const CSS = `
 }
 .sform-tab:hover    { background: var(--bg-overlay); color: var(--text-primary); }
 .sform-tab--active  { background: var(--accent-muted); border-color: var(--accent-border); color: var(--cyan-300); }
+.sform-tab-error-dot {
+  width:         6px;
+  height:        6px;
+  border-radius: 50%;
+  background:    var(--danger);
+  flex-shrink:   0;
+  margin-left:   2px;
+}
 
 /* Panel */
 .sform-panel { display: flex; flex-direction: column; gap: 16px; padding: 16px 0; }

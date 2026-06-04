@@ -11,6 +11,8 @@ import {
   LucideFolder,
   LucideTag,
   LucideClock,
+  LucideMessageSquare,
+  LucideServer,
 } from "@/Icons/Icons";
 
 interface SearchResultCardProps {
@@ -18,7 +20,7 @@ interface SearchResultCardProps {
   searchTerm: string;
 }
 
-const typeConfig = {
+const typeConfig: Record<string, { icon: React.ComponentType<any>; color: string; bg: string }> = {
   link: {
     icon: LucideLink2,
     color: "var(--primary, #06b6d4)",
@@ -34,6 +36,16 @@ const typeConfig = {
     color: "#8b5cf6",
     bg: "rgba(139,92,246,0.1)",
   },
+  prompt: {
+    icon: LucideMessageSquare,
+    color: "#f97316",
+    bg: "rgba(249,115,22,0.1)",
+  },
+  infrastructure: {
+    icon: LucideServer,
+    color: "#06b6d4",
+    bg: "rgba(6,182,212,0.1)",
+  },
 };
 
 export default function SearchResultCard({
@@ -47,11 +59,18 @@ export default function SearchResultCard({
       case "link":
         window.open((result as any).url, "_blank");
         break;
+      // P1-6: Navigate with ?open=<id> so the module page can open the specific item
       case "note":
-        router.push(`/notes`);
+        router.push(`/notes?open=${result.id}`);
         break;
       case "snippet":
-        router.push(`/snippets`);
+        router.push(`/snippets?open=${result.id}`);
+        break;
+      case "prompt":
+        router.push(`/prompts?open=${result.id}`);
+        break;
+      case "infrastructure":
+        router.push(`/infrastructure?open=${result.id}`);
         break;
     }
   };
@@ -77,15 +96,14 @@ export default function SearchResultCard({
   const getPreview = () => {
     if (result.type === "link") {
       return (result as any).url || "";
-    } else if (result.type === "note" || result.type === "snippet") {
-      const content = (result as any).content || "";
-      const cleaned = content.substring(0, 200).replace(/[#*`\n]/g, " ");
-      return cleaned + (content.length > 200 ? "…" : "");
     }
-    return "";
+    const content = (result as any).content || (result as any).description || "";
+    if (!content) return "";
+    const cleaned = content.substring(0, 200).replace(/[#*`\n]/g, " ");
+    return cleaned + (content.length > 200 ? "…" : "");
   };
 
-  const config = typeConfig[result.type];
+  const config = typeConfig[result.type] ?? typeConfig.note;
   const Icon = config.icon;
   const preview = getPreview();
 

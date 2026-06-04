@@ -30,6 +30,9 @@ interface PromptFormProps {
 export default function PromptForm({ prompt, onClose }: PromptFormProps) {
   const isEditing = !!prompt;
 
+  const [titleError,   setTitleError]   = useState("");
+  const [contentError, setContentError] = useState("");
+
   const [formData, setFormData] = useState<CreatePromptDto>({
     title: "",
     content: "",
@@ -62,9 +65,14 @@ export default function PromptForm({ prompt, onClose }: PromptFormProps) {
     }
   }, [prompt]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!formData.title.trim() || !formData.content.trim()) return;
+
+    const titleValid   = formData.title.trim().length > 0;
+    const contentValid = formData.content.trim().length > 0;
+    setTitleError(titleValid   ? "" : "Title is required.");
+    setContentError(contentValid ? "" : "Prompt content is required.");
+    if (!titleValid || !contentValid) return;
 
     try {
       if (isEditing && prompt) {
@@ -103,16 +111,17 @@ export default function PromptForm({ prompt, onClose }: PromptFormProps) {
           </label>
           <input
             id="prompt-title"
-            className="form-input"
+            className={["form-input", titleError ? "form-input--error" : ""].filter(Boolean).join(" ")}
             type="text"
             value={formData.title}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, title: e.target.value }))
-            }
+            onChange={(e) => {
+              setTitleError("");
+              setFormData((prev) => ({ ...prev, title: e.target.value }));
+            }}
             placeholder="e.g., React Component Generator"
-            required
             autoFocus
           />
+          {titleError && <span className="form-field-error">{titleError}</span>}
         </div>
 
         {/* Type & Target AI */}
@@ -236,15 +245,16 @@ export default function PromptForm({ prompt, onClose }: PromptFormProps) {
           </label>
           <textarea
             id="prompt-content"
-            className="form-textarea form-textarea--code"
+            className={["form-textarea form-textarea--code", contentError ? "form-textarea--error" : ""].filter(Boolean).join(" ")}
             value={formData.content}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, content: e.target.value }))
-            }
+            onChange={(e) => {
+              setContentError("");
+              setFormData((prev) => ({ ...prev, content: e.target.value }));
+            }}
             rows={10}
             placeholder={`You are an expert React developer. Create a {{component_type}} component with:\n- {{feature_1}}\n- {{feature_2}}`}
-            required
           />
+          {contentError && <span className="form-field-error">{contentError}</span>}
           {variables.length > 0 && (
             <p className="form-hint form-hint--success">
               <LucideVariable width={12} />
@@ -394,6 +404,15 @@ const CSS = `
 .form-textarea:focus { border-color: var(--border-focus); background: var(--bg-elevated); }
 .form-textarea--code {
   font-family: var(--font-mono, monospace);
+}
+
+.form-input--error   { border-color: var(--danger) !important; }
+.form-textarea--error { border-color: var(--danger) !important; }
+.form-field-error {
+  font-size:   var(--text-xs);
+  color:       var(--danger);
+  font-weight: 500;
+  margin-top:  2px;
 }
 
 .form-hint {

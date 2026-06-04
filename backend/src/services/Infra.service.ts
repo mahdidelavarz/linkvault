@@ -35,6 +35,11 @@ export class InfraService {
             qb.andWhere('infra.categoryId = :categoryId', { categoryId: filters.categoryId });
         if (filters?.isFavorite)
             qb.andWhere('infra.isFavorite = :isFavorite', { isFavorite: filters.isFavorite });
+        if (filters?.tagIds && filters.tagIds.length > 0) {
+            const infraIds = await this.getItemIdsByTags('infrastructure', filters.tagIds);
+            if (infraIds.length === 0) return { items: [], total: 0, page, limit, hasMore: false };
+            qb.andWhere('infra.id IN (:...infraIds)', { infraIds });
+        }
 
         const [raw, total] = await qb
             .orderBy('infra.isFavorite', 'DESC')
@@ -151,6 +156,13 @@ export class InfraService {
     private withDecryptedMetadata(item: any): any {
         if (!item) return item;
         return { ...item, metadata: item.metadata ? this.decryptSensitiveMetadata(item.metadata) : item.metadata };
+    }
+
+    private async getItemIdsByTags(type: string, tagIds: number[]): Promise<number[]> {
+        const taggables = await this.taggableRepository.find({ where: { taggableType: type } });
+        return taggables
+            .filter(t => tagIds.map(Number).includes(Number(t.tagId)))
+            .map(t => t.taggableId);
     }
 
     private async syncTags(infraId: number, tagIds: number[]) {

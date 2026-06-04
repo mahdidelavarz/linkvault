@@ -26,6 +26,7 @@ export const useGlobalSearch = (filters: {
       const { data } = await api.get(`/search?${params.toString()}`);
       return data as SearchResults;
     },
-    enabled: true,
+    // P1-7: Only run when there is an actual query — empty string returns nothing useful
+    enabled: debouncedQuery.trim().length > 0,
   });
 };

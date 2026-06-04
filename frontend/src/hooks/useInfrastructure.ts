@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/http';
 import { Infrastructure, CreateInfraDto } from '@/types/infrastructure';
 
@@ -27,6 +27,17 @@ export const useInfrastructures = (filters?: {
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.page + 1 : undefined,
+  });
+};
+
+export const useInfrastructure = (id: number) => {
+  return useQuery<Infrastructure>({
+    queryKey: ['infrastructure', id],
+    queryFn: async () => {
+      const { data } = await api.get(`/infrastructure/${id}`);
+      return data.infrastructure as Infrastructure;
+    },
+    enabled: id > 0,
   });
 };
 

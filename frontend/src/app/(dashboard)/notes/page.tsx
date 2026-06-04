@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useNotes, useNote } from "@/hooks/useNote";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useCategories } from "@/hooks/useCategories";
+import { useTags } from "@/hooks/useTag";
+import TagSelector from "@/components/tags/TagSelector";
 import { type Note } from "@/types/note";
 import NoteCard from "@/components/notes/NoteCard";
 import NoteEditor from "@/components/notes/NoteEditor";
@@ -24,17 +27,20 @@ import {
 } from "@/Icons/Icons";
 
 export default function NotesPage() {
+  const searchParams  = useSearchParams();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [showPinned, setShowPinned] = useState(false);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   // Mobile: show editor panel instead of list
   const [mobileView, setMobileView] = useState<"list" | "editor">("list");
 
   const sidebarRef = useRef<HTMLElement>(null);
   const { data: categories } = useCategories();
+  const { data: allTags }    = useTags();
   const {
     data,
     isLoading,
@@ -45,18 +51,30 @@ export default function NotesPage() {
     search: search || undefined,
     categoryId: categoryId ? parseInt(categoryId) : undefined,
     isPinned: showPinned || undefined,
+    tagIds: selectedTagIds.length ? selectedTagIds : undefined,
   });
   const notes = data?.pages.flatMap((p) => p.items) ?? [];
   const { data: selectedNote } = useNote(selectedId ?? 0);
 
+  // P1-6: Deep-link from search — ?open=<id> opens that note's editor directly
+  const openParam = searchParams.get("open");
+  const { data: openNote } = useNote(openParam ? parseInt(openParam) : 0);
+  useEffect(() => {
+    if (openNote) {
+      setSelectedId(openNote.id);
+      setMobileView("editor");
+    }
+  }, [openNote]);
+
   const onReach = useCallback(() => { if (hasNextPage) fetchNextPage(); }, [hasNextPage, fetchNextPage]);
   const sentinelRef = useInfiniteScroll(onReach, !!hasNextPage && !isLoading, sidebarRef.current);
 
-  const hasFilters = !!(search || categoryId || showPinned);
+  const hasFilters = !!(search || categoryId || showPinned || selectedTagIds.length);
   const clearFilters = () => {
     setSearch("");
     setCategoryId("");
     setShowPinned(false);
+    setSelectedTagIds([]);
   };
 
   const openCreate = () => {
@@ -154,6 +172,24 @@ export default function NotesPage() {
                   Pinned
                 </button>
               </div>
+
+              {/* Tags */}
+              <TagSelector selectedTagIds={selectedTagIds} onChange={setSelectedTagIds} variant="filter" />
+
+              {/* Active tag chips */}
+              {selectedTagIds.length > 0 && (
+                <div className="nf-tag-chips">
+                  {selectedTagIds.map((tid) => {
+                    const tag = allTags?.find((t) => t.id === tid);
+                    if (!tag) return null;
+                    return (
+                      <button key={tid} className="nf-tag-chip" onClick={() => setSelectedTagIds((p) => p.filter((id) => id !== tid))}>
+                        #{tag.name} <LucideX width={9} />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
               {hasFilters && (
                 <button className="nf-clear" onClick={clearFilters}>
@@ -425,6 +461,14 @@ const CSS = `
   font-family: var(--font-sans);
 }
 .nf-clear:hover { color: var(--danger); }
+.nf-tag-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
+.nf-tag-chip {
+  display: inline-flex; align-items: center; gap: 3px; height: 22px; padding: 0 8px;
+  background: var(--accent-muted); border: 1px solid var(--accent-border); border-radius: var(--radius-full);
+  color: var(--accent); font-size: 11px; font-family: var(--font-sans); font-weight: 500;
+  cursor: pointer; transition: background var(--transition-fast);
+}
+.nf-tag-chip:hover { background: var(--accent); color: #fff; }
 
 /* Note list */
 .notes-list {

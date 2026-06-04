@@ -37,6 +37,11 @@ export class PromptService {
         if (filters?.isFavorite !== undefined) {
             queryBuilder.andWhere('prompt.isFavorite = :isFavorite', { isFavorite: filters.isFavorite });
         }
+        if (filters?.tagIds && filters.tagIds.length > 0) {
+            const promptIds = await this.getItemIdsByTags('prompt', filters.tagIds);
+            if (promptIds.length === 0) return { items: [], total: 0, page, limit, hasMore: false };
+            queryBuilder.andWhere('prompt.id IN (:...promptIds)', { promptIds });
+        }
 
         const [raw, total] = await queryBuilder
             .orderBy('prompt.isFavorite', 'DESC')
@@ -172,6 +177,13 @@ export class PromptService {
         await this.promptRepository.save(prompt);
 
         return await this.findOne(id, userId);
+    }
+
+    private async getItemIdsByTags(type: string, tagIds: number[]): Promise<number[]> {
+        const taggables = await this.taggableRepository.find({ where: { taggableType: type } });
+        return taggables
+            .filter(t => tagIds.map(Number).includes(Number(t.tagId)))
+            .map(t => t.taggableId);
     }
 
     private async syncTags(promptId: number, tagIds: number[]) {

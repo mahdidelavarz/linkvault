@@ -5,6 +5,8 @@ import { asyncHandler } from '../middleware/asyncHandler';
 
 const searchService = new SearchService();
 
+const VALID_TYPES = new Set(['link', 'note', 'snippet', 'prompt', 'infrastructure']);
+
 export class SearchController {
     search = asyncHandler(async (req: AuthRequest, res: Response) => {
         const { q, categoryId, tagIds, type } = req.query;
@@ -12,7 +14,7 @@ export class SearchController {
         const options: any = {};
         if (q) options.query = q as string;
         if (categoryId) options.categoryId = parseInt(categoryId as string);
-        if (type && ['link', 'note', 'snippet'].includes(type as string)) {
+        if (type && VALID_TYPES.has(type as string)) {
             options.type = type as string;
         }
         if (tagIds) {
@@ -20,7 +22,12 @@ export class SearchController {
         }
 
         const results = await searchService.globalSearch(req.userId!, options);
-        const totalResults = results.links.length + results.notes.length + results.snippets.length;
+        const totalResults =
+            results.links.length +
+            results.notes.length +
+            results.snippets.length +
+            results.prompts.length +
+            results.infrastructures.length;
 
         res.json({
             results,

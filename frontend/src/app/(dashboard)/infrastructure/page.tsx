@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useInfrastructures } from "@/hooks/useInfrastructure";
+import { useState, useCallback, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import { useInfrastructures, useInfrastructure } from "@/hooks/useInfrastructure";
+import TagSelector from "@/components/tags/TagSelector";
+import { useTags } from "@/hooks/useTag";
 import PageLayout from "@/components/layout/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
@@ -30,15 +33,28 @@ import {
 import { LucideServer } from "../../../Icons/Icons";
 
 export default function InfrastructurePage() {
+  const searchParams   = useSearchParams();
   const [formOpen, setFormOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Infrastructure | null>(null);
   const [search, setSearch] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [showFavorites, setShowFavorites] = useState(false);
+  const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
+  // P1-6: Deep-link from search — ?open=<id> opens that item's form directly
+  const openParam = searchParams.get("open");
+  const { data: openItem } = useInfrastructure(openParam ? parseInt(openParam) : 0);
+  useEffect(() => {
+    if (openItem) {
+      setEditingItem(openItem);
+      setFormOpen(true);
+    }
+  }, [openItem]);
+
   const { data: categories } = useCategories();
+  const { data: allTags }    = useTags();
   const {
     data,
     isLoading,
@@ -50,6 +66,7 @@ export default function InfrastructurePage() {
     infraType: selectedType || undefined,
     categoryId: categoryId ? parseInt(categoryId) : undefined,
     isFavorite: showFavorites || undefined,
+    tagIds: selectedTagIds.length ? selectedTagIds : undefined,
   });
   const items = data?.pages.flatMap((p) => p.items) ?? [];
   const total = data?.pages[0]?.total ?? 0;
@@ -57,16 +74,15 @@ export default function InfrastructurePage() {
   const onReach = useCallback(() => { if (hasNextPage) fetchNextPage(); }, [hasNextPage, fetchNextPage]);
   const sentinelRef = useInfiniteScroll(onReach, !!hasNextPage && !isLoading);
 
-  const hasFilters = !!(search || selectedType || categoryId || showFavorites);
-  const activeCount = [search, selectedType, categoryId, showFavorites].filter(
-    Boolean,
-  ).length;
+  const hasFilters = !!(search || selectedType || categoryId || showFavorites || selectedTagIds.length);
+  const activeCount = [search, selectedType, categoryId, showFavorites, selectedTagIds.length].filter(Boolean).length;
 
   const clearFilters = () => {
     setSearch("");
     setSelectedType("");
     setCategoryId("");
     setShowFavorites(false);
+    setSelectedTagIds([]);
   };
 
   const openCreate = () => {
@@ -169,6 +185,9 @@ export default function InfrastructurePage() {
                 <LucideChevronDown className="ip-select-chevron" />
               </div>
 
+              {/* Tags */}
+              <TagSelector selectedTagIds={selectedTagIds} onChange={setSelectedTagIds} variant="filter" />
+
               <button
                 className={[
                   "ip-fav-btn",
@@ -207,13 +226,19 @@ export default function InfrastructurePage() {
                 </button>
               )}
               {showFavorites && (
-                <button
-                  className="ip-chip ip-chip--star"
-                  onClick={() => setShowFavorites(false)}
-                >
+                <button className="ip-chip ip-chip--star" onClick={() => setShowFavorites(false)}>
                   Favorites <LucideX width={10} />
                 </button>
               )}
+              {selectedTagIds.map((tid) => {
+                const tag = allTags?.find((t) => t.id === tid);
+                if (!tag) return null;
+                return (
+                  <button key={tid} className="ip-chip" onClick={() => setSelectedTagIds((p) => p.filter((id) => id !== tid))}>
+                    #{tag.name} <LucideX width={10} />
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

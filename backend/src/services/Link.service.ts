@@ -11,7 +11,7 @@ export class LinkService {
 
     async findAll(
         userId: number,
-        filters?: { search?: string; categoryId?: number; isFavorite?: boolean },
+        filters?: { search?: string; categoryId?: number; isFavorite?: boolean; tagIds?: number[] },
         pagination = { page: 1, limit: 20 }
     ) {
         const { page, limit } = pagination;
@@ -33,6 +33,11 @@ export class LinkService {
         if (filters?.isFavorite !== undefined) {
             queryBuilder.andWhere('link.isFavorite = :isFavorite', { isFavorite: filters.isFavorite });
         }
+        if (filters?.tagIds && filters.tagIds.length > 0) {
+            const linkIds = await this.getItemIdsByTags('link', filters.tagIds);
+            if (linkIds.length === 0) return { items: [], total: 0, page, limit, hasMore: false };
+            queryBuilder.andWhere('link.id IN (:...linkIds)', { linkIds });
+        }
 
         const [raw, total] = await queryBuilder
             .orderBy('link.updatedAt', 'DESC')
@@ -42,6 +47,13 @@ export class LinkService {
 
         const items = await this.loadTagsForLinks(raw);
         return { items, total, page, limit, hasMore: skip + raw.length < total };
+    }
+
+    private async getItemIdsByTags(type: string, tagIds: number[]): Promise<number[]> {
+        const taggables = await this.taggableRepository.find({ where: { taggableType: type } });
+        return taggables
+            .filter(t => tagIds.map(Number).includes(Number(t.tagId)))
+            .map(t => t.taggableId);
     }
 
     async findOne(id: number, userId: number) {

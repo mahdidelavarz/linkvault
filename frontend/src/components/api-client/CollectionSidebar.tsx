@@ -33,9 +33,10 @@ export default function CollectionSidebar({
   onSelectCollection, onSelectEndpoint, onNewRequest,
   mobileOpen, onMobileClose,
 }: CollectionSidebarProps) {
-  const [showNewColl,  setShowNewColl]  = useState(false)
-  const [collName,     setCollName]     = useState('')
-  const [collapsedIds, setCollapsedIds] = useState<Set<number>>(new Set())
+  const [showNewColl,       setShowNewColl]       = useState(false)
+  const [collName,          setCollName]          = useState('')
+  const [collapsedIds,      setCollapsedIds]      = useState<Set<number>>(new Set())
+  const [confirmDeleteId,   setConfirmDeleteId]   = useState<number | null>(null)
 
   const createCollection = useCreateCollection()
   const deleteCollection = useDeleteCollection()
@@ -140,7 +141,7 @@ export default function CollectionSidebar({
                   <span className="csb-count">{eps.length}</span>
                   <button
                     className="csb-del-btn"
-                    onClick={(e) => { e.stopPropagation(); deleteCollection.mutate(col.id) }}
+                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(col.id) }}
                     aria-label="Delete collection"
                   >
                     <Icon icon="lucide:trash-2" width={12} />
@@ -187,6 +188,9 @@ export default function CollectionSidebar({
     </>
   )
 
+  const confirmingCollection = collections?.find(c => c.id === confirmDeleteId)
+  const endpointsInCollection = confirmDeleteId ? (collections?.find(c => c.id === confirmDeleteId) ? endpoints?.filter(e => e.collectionId === confirmDeleteId) ?? [] : []) : []
+
   return (
     <>
       {/* Desktop */}
@@ -201,6 +205,30 @@ export default function CollectionSidebar({
       <aside className={['csb-mobile-drawer', mobileOpen ? 'csb-mobile-drawer--open' : ''].filter(Boolean).join(' ')}>
         {SidebarContent}
       </aside>
+
+      {/* Delete collection confirmation */}
+      {confirmDeleteId !== null && (
+        <div className="csb-confirm-overlay" onClick={() => setConfirmDeleteId(null)}>
+          <div className="csb-confirm-box" onClick={(e) => e.stopPropagation()}>
+            <p className="csb-confirm-title">Delete &ldquo;{confirmingCollection?.name}&rdquo;?</p>
+            <p className="csb-confirm-body">
+              {endpointsInCollection.length > 0
+                ? `${endpointsInCollection.length} endpoint${endpointsInCollection.length > 1 ? 's' : ''} will become uncollected — they won't be deleted.`
+                : 'This collection is empty.'}
+            </p>
+            <div className="csb-confirm-actions">
+              <button className="csb-confirm-cancel" onClick={() => setConfirmDeleteId(null)}>Cancel</button>
+              <button
+                className="csb-confirm-delete"
+                onClick={() => { const id = confirmDeleteId; setConfirmDeleteId(null); if (id !== null) deleteCollection.mutate(id); }}
+                disabled={deleteCollection.isPending}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
@@ -358,14 +386,16 @@ const CSS = `
   background: var(--bg-overlay); padding: 1px 6px; border-radius: 99px; flex-shrink: 0;
 }
 .csb-del-btn {
-  display:         none; align-items: center; justify-content: center;
+  display:         flex; align-items: center; justify-content: center;
   width:           22px; height: 22px; border-radius: var(--radius-sm);
-  background:      transparent; border: none; color: var(--text-tertiary);
+  background:      transparent; border: none;
+  color:           var(--text-tertiary);
+  opacity:         0.4;
   cursor:          pointer; flex-shrink: 0;
-  transition:      background var(--transition-fast), color var(--transition-fast);
+  transition:      background var(--transition-fast), color var(--transition-fast), opacity var(--transition-fast);
 }
-.csb-coll-row:hover .csb-del-btn { display: flex; }
-.csb-del-btn:hover { background: var(--danger-muted); color: var(--danger); }
+.csb-coll-row:hover .csb-del-btn { opacity: 1; }
+.csb-del-btn:hover { background: var(--danger-muted); color: var(--danger); opacity: 1; }
 
 /* Endpoint rows */
 .csb-ep-row {
@@ -419,4 +449,45 @@ const CSS = `
   transition:    background var(--transition-fast), box-shadow var(--transition-fast);
 }
 .csb-new-req:hover { background: var(--accent); color: white; box-shadow: var(--shadow-glow); }
+
+/* Delete confirm overlay */
+.csb-confirm-overlay {
+  position:        fixed; inset: 0; z-index: 1000;
+  background:      rgba(0,0,0,0.5);
+  display:         flex; align-items: center; justify-content: center;
+  padding:         16px;
+}
+.csb-confirm-box {
+  background:      var(--bg-surface);
+  border:          1px solid var(--border-default);
+  border-radius:   var(--radius-lg);
+  padding:         20px;
+  width:           100%; max-width: 320px;
+  display:         flex; flex-direction: column; gap: 10px;
+  box-shadow:      var(--shadow-lg);
+}
+.csb-confirm-title {
+  font-size:   var(--text-sm); font-weight: 600; color: var(--text-primary); margin: 0;
+}
+.csb-confirm-body {
+  font-size:   var(--text-xs); color: var(--text-secondary); line-height: 1.5; margin: 0;
+}
+.csb-confirm-actions {
+  display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px;
+}
+.csb-confirm-cancel {
+  height: 30px; padding: 0 14px; background: var(--bg-overlay);
+  border: 1px solid var(--border-default); border-radius: var(--radius-md);
+  color: var(--text-secondary); font-size: var(--text-xs); font-family: var(--font-sans);
+  cursor: pointer; transition: background var(--transition-fast);
+}
+.csb-confirm-cancel:hover { background: var(--bg-subtle); }
+.csb-confirm-delete {
+  height: 30px; padding: 0 14px; background: var(--danger);
+  border: none; border-radius: var(--radius-md);
+  color: #fff; font-size: var(--text-xs); font-family: var(--font-sans); font-weight: 500;
+  cursor: pointer; transition: opacity var(--transition-fast);
+}
+.csb-confirm-delete:hover { opacity: 0.85; }
+.csb-confirm-delete:disabled { opacity: 0.5; cursor: not-allowed; }
 `

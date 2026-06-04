@@ -117,11 +117,22 @@ export const SNIPPET_TYPES: Record<SnippetType, {
 
 // Language mapping for each type
 export const TYPE_LANGUAGES: Record<SnippetType, string[]> = {
-  code: ['js', 'ts', 'py', 'java', 'go', 'rust', 'cpp', 'php', 'rb', 'swift', 'kt', 'scala'],
-  sql: ['sql', 'mysql', 'pgsql', 'plsql'],
-  regex: ['regex'],
-  command: ['bash', 'zsh', 'sh', 'ps1', 'cmd'],
-  curl: ['bash', 'curl'],
-  json: ['json'],
-  script: ['bash', 'py', 'rb', 'pl', 'lua', 'r'],
+  code: [
+    // JavaScript / TypeScript ecosystem
+    'js', 'jsx', 'ts', 'tsx',
+    // Systems / compiled
+    'py', 'java', 'go', 'rs', 'cpp', 'cs', 'c', 'swift', 'kt', 'scala', 'dart', 'rb', 'php', 'lua',
+    // Web
+    'html', 'css', 'scss',
+    // Config / data
+    'yaml', 'xml', 'graphql', 'proto', 'tf',
+    // Other
+    'sh', 'bash', 'dockerfile', 'md',
+  ],
+  sql:     ['sql', 'mysql', 'pgsql', 'plsql'],
+  regex:   ['regex'],
+  command: ['bash', 'zsh', 'sh', 'ps1', 'powershell', 'cmd'],
+  curl:    ['curl'],
+  json:    ['json'],
+  script:  ['bash', 'py', 'rb', 'sh', 'pl', 'lua', 'r'],
 };
