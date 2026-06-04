@@ -2,6 +2,8 @@ import { AppDataSource } from '../config/database';
 import { ApiEndpoint } from '../entities/ApiEndpoint';
 import { ApiCollection } from '../entities/ApiCollection';
 import { Taggable } from '../entities/Taggable';
+import { encrypt, decrypt } from '../utils/crypto';
+import { validateRequestUrl } from '../utils/ssrf.util';
 import axios from 'axios';
 
 export class ApiService {
@@ -9,17 +11,18 @@ export class ApiService {
     private collectionRepository = AppDataSource.getRepository(ApiCollection);
     private taggableRepository = AppDataSource.getRepository(Taggable);
 
-    // Collections
+    // ─── Collections ────────────────────────────────────────────────────────────
+
     async getCollections(userId: number) {
         const collections = await this.collectionRepository.find({
             where: { userId },
-            order: { name: 'ASC' }
+            order: { name: 'ASC' },
         });
 
         const collectionsWithCount = await Promise.all(
             collections.map(async (col) => {
                 const count = await this.endpointRepository.count({
-                    where: { collectionId: col.id, userId }
+                    where: { collectionId: col.id, userId },
                 });
                 return { ...col, _count: { endpoints: count } };
             })
@@ -33,7 +36,6 @@ export class ApiService {
         collection.name = data.name;
         collection.description = data.description || '';
         collection.userId = userId;
-
         return await this.collectionRepository.save(collection);
     }
 
@@ -41,7 +43,6 @@ export class ApiService {
         const collection = await this.collectionRepository.findOne({ where: { id, userId } });
         if (!collection) throw new Error('Collection not found');
 
-        // Unlink endpoints
         await this.endpointRepository.update(
             { collectionId: id, userId },
             { collectionId: undefined as any }
@@ -51,7 +52,8 @@ export class ApiService {
         return { message: 'Collection deleted' };
     }
 
-    // Endpoints
+    // ─── Endpoints ──────────────────────────────────────────────────────────────
+
     async getEndpoints(userId: number, filters?: {
         collectionId?: number;
         categoryId?: number;
@@ -59,42 +61,39 @@ export class ApiService {
         method?: string;
         isFavorite?: boolean;
     }) {
-        const queryBuilder = this.endpointRepository.createQueryBuilder('endpoint')
+        const qb = this.endpointRepository.createQueryBuilder('endpoint')
             .leftJoinAndSelect('endpoint.collection', 'collection')
             .leftJoinAndSelect('endpoint.category', 'category')
             .where('endpoint.userId = :userId', { userId });
 
-        if (filters?.collectionId) {
-            queryBuilder.andWhere('endpoint.collectionId = :collectionId', { collectionId: filters.collectionId });
-        }
-        if (filters?.categoryId) {
-            queryBuilder.andWhere('endpoint.categoryId = :categoryId', { categoryId: filters.categoryId });
-        }
-        if (filters?.search) {
-            queryBuilder.andWhere('(endpoint.title LIKE :search OR endpoint.url LIKE :search)', 
+        if (filters?.collectionId)
+            qb.andWhere('endpoint.collectionId = :collectionId', { collectionId: filters.collectionId });
+        if (filters?.categoryId)
+            qb.andWhere('endpoint.categoryId = :categoryId', { categoryId: filters.categoryId });
+        if (filters?.search)
+            qb.andWhere('(endpoint.title LIKE :search OR endpoint.url LIKE :search)',
                 { search: `%${filters.search}%` });
-        }
-        if (filters?.method) {
-            queryBuilder.andWhere('endpoint.method = :method', { method: filters.method });
-        }
-        if (filters?.isFavorite) {
-            queryBuilder.andWhere('endpoint.isFavorite = :isFavorite', { isFavorite: filters.isFavorite });
-        }
+        if (filters?.method)
+            qb.andWhere('endpoint.method = :method', { method: filters.method });
+        if (filters?.isFavorite)
+            qb.andWhere('endpoint.isFavorite = :isFavorite', { isFavorite: filters.isFavorite });
 
-        const endpoints = await queryBuilder
-            .orderBy('endpoint.updatedAt', 'DESC')
-            .getMany();
+        const endpoints = await qb.orderBy('endpoint.updatedAt', 'DESC').getMany();
 
-        return await this.loadTags(endpoints);
+        const withTags = await this.loadTags(endpoints);
+        // P0-3: decrypt authData for each endpoint before returning to client
+        return withTags.map(ep => this.withDecryptedAuth(ep));
     }
 
     async getEndpoint(id: number, userId: number) {
         const endpoint = await this.endpointRepository.findOne({
             where: { id, userId },
-            relations: ['collection', 'category']
+            relations: ['collection', 'category'],
         });
         if (!endpoint) throw new Error('Endpoint not found');
-        return (await this.loadTags([endpoint]))[0];
+        const withTags = await this.loadTags([endpoint]);
+        // P0-3: decrypt authData before returning to client
+        return this.withDecryptedAuth(withTags[0]);
     }
 
     async createEndpoint(userId: number, data: any) {
@@ -104,12 +103,12 @@ export class ApiService {
             userId,
             authType: data.authType || 'none',
             isFavorite: data.isFavorite || false,
+            // P0-3: encrypt authData before persisting
+            authData: data.authData ? this.encryptAuthData(data.authData) : undefined,
         });
 
         const saved = await this.endpointRepository.save(endpoint);
-        if (data.tagIds?.length) {
-            await this.syncTags(saved.id, data.tagIds);
-        }
+        if (data.tagIds?.length) await this.syncTags(saved.id, data.tagIds);
         return await this.getEndpoint(saved.id, userId);
     }
 
@@ -117,12 +116,16 @@ export class ApiService {
         const endpoint = await this.endpointRepository.findOne({ where: { id, userId } });
         if (!endpoint) throw new Error('Endpoint not found');
 
-        Object.assign(endpoint, data);
+        // P0-3: encrypt authData only when a new value is provided
+        const payload = { ...data };
+        if (data.authData !== undefined) {
+            payload.authData = this.encryptAuthData(data.authData);
+        }
+
+        Object.assign(endpoint, payload);
         await this.endpointRepository.save(endpoint);
 
-        if (data.tagIds) {
-            await this.syncTags(id, data.tagIds);
-        }
+        if (data.tagIds) await this.syncTags(id, data.tagIds);
         return await this.getEndpoint(id, userId);
     }
 
@@ -135,34 +138,46 @@ export class ApiService {
         return { message: 'Endpoint deleted' };
     }
 
-    // Test endpoint
+    // ─── Test endpoint ───────────────────────────────────────────────────────────
+
     async testEndpoint(userId: number, data: {
         method: string;
         url: string;
         headers?: Record<string, string>;
         body?: string;
         bodyType?: string;
+        authType?: string;
+        authData?: any;
     }) {
+        // P0-1: Block SSRF — validate URL before making any outbound request
+        await validateRequestUrl(data.url);
+
         const startTime = Date.now();
-        
+
         try {
+            // P0-2: Build auth headers from authType / authData when present
+            const authHeaders = this.buildAuthHeaders(data.authType, data.authData);
+
             const config: any = {
                 method: data.method.toLowerCase(),
                 url: data.url,
-                headers: data.headers || {},
+                // Auth headers are applied first; explicit headers can override them
+                headers: { ...authHeaders, ...(data.headers ?? {}) },
                 validateStatus: () => true,
                 timeout: 30000,
             };
 
             if (data.body && data.method !== 'GET') {
-                config.data = data.bodyType === 'json' ? JSON.parse(data.body) : data.body;
+                config.data = data.bodyType === 'json'
+                    ? JSON.parse(data.body)
+                    : data.body;
             }
 
             const response = await axios(config);
-            const endTime = Date.now();
+            const elapsed = Date.now() - startTime;
 
-            const responseBody = typeof response.data === 'object' 
-                ? JSON.stringify(response.data, null, 2) 
+            const responseBody = typeof response.data === 'object'
+                ? JSON.stringify(response.data, null, 2)
                 : String(response.data);
 
             return {
@@ -170,23 +185,93 @@ export class ApiService {
                 statusText: response.statusText,
                 headers: response.headers as Record<string, string>,
                 body: responseBody,
-                time: endTime - startTime,
+                time: elapsed,
                 size: new Blob([responseBody]).size,
             };
         } catch (error: any) {
-            const endTime = Date.now();
+            const elapsed = Date.now() - startTime;
             if (error.response) {
                 return {
                     status: error.response.status,
                     statusText: error.response.statusText,
                     headers: error.response.headers,
                     body: JSON.stringify(error.response.data, null, 2),
-                    time: endTime - startTime,
+                    time: elapsed,
                     size: 0,
                 };
             }
             throw error;
         }
+    }
+
+    // ─── Private helpers ─────────────────────────────────────────────────────────
+
+    /**
+     * P0-2: Translate saved auth configuration into HTTP headers.
+     */
+    private buildAuthHeaders(authType?: string, authData?: any): Record<string, string> {
+        if (!authType || authType === 'none' || !authData) return {};
+
+        switch (authType) {
+            case 'bearer': {
+                const token = authData.token ?? authData.value;
+                if (token) return { Authorization: `Bearer ${token}` };
+                break;
+            }
+            case 'basic': {
+                const { username, password } = authData;
+                if (username && password) {
+                    const encoded = Buffer.from(`${username}:${password}`).toString('base64');
+                    return { Authorization: `Basic ${encoded}` };
+                }
+                break;
+            }
+            case 'api-key': {
+                const key = authData.key ?? authData.value;
+                if (key) {
+                    // Default to header injection; query param injection handled client-side
+                    const headerName = authData.headerName ?? 'X-API-Key';
+                    return { [headerName]: key };
+                }
+                break;
+            }
+        }
+        return {};
+    }
+
+    /**
+     * P0-3: Wrap a plaintext authData object in an encrypted envelope.
+     * Safe to call even when ENCRYPTION_KEY is not set — falls back to plaintext.
+     */
+    private encryptAuthData(authData: any): any {
+        if (!authData) return authData;
+        if (!process.env.ENCRYPTION_KEY) return authData; // no-op when key not configured
+        // Already encrypted — don't double-encrypt
+        if (authData?.__enc) return authData;
+        try {
+            return { __enc: encrypt(JSON.stringify(authData)) };
+        } catch {
+            return authData;
+        }
+    }
+
+    /**
+     * P0-3: Unwrap an encrypted authData envelope back to the original object.
+     * Returns plaintext authData unchanged if it was never encrypted.
+     */
+    private decryptAuthData(authData: any): any {
+        if (!authData?.__enc) return authData;
+        try {
+            return JSON.parse(decrypt(authData.__enc));
+        } catch {
+            return authData;
+        }
+    }
+
+    /** Apply decrypted authData to an endpoint DTO. */
+    private withDecryptedAuth(ep: any): any {
+        if (!ep) return ep;
+        return { ...ep, authData: this.decryptAuthData(ep.authData) };
     }
 
     private async syncTags(endpointId: number, tagIds: number[]) {
@@ -208,7 +293,7 @@ export class ApiService {
         for (const ep of endpoints) {
             const taggables = await this.taggableRepository.find({
                 where: { taggableId: ep.id, taggableType: 'api_endpoint' },
-                relations: ['tag']
+                relations: ['tag'],
             });
             result.push({ ...ep, tags: taggables.map(t => t.tag) });
         }

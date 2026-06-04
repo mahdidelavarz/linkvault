@@ -29,6 +29,7 @@ import {
   LucideDatabase,
   LucideFileCode2,
   LucideFolder,
+  LucideServer,
   LucideSettings2,
   LucideStar,
   LucideTerminal,
@@ -434,7 +435,7 @@ function TypeMetadataFields({
         <FormSelect
           label="Database"
           optional
-          leftIcon="lucide:server"
+          leftIcon={LucideServer}
           {...register("metadata.database")}
         >
           <option value="">Any</option>

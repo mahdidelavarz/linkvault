@@ -2,6 +2,10 @@ import { AppDataSource } from '../config/database';
 import { Infrastructure } from '../entities/Infrastructure';
 import { Taggable } from '../entities/Taggable';
 import { loadTagsForItems } from '../utils/tagLoader';
+import { encrypt, decrypt } from '../utils/crypto';
+
+// Metadata fields that must be encrypted at rest for server and config infra types.
+const SENSITIVE_METADATA_FIELDS = ['sshKey', 'password', 'token', 'privateKey'];
 
 export class InfraService {
     private infraRepository = AppDataSource.getRepository(Infrastructure);
@@ -15,45 +19,45 @@ export class InfraService {
         const { page, limit } = pagination;
         const skip = (page - 1) * limit;
 
-        const queryBuilder = this.infraRepository.createQueryBuilder('infra')
+        const qb = this.infraRepository.createQueryBuilder('infra')
             .leftJoinAndSelect('infra.category', 'category')
             .where('infra.userId = :userId', { userId });
 
         if (filters?.search) {
-            queryBuilder.andWhere(
+            qb.andWhere(
                 '(infra.title LIKE :search OR infra.description LIKE :search OR infra.content LIKE :search)',
                 { search: `%${filters.search}%` }
             );
         }
-        if (filters?.infraType) {
-            queryBuilder.andWhere('infra.infraType = :infraType', { infraType: filters.infraType });
-        }
-        if (filters?.categoryId) {
-            queryBuilder.andWhere('infra.categoryId = :categoryId', { categoryId: filters.categoryId });
-        }
-        if (filters?.isFavorite) {
-            queryBuilder.andWhere('infra.isFavorite = :isFavorite', { isFavorite: filters.isFavorite });
-        }
+        if (filters?.infraType)
+            qb.andWhere('infra.infraType = :infraType', { infraType: filters.infraType });
+        if (filters?.categoryId)
+            qb.andWhere('infra.categoryId = :categoryId', { categoryId: filters.categoryId });
+        if (filters?.isFavorite)
+            qb.andWhere('infra.isFavorite = :isFavorite', { isFavorite: filters.isFavorite });
 
-        const [raw, total] = await queryBuilder
+        const [raw, total] = await qb
             .orderBy('infra.isFavorite', 'DESC')
             .addOrderBy('infra.updatedAt', 'DESC')
             .skip(skip)
             .take(limit)
             .getManyAndCount();
 
-        const items = await this.loadTags(raw);
+        const withTags = await this.loadTags(raw);
+        // P0-3: decrypt sensitive metadata before returning to client
+        const items = withTags.map(item => this.withDecryptedMetadata(item));
         return { items, total, page, limit, hasMore: skip + raw.length < total };
     }
 
     async findOne(id: number, userId: number) {
         const item = await this.infraRepository.findOne({
             where: { id, userId },
-            relations: ['category']
+            relations: ['category'],
         });
         if (!item) return null;
         const withTags = await this.loadTags([item]);
-        return withTags[0] || null;
+        // P0-3: decrypt sensitive metadata before returning to client
+        return this.withDecryptedMetadata(withTags[0] ?? null);
     }
 
     async create(userId: number, data: any) {
@@ -62,12 +66,12 @@ export class InfraService {
             ...data,
             userId,
             isFavorite: data.isFavorite || false,
+            // P0-3: encrypt sensitive metadata fields before persisting
+            metadata: data.metadata ? this.encryptSensitiveMetadata(data.metadata) : undefined,
         });
 
         const saved = await this.infraRepository.save(infra);
-        if (data.tagIds?.length) {
-            await this.syncTags(saved.id, data.tagIds);
-        }
+        if (data.tagIds?.length) await this.syncTags(saved.id, data.tagIds);
         return await this.findOne(saved.id, userId);
     }
 
@@ -75,12 +79,16 @@ export class InfraService {
         const infra = await this.infraRepository.findOne({ where: { id, userId } });
         if (!infra) throw new Error('Not found');
 
-        Object.assign(infra, data);
+        // P0-3: encrypt sensitive metadata only when a new metadata object is provided
+        const payload = { ...data };
+        if (data.metadata !== undefined) {
+            payload.metadata = this.encryptSensitiveMetadata(data.metadata);
+        }
+
+        Object.assign(infra, payload);
         await this.infraRepository.save(infra);
 
-        if (data.tagIds) {
-            await this.syncTags(id, data.tagIds);
-        }
+        if (data.tagIds) await this.syncTags(id, data.tagIds);
         return await this.findOne(id, userId);
     }
 
@@ -100,6 +108,49 @@ export class InfraService {
         infra.isFavorite = !infra.isFavorite;
         await this.infraRepository.save(infra);
         return await this.findOne(id, userId);
+    }
+
+    // ─── Private helpers ─────────────────────────────────────────────────────────
+
+    /**
+     * P0-3: Encrypt any sensitive field in a metadata object before it reaches the DB.
+     * Safe to call even when ENCRYPTION_KEY is not set — falls back to plaintext.
+     * Skips fields that are already encrypted (start with 'enc:').
+     */
+    private encryptSensitiveMetadata(metadata: Record<string, any>): Record<string, any> {
+        if (!metadata || !process.env.ENCRYPTION_KEY) return metadata;
+
+        const result = { ...metadata };
+        for (const field of SENSITIVE_METADATA_FIELDS) {
+            const value = result[field];
+            if (value && typeof value === 'string' && !value.startsWith('enc:')) {
+                result[field] = encrypt(value);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * P0-3: Decrypt any sensitive field in a metadata object before returning to client.
+     * The underlying decrypt() is a no-op for values that are not encrypted.
+     */
+    private decryptSensitiveMetadata(metadata: Record<string, any>): Record<string, any> {
+        if (!metadata) return metadata;
+
+        const result = { ...metadata };
+        for (const field of SENSITIVE_METADATA_FIELDS) {
+            const value = result[field];
+            if (value && typeof value === 'string') {
+                result[field] = decrypt(value);
+            }
+        }
+        return result;
+    }
+
+    /** Apply decrypted metadata to an infra DTO. */
+    private withDecryptedMetadata(item: any): any {
+        if (!item) return item;
+        return { ...item, metadata: item.metadata ? this.decryptSensitiveMetadata(item.metadata) : item.metadata };
     }
 
     private async syncTags(infraId: number, tagIds: number[]) {
