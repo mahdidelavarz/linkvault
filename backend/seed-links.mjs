@@ -26,7 +26,8 @@ async function main() {
     process.exit(1);
   }
 
-  const { token } = await loginRes.json();
+  const loginData = await loginRes.json();
+  const token = loginData.token ?? loginData.accessToken;
   console.log('Logged in successfully.');
 
   // 2. Create links
