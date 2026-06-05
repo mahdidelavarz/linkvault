@@ -12,6 +12,7 @@ import {
   type SnippetType,
 } from "@/types/snippet";
 import { getLanguageName, detectLanguage, detectSnippetType } from "@/lib/languageDetector";
+import { formatSQL, formatJSON } from "@/lib/snippetUtils";
 import { useCreateSnippet, useUpdateSnippet } from "@/hooks/useSnippet";
 import { useCategories } from "@/hooks/useCategories";
 import FormLayout from "@/components/layout/FormLayout";
@@ -22,6 +23,7 @@ import TagSelector from "@/components/tags/TagSelector";
 import {
   LucideArrowRight,
   LucideArrowRightLeft,
+  LucideBraces,
   LucideCheck,
   LucideCircleAlert,
   LucideCodeXml,
@@ -106,6 +108,19 @@ export default function SnippetForm({
 
   // Available languages for current type
   const typeLangs = TYPE_LANGUAGES[watchedType] ?? [];
+
+  const SQL_LANGS = ['sql', 'mysql', 'pgsql', 'plsql']
+  const canFormatSQL  = watchedType === 'sql'  || SQL_LANGS.includes(watchedLang)
+  const canFormatJSON = watchedType === 'json' || watchedLang === 'json'
+  const showFormatBtn = (canFormatSQL || canFormatJSON) && watchedContent.trim().length > 0
+
+  const handleFormat = () => {
+    if (canFormatJSON) {
+      setValue('content', formatJSON(watchedContent), { shouldDirty: true })
+    } else if (canFormatSQL) {
+      setValue('content', formatSQL(watchedContent), { shouldDirty: true })
+    }
+  }
 
   // When type changes, reset language to first of that type
   const handleTypeChange = (type: SnippetType) => {
@@ -298,7 +313,22 @@ export default function SnippetForm({
                             ? "JSON"
                             : "Code"}
                 </label>
-                <span className="sform-lang-pill">{watchedLang}</span>
+                <div className="sform-code-actions">
+                  {showFormatBtn && (
+                    <button
+                      type="button"
+                      className="sform-format-btn"
+                      onClick={handleFormat}
+                      title={canFormatJSON ? "Format JSON" : "Format SQL"}
+                    >
+                      {canFormatJSON
+                        ? <LucideBraces width={12} />
+                        : <LucideDatabase width={12} />}
+                      {canFormatJSON ? "Format JSON" : "Format SQL"}
+                    </button>
+                  )}
+                  <span className="sform-lang-pill">{watchedLang}</span>
+                </div>
               </div>
               <div
                 className={[
@@ -622,7 +652,8 @@ const CSS = `
 .sform-detect-hint strong { color: var(--text-primary); }
 
 /* Code editor */
-.sform-code-header { display: flex; align-items: center; justify-content: space-between; }
+.sform-code-header  { display: flex; align-items: center; justify-content: space-between; }
+.sform-code-actions { display: flex; align-items: center; gap: 8px; }
 .sform-lang-pill {
   font-size:     10px;
   font-family:   var(--font-mono);
@@ -631,6 +662,28 @@ const CSS = `
   border:        1px solid var(--border-subtle);
   padding:       1px 8px;
   border-radius: var(--radius-sm);
+}
+.sform-format-btn {
+  display:       flex;
+  align-items:   center;
+  gap:           4px;
+  height:        22px;
+  padding:       0 8px;
+  background:    transparent;
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color:         var(--text-tertiary);
+  font-size:     11px;
+  font-family:   var(--font-sans);
+  font-weight:   500;
+  cursor:        pointer;
+  white-space:   nowrap;
+  transition:    color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+}
+.sform-format-btn:hover {
+  color:         var(--text-primary);
+  border-color:  var(--border-strong);
+  background:    var(--bg-overlay);
 }
 .sform-code-wrap {
   border:        1px solid var(--border-default);
