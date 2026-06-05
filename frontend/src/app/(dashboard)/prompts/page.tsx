@@ -33,6 +33,7 @@ export default function PromptsPage() {
   const searchParams   = useSearchParams();
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
+  const [duplicateFrom, setDuplicateFrom] = useState<Prompt | null>(null);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [selectedType, setSelectedType] = useState("");
@@ -76,15 +77,23 @@ export default function PromptsPage() {
 
   const openCreate = () => {
     setEditingPrompt(null);
+    setDuplicateFrom(null);
     setModalOpen(true);
   };
   const openEdit = (prompt: Prompt) => {
     setEditingPrompt(prompt);
+    setDuplicateFrom(null);
+    setModalOpen(true);
+  };
+  const openDuplicate = (prompt: Prompt) => {
+    setDuplicateFrom(prompt);
+    setEditingPrompt(null);
     setModalOpen(true);
   };
   const closeModal = () => {
     setModalOpen(false);
     setEditingPrompt(null);
+    setDuplicateFrom(null);
   };
   const clearFilters = () => {
     setSearch("");
@@ -204,7 +213,7 @@ export default function PromptsPage() {
         ) : prompts.length > 0 ? (
           <>
             <CardGrid minCardWidth={380}>
-              {prompts.map((prompt) => <PromptCard key={prompt.id} prompt={prompt} onEdit={openEdit} />)}
+              {prompts.map((prompt) => <PromptCard key={prompt.id} prompt={prompt} onEdit={openEdit} onDuplicate={openDuplicate} />)}
             </CardGrid>
             <div ref={sentinelRef} style={{ height: 1 }} />
             {isFetchingNextPage && (
@@ -227,10 +236,14 @@ export default function PromptsPage() {
       <Modal
         isOpen={modalOpen}
         onClose={closeModal}
-        title={editingPrompt ? "Edit Prompt" : "New Prompt"}
+        title={editingPrompt ? "Edit Prompt" : duplicateFrom ? "Duplicate Prompt" : "New Prompt"}
         size="lg"
       >
-        <PromptForm prompt={editingPrompt} onClose={closeModal} />
+        <PromptForm
+          prompt={editingPrompt}
+          onClose={closeModal}
+          initialValues={duplicateFrom ?? undefined}
+        />
       </Modal>
     </>
   );

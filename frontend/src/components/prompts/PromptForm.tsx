@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import {
   type Prompt,
   type CreatePromptDto,
+  type PromptVariable,
   PROMPT_TYPES,
   AI_PLATFORMS,
   type PromptType,
   type AIPlatform,
 } from "@/types/prompt";
-import { useCreatePrompt, useUpdatePrompt } from "@/hooks/usePrompt";
+import { useCreatePrompt, useUpdatePrompt, usePrompt } from "@/hooks/usePrompt";
 import { useCategories } from "@/hooks/useCategories";
 import { extractVariables } from "@/lib/promptUtils";
 import FormLayout from "@/components/layout/FormLayout";
@@ -20,18 +21,23 @@ import {
   LucideMessageSquare,
   LucideBot,
   LucideVariable,
+  LucideClock,
+  LucideRefreshCw,
 } from "@/Icons/Icons";
 
 interface PromptFormProps {
   prompt?: Prompt | null;
   onClose: () => void;
+  initialValues?: Prompt;
 }
 
-export default function PromptForm({ prompt, onClose }: PromptFormProps) {
+export default function PromptForm({ prompt, onClose, initialValues }: PromptFormProps) {
   const isEditing = !!prompt;
 
   const [titleError,   setTitleError]   = useState("");
   const [contentError, setContentError] = useState("");
+  const [varDefaults, setVarDefaults]   = useState<Record<string, string>>({});
+  const [restoredIdx, setRestoredIdx]   = useState<number | null>(null);
 
   const [formData, setFormData] = useState<CreatePromptDto>({
     title: "",
@@ -47,8 +53,10 @@ export default function PromptForm({ prompt, onClose }: PromptFormProps) {
 
   const createPrompt = useCreatePrompt();
   const updatePrompt = useUpdatePrompt();
+  const { data: freshPrompt } = usePrompt(prompt?.id ?? 0);
   const { data: categories } = useCategories();
 
+  // Edit mode — load existing prompt
   useEffect(() => {
     if (prompt) {
       setFormData({
@@ -62,8 +70,36 @@ export default function PromptForm({ prompt, onClose }: PromptFormProps) {
         categoryId: prompt.categoryId,
         tagIds: prompt.tags ? prompt.tags.map((tag: any) => tag.id) : [],
       });
+      // Init var defaults from stored variables
+      const defaults: Record<string, string> = {};
+      for (const v of prompt.variables ?? []) {
+        defaults[v.name] = v.defaultValue;
+      }
+      setVarDefaults(defaults);
     }
   }, [prompt]);
+
+  // Duplicate mode — pre-fill from initialValues
+  useEffect(() => {
+    if (!prompt && initialValues) {
+      setFormData({
+        title: `Copy of ${initialValues.title}`,
+        content: initialValues.content,
+        description: initialValues.description || "",
+        promptType: initialValues.promptType as PromptType,
+        targetAI: initialValues.targetAI as AIPlatform,
+        expectedOutput: initialValues.expectedOutput || "",
+        isFavorite: false,
+        categoryId: initialValues.categoryId,
+        tagIds: initialValues.tags?.map((t: any) => t.id) ?? [],
+      });
+      const defaults: Record<string, string> = {};
+      for (const v of initialValues.variables ?? []) {
+        defaults[v.name] = v.defaultValue;
+      }
+      setVarDefaults(defaults);
+    }
+  }, [initialValues]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -74,11 +110,18 @@ export default function PromptForm({ prompt, onClose }: PromptFormProps) {
     setContentError(contentValid ? "" : "Prompt content is required.");
     if (!titleValid || !contentValid) return;
 
+    // Build variables array from current defaults
+    const variables: PromptVariable[] = extractVariables(formData.content).map(v => ({
+      name: v.name,
+      defaultValue: varDefaults[v.name] ?? '',
+      description: '',
+    }));
+
     try {
       if (isEditing && prompt) {
-        await updatePrompt.mutateAsync({ id: prompt.id, ...formData });
+        await updatePrompt.mutateAsync({ id: prompt.id, ...formData, variables });
       } else {
-        await createPrompt.mutateAsync(formData);
+        await createPrompt.mutateAsync({ ...formData, variables });
       }
       onClose();
     } catch (error) {
@@ -88,6 +131,39 @@ export default function PromptForm({ prompt, onClose }: PromptFormProps) {
 
   const variables = extractVariables(formData.content);
   const isLoading = createPrompt.isPending || updatePrompt.isPending;
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setContentError("");
+    const content = e.target.value;
+    setFormData((prev) => ({ ...prev, content }));
+    // Sync varDefaults: keep existing values, init new vars as ''
+    const newVars = extractVariables(content);
+    setVarDefaults((prev) => {
+      const next: Record<string, string> = {};
+      for (const v of newVars) {
+        next[v.name] = prev[v.name] ?? '';
+      }
+      return next;
+    });
+  };
+
+  const restoreVersion = (ver: NonNullable<Prompt['versions']>[number]) => {
+    setFormData((prev) => ({
+      ...prev,
+      title:          ver.title,
+      content:        ver.content,
+      description:    ver.description || '',
+      promptType:     ver.promptType as PromptType,
+      targetAI:       (ver.targetAI || undefined) as AIPlatform,
+      expectedOutput: ver.expectedOutput || '',
+    }));
+    if (ver.variables) {
+      const defaults: Record<string, string> = {};
+      for (const v of ver.variables) defaults[v.name] = v.defaultValue;
+      setVarDefaults(defaults);
+    }
+    setRestoredIdx(null);
+  };
 
   return (
     <>
@@ -247,20 +323,36 @@ export default function PromptForm({ prompt, onClose }: PromptFormProps) {
             id="prompt-content"
             className={["form-textarea form-textarea--code", contentError ? "form-textarea--error" : ""].filter(Boolean).join(" ")}
             value={formData.content}
-            onChange={(e) => {
-              setContentError("");
-              setFormData((prev) => ({ ...prev, content: e.target.value }));
-            }}
+            onChange={handleContentChange}
             rows={10}
             placeholder={`You are an expert React developer. Create a {{component_type}} component with:\n- {{feature_1}}\n- {{feature_2}}`}
           />
           {contentError && <span className="form-field-error">{contentError}</span>}
+
+          {/* P3-8: Live variable defaults panel */}
           {variables.length > 0 && (
-            <p className="form-hint form-hint--success">
-              <LucideVariable width={12} />
-              {variables.length} variable{variables.length > 1 ? "s" : ""}{" "}
-              detected: {variables.map((v) => v.name).join(", ")}
-            </p>
+            <div className="pf-vars-panel">
+              <span className="pf-vars-title">
+                <LucideVariable width={12} />
+                Variable defaults ({variables.length})
+              </span>
+              <div className="pf-vars-grid">
+                {variables.map((v) => (
+                  <div key={v.name} className="pf-var-item">
+                    <span className="pf-var-name">{`{{${v.name}}}`}</span>
+                    <input
+                      className="pf-var-input"
+                      type="text"
+                      placeholder="Default value…"
+                      value={varDefaults[v.name] ?? ''}
+                      onChange={(e) =>
+                        setVarDefaults((p) => ({ ...p, [v.name]: e.target.value }))
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 
@@ -299,6 +391,54 @@ export default function PromptForm({ prompt, onClose }: PromptFormProps) {
           />
           <span>Mark as favorite</span>
         </label>
+
+        {/* P3-9: Version history (edit mode only) */}
+        {isEditing && (
+          <div className="pf-versions">
+            <div className="pf-versions-header">
+              <LucideClock width={13} />
+              Version history
+              {((freshPrompt?.versions ?? prompt?.versions)?.length ?? 0) > 0 && (
+                <span className="pf-versions-count">{(freshPrompt?.versions ?? prompt?.versions)!.length}</span>
+              )}
+            </div>
+            {((freshPrompt?.versions ?? prompt?.versions)?.length ?? 0) > 0 ? (
+              <div className="pf-versions-list">
+                {(freshPrompt?.versions ?? prompt?.versions)!.map((ver, idx) => (
+                  <div
+                    key={idx}
+                    className={["pf-version-item", restoredIdx === idx ? "pf-version-item--restored" : ""].filter(Boolean).join(" ")}
+                  >
+                    <div className="pf-version-meta">
+                      <span className="pf-version-title">{ver.title}</span>
+                      <span className="pf-version-date">
+                        {new Date(ver.savedAt).toLocaleDateString('en-US', {
+                          month: 'short', day: 'numeric',
+                          hour: '2-digit', minute: '2-digit',
+                        })}
+                      </span>
+                    </div>
+                    <pre className="pf-version-preview">
+                      {ver.content.length > 140 ? ver.content.slice(0, 140) + '…' : ver.content}
+                    </pre>
+                    <button
+                      type="button"
+                      className="pf-version-restore"
+                      onClick={() => { restoreVersion(ver); setRestoredIdx(idx); }}
+                    >
+                      <LucideRefreshCw width={11} />
+                      Restore
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="pf-versions-empty">
+                No history yet — versions are saved automatically when you update this prompt.
+              </p>
+            )}
+          </div>
+        )}
 
         </div>
       </FormLayout>
@@ -438,6 +578,163 @@ const CSS = `
   height: 16px;
   accent-color: var(--primary);
   cursor: pointer;
+}
+
+/* P3-8: Variable defaults panel */
+.pf-vars-panel {
+  display:        flex;
+  flex-direction: column;
+  gap:            10px;
+  padding:        12px;
+  background:     var(--bg-elevated);
+  border:         1px solid var(--border-subtle);
+  border-radius:  var(--radius-md);
+  margin-top:     4px;
+}
+.pf-vars-title {
+  display:     flex;
+  align-items: center;
+  gap:         6px;
+  font-size:   var(--text-xs);
+  font-weight: 600;
+  color:       var(--text-tertiary);
+}
+.pf-vars-grid {
+  display:               grid;
+  grid-template-columns: 1fr 1fr;
+  gap:                   8px;
+}
+@media (max-width: 479px) {
+  .pf-vars-grid { grid-template-columns: 1fr; }
+}
+.pf-var-item {
+  display:        flex;
+  flex-direction: column;
+  gap:            4px;
+}
+.pf-var-name {
+  font-family: var(--font-mono);
+  font-size:   var(--text-xs);
+  color:       var(--accent);
+  font-weight: 500;
+}
+.pf-var-input {
+  height:        32px;
+  padding:       0 10px;
+  background:    var(--bg-subtle);
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color:         var(--text-primary);
+  font-size:     var(--text-xs);
+  font-family:   var(--font-sans);
+  outline:       none;
+  transition:    border-color var(--transition-fast);
+}
+.pf-var-input:focus { border-color: var(--border-focus); }
+.pf-var-input::placeholder { color: var(--text-tertiary); }
+
+/* P3-9: Version history */
+.pf-versions {
+  display:        flex;
+  flex-direction: column;
+  gap:            10px;
+  padding:        14px;
+  background:     var(--bg-elevated);
+  border:         1px solid var(--border-subtle);
+  border-radius:  var(--radius-md);
+}
+.pf-versions-header {
+  display:     flex;
+  align-items: center;
+  gap:         6px;
+  font-size:   var(--text-sm);
+  font-weight: 600;
+  color:       var(--text-secondary);
+}
+.pf-versions-count {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           18px;
+  height:          18px;
+  background:      var(--bg-overlay);
+  border:          1px solid var(--border-subtle);
+  border-radius:   50%;
+  font-size:       10px;
+  color:           var(--text-tertiary);
+}
+.pf-versions-list {
+  display:        flex;
+  flex-direction: column;
+  gap:            8px;
+}
+.pf-version-item {
+  display:        flex;
+  flex-direction: column;
+  gap:            6px;
+  padding:        10px 12px;
+  background:     var(--bg-subtle);
+  border:         1px solid var(--border-default);
+  border-radius:  var(--radius-md);
+  transition:     border-color var(--transition-fast);
+}
+.pf-version-item--restored { border-color: var(--accent-border); }
+.pf-version-meta {
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+  flex-wrap:   wrap;
+}
+.pf-version-title {
+  font-size:   var(--text-xs);
+  font-weight: 600;
+  color:       var(--text-primary);
+  flex:        1;
+  min-width:   0;
+  overflow:    hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pf-version-date {
+  font-size:   var(--text-xs);
+  color:       var(--text-tertiary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pf-version-preview {
+  font-family:        var(--font-mono);
+  font-size:          var(--text-xs);
+  color:              var(--text-secondary);
+  line-height:        var(--leading-relaxed);
+  white-space:        pre-wrap;
+  word-break:         break-word;
+  display:            -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow:           hidden;
+  margin:             0;
+}
+.pf-version-restore {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           5px;
+  align-self:    flex-start;
+  padding:       4px 10px;
+  background:    transparent;
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color:         var(--text-secondary);
+  font-size:     var(--text-xs);
+  font-family:   var(--font-sans);
+  cursor:        pointer;
+  transition:    all var(--transition-fast);
+}
+.pf-version-restore:hover { border-color: var(--accent-border); color: var(--accent); }
+.pf-versions-empty {
+  font-size:  var(--text-xs);
+  color:      var(--text-tertiary);
+  font-style: italic;
+  margin:     0;
 }
 
 `;

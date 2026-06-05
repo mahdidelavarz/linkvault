@@ -38,6 +38,21 @@ export class Prompt {
     @Column({ type: 'boolean', default: false, name: 'is_favorite' })
     isFavorite!: boolean;
 
+    @Column({ type: 'jsonb', nullable: true, default: () => "'[]'::jsonb" })
+    variables?: Array<{ name: string; defaultValue: string; description?: string }>;
+
+    @Column({ type: 'jsonb', nullable: true, default: () => "'[]'::jsonb" })
+    versions?: Array<{
+        title: string;
+        content: string;
+        description?: string;
+        promptType: string;
+        targetAI?: string;
+        expectedOutput?: string;
+        variables?: Array<{ name: string; defaultValue: string; description?: string }>;
+        savedAt: string;
+    }>;
+
     @ManyToOne(() => Category, { nullable: true })
     @JoinColumn({ name: 'category_id' })
     category?: Category;

@@ -16,5 +16,6 @@ router.put('/:id', validate(updatePromptSchema), promptController.update);
 router.delete('/:id', promptController.delete);
 router.patch('/:id/favorite', promptController.toggleFavorite);
 router.patch('/:id/use', promptController.incrementUsage);
+router.get('/:id/versions', promptController.getVersions);
 
 export default router;

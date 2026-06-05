@@ -36,7 +36,7 @@ export const usePrompt = (id: number) => {
   return useQuery({
     queryKey: ['prompt', id],
     queryFn: async () => {
-      const { data } = await api.get(`/prompts/${id}`);
+      const { data } = await api.get(`/prompts/${id}`, { params: { _t: Date.now() } });
       return data.prompt as Prompt;
     },
     enabled: !!id,
@@ -61,9 +61,11 @@ export const useUpdatePrompt = () => {
       const { data: response } = await api.put(`/prompts/${id}`, data);
       return response.prompt as Prompt;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['prompts'] });
-      queryClient.invalidateQueries({ queryKey: ['prompt', variables.id] });
+    onSuccess: (updatedPrompt, variables) => {
+      // Write fresh data directly into the single-prompt cache
+      queryClient.setQueryData(['prompt', variables.id], updatedPrompt);
+      // Force-refetch the list so cards show updated data immediately
+      queryClient.refetchQueries({ queryKey: ['prompts'] });
     },
   });
 };

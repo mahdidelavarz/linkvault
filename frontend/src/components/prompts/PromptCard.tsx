@@ -36,11 +36,13 @@ import {
   LucideBrain,
   LucideSparkles,
   LucideGem,
+  LucideRefreshCw,
 } from "@/Icons/Icons";
 
 interface PromptCardProps {
   prompt: Prompt;
   onEdit: (prompt: Prompt) => void;
+  onDuplicate?: (prompt: Prompt) => void;
 }
 
 const platformIcons: Record<string, React.ComponentType<{ width?: number }>> = {
@@ -50,7 +52,7 @@ const platformIcons: Record<string, React.ComponentType<{ width?: number }>> = {
   gemini: LucideGem,
 };
 
-export default function PromptCard({ prompt, onEdit }: PromptCardProps) {
+export default function PromptCard({ prompt, onEdit, onDuplicate }: PromptCardProps) {
   const [showVariables, setShowVariables] = useState(false);
   const [filledContent, setFilledContent] = useState(prompt.content);
   const [copied, setCopied] = useState(false);
@@ -60,7 +62,14 @@ export default function PromptCard({ prompt, onEdit }: PromptCardProps) {
   const deletePrompt = useDeletePrompt();
   const incrementUsage = useIncrementPromptUsage();
 
-  const variables = extractVariables(prompt.content);
+  // Merge extracted variables with stored defaults (P3-8 persistence)
+  const variables = extractVariables(prompt.content).map(v => ({
+    ...v,
+    defaultValue: prompt.variables?.find(sv => sv.name === v.name)?.defaultValue ?? v.defaultValue,
+  }));
+
+  const isTestMode = filledContent !== prompt.content;
+
   const promptType = PROMPT_TYPES[prompt.promptType];
   const aiPlatform = prompt.targetAI ? AI_PLATFORMS[prompt.targetAI] : null;
 
@@ -85,6 +94,11 @@ export default function PromptCard({ prompt, onEdit }: PromptCardProps) {
   const handleVariablesFilled = (values: Record<string, string>) => {
     const replaced = replaceVariables(prompt.content, values);
     setFilledContent(replaced);
+    setShowVariables(false);
+  };
+
+  const resetTest = () => {
+    setFilledContent(prompt.content);
     setShowVariables(false);
   };
 
@@ -143,28 +157,52 @@ export default function PromptCard({ prompt, onEdit }: PromptCardProps) {
         )}
 
         {/* Content Preview */}
-        <div className="prompt-card-content">
+        <div className={["prompt-card-content", isTestMode ? "prompt-card-content--test" : ""].filter(Boolean).join(" ")}>
           <pre className="prompt-card-content-text">{filledContent}</pre>
         </div>
 
-        {/* Variables */}
+        {/* Variables / Test Mode */}
         {variables.length > 0 && (
           <div className="prompt-card-vars-section">
-            <button
-              onClick={() => setShowVariables(!showVariables)}
-              className={[
-                "prompt-card-vars-toggle",
-                showVariables ? "prompt-card-vars-toggle--active" : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              <LucideVariable width={12} />
-              {variables.length} variable{variables.length > 1 ? "s" : ""}
-              <span className="prompt-card-vars-names">
-                ({variables.map((v) => v.name).join(", ")})
-              </span>
-            </button>
+            {isTestMode ? (
+              <div className="prompt-card-test-row">
+                <span className="prompt-card-test-label">
+                  <LucideVariable width={12} />
+                  Variables filled
+                </span>
+                <button
+                  className="prompt-card-test-btn"
+                  onClick={() => { setShowVariables(true); }}
+                  title="Re-fill with different values"
+                >
+                  Re-fill
+                </button>
+                <button
+                  className="prompt-card-test-btn prompt-card-test-btn--reset"
+                  onClick={resetTest}
+                  title="Reset to original content"
+                >
+                  <LucideRefreshCw width={11} />
+                  Reset
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowVariables(!showVariables)}
+                className={[
+                  "prompt-card-vars-toggle",
+                  showVariables ? "prompt-card-vars-toggle--active" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
+                <LucideVariable width={12} />
+                {variables.length} variable{variables.length > 1 ? "s" : ""}
+                <span className="prompt-card-vars-names">
+                  ({variables.map((v) => v.name).join(", ")})
+                </span>
+              </button>
+            )}
 
             {showVariables && (
               <div className="prompt-card-vars-form">
@@ -279,6 +317,15 @@ export default function PromptCard({ prompt, onEdit }: PromptCardProps) {
           )}
 
           <div className="prompt-card-actions-right">
+            {onDuplicate && (
+              <button
+                className="prompt-card-action-btn"
+                onClick={(e) => { e.stopPropagation(); onDuplicate(prompt); }}
+                title="Duplicate prompt"
+              >
+                <LucideCopy width={14} />
+              </button>
+            )}
             <button
               className="prompt-card-action-btn"
               onClick={() => onEdit(prompt)}
@@ -395,6 +442,9 @@ const CSS = `
   margin:        0;
 }
 
+/* Content — test mode */
+.prompt-card-content--test { border: 1px solid var(--accent-border); }
+
 /* Variables */
 .prompt-card-vars-section {
   display:        flex;
@@ -419,6 +469,38 @@ const CSS = `
 .prompt-card-vars-toggle:hover { border-color: var(--border-strong); color: var(--text-primary); }
 .prompt-card-vars-toggle--active { border-color: var(--primary); color: var(--primary); }
 .prompt-card-vars-names { color: var(--text-tertiary); }
+
+/* Test mode row */
+.prompt-card-test-row {
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+  flex-wrap:   wrap;
+}
+.prompt-card-test-label {
+  display:     flex;
+  align-items: center;
+  gap:         5px;
+  font-size:   var(--text-xs);
+  font-weight: 500;
+  color:       var(--accent);
+}
+.prompt-card-test-btn {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           4px;
+  padding:       3px 10px;
+  background:    var(--bg-subtle);
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color:         var(--text-secondary);
+  font-size:     var(--text-xs);
+  font-family:   var(--font-sans);
+  cursor:        pointer;
+  transition:    all var(--transition-fast);
+}
+.prompt-card-test-btn:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.prompt-card-test-btn--reset:hover { border-color: var(--danger); color: var(--danger); }
 
 /* Taxonomy */
 .prompt-card-taxonomy {

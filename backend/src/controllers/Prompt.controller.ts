@@ -66,4 +66,10 @@ export class PromptController {
             res.json({ prompt });
         } catch (e: any) { notFound(e); }
     });
+
+    getVersions = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const data = await promptService.getRawVersions(parseParamId(req.params.id)!, req.userId!);
+        if (!data) throw new HttpError(404, 'Prompt not found');
+        res.json(data);
+    });
 }

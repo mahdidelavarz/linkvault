@@ -1,3 +1,14 @@
+export interface PromptVersion {
+  title: string;
+  content: string;
+  description?: string;
+  promptType: string;
+  targetAI?: string;
+  expectedOutput?: string;
+  variables?: PromptVariable[];
+  savedAt: string;
+}
+
 export interface Prompt {
   id: number;
   title: string;
@@ -18,6 +29,8 @@ export interface Prompt {
     name: string;
   };
   tags?: Tag[];
+  variables?: PromptVariable[];
+  versions?: PromptVersion[];
 }
 
 export interface Tag {
@@ -39,6 +52,7 @@ export interface CreatePromptDto {
   isFavorite?: boolean;
   categoryId?: number;
   tagIds?: number[];
+  variables?: PromptVariable[];
 }
 
 export interface UpdatePromptDto extends Partial<CreatePromptDto> {

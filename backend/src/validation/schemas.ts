@@ -83,6 +83,11 @@ export const createPromptSchema = z.object({
     isFavorite: z.boolean().optional(),
     categoryId: z.number().int().positive().nullable().optional(),
     tagIds: z.array(z.number().int().positive()).optional(),
+    variables: z.array(z.object({
+        name: z.string().max(100),
+        defaultValue: z.string().max(500),
+        description: z.string().max(500).optional(),
+    })).optional(),
 });
 
 export const updatePromptSchema = createPromptSchema.partial();

@@ -52,6 +52,24 @@ export class PromptService {
             .getManyAndCount();
 
         const items = await this.loadTagsForPrompts(raw);
+
+        // Merge JSONB columns — TypeORM sometimes omits them from entity SELECT
+        if (items.length > 0) {
+            const ids = items.map((i: any) => i.id);
+            const jsonRows = await AppDataSource.query(
+                `SELECT "id", "versions", "variables" FROM "prompts" WHERE "id" = ANY($1)`,
+                [ids]
+            );
+            const jsonMap = new Map<number, any>(jsonRows.map((r: any) => [r.id, r]));
+            for (const item of items as any[]) {
+                const row: any = jsonMap.get(item.id);
+                if (row) {
+                    item.versions  = row.versions  ?? [];
+                    item.variables = row.variables ?? [];
+                }
+            }
+        }
+
         return { items, total, page, limit, hasMore: skip + raw.length < total };
     }
 
@@ -64,7 +82,21 @@ export class PromptService {
         if (!prompt) return null;
 
         const promptsWithTags = await this.loadTagsForPrompts([prompt]);
-        return promptsWithTags[0] || null;
+        const result = promptsWithTags[0] || null;
+
+        // Merge JSONB columns — TypeORM sometimes omits them from entity SELECT
+        if (result) {
+            const rows = await AppDataSource.query(
+                `SELECT "versions", "variables" FROM "prompts" WHERE "id" = $1`,
+                [id]
+            );
+            if (rows[0]) {
+                result.versions  = rows[0].versions  ?? [];
+                result.variables = rows[0].variables ?? [];
+            }
+        }
+
+        return result;
     }
 
     async create(userId: number, data: {
@@ -77,6 +109,7 @@ export class PromptService {
         isFavorite?: boolean;
         categoryId?: number;
         tagIds?: number[];
+        variables?: Array<{ name: string; defaultValue: string; description?: string }>;
     }) {
         const prompt = new Prompt();
         prompt.title = data.title;
@@ -86,6 +119,8 @@ export class PromptService {
         prompt.targetAI = data.targetAI;
         prompt.expectedOutput = data.expectedOutput || '';
         prompt.isFavorite = data.isFavorite || false;
+        prompt.variables = data.variables || [];
+        prompt.versions = [];
         prompt.userId = userId;
 
         if (data.categoryId) {
@@ -111,12 +146,28 @@ export class PromptService {
         isFavorite?: boolean;
         categoryId?: number;
         tagIds?: number[];
+        variables?: Array<{ name: string; defaultValue: string; description?: string }>;
     }) {
         const prompt = await this.promptRepository.findOne({ where: { id, userId } });
 
         if (!prompt) {
             throw new Error('Prompt not found');
         }
+
+        // Snapshot current state before every update (keep last 5)
+        const snapshot = {
+            title: prompt.title,
+            content: prompt.content,
+            description: prompt.description,
+            promptType: prompt.promptType,
+            targetAI: prompt.targetAI,
+            expectedOutput: prompt.expectedOutput,
+            variables: prompt.variables,
+            savedAt: new Date().toISOString(),
+        };
+        const existing = Array.isArray(prompt.versions) ? [...prompt.versions] : [];
+        existing.unshift(snapshot);
+        prompt.versions = existing.slice(0, 5);
 
         if (data.title !== undefined) prompt.title = data.title;
         if (data.content !== undefined) prompt.content = data.content;
@@ -126,8 +177,16 @@ export class PromptService {
         if (data.expectedOutput !== undefined) prompt.expectedOutput = data.expectedOutput;
         if (data.isFavorite !== undefined) prompt.isFavorite = data.isFavorite;
         if (data.categoryId !== undefined) prompt.categoryId = data.categoryId;
+        if (data.variables !== undefined) prompt.variables = data.variables;
 
         await this.promptRepository.save(prompt);
+
+        // TypeORM dirty-checking skips JSONB columns and also skips updated_at when nothing else
+        // changes — force both so the ETag changes and the browser never returns a stale 304.
+        await AppDataSource.query(
+            `UPDATE "prompts" SET "versions" = $1::jsonb, "variables" = $2::jsonb, "updated_at" = NOW() WHERE "id" = $3`,
+            [JSON.stringify(prompt.versions ?? []), JSON.stringify(prompt.variables ?? []), id]
+        );
 
         if (data.tagIds) {
             await this.syncTags(id, data.tagIds);
@@ -177,6 +236,15 @@ export class PromptService {
         await this.promptRepository.save(prompt);
 
         return await this.findOne(id, userId);
+    }
+
+    async getRawVersions(id: number, userId: number) {
+        const rows = await AppDataSource.query(
+            `SELECT "id", "title", "versions", "variables" FROM "prompts" WHERE "id" = $1 AND "userId" = $2`,
+            [id, userId]
+        );
+        if (!rows[0]) return null;
+        return { id: rows[0].id, title: rows[0].title, versions: rows[0].versions ?? [], variables: rows[0].variables ?? [] };
     }
 
     private async getItemIdsByTags(type: string, tagIds: number[]): Promise<number[]> {
