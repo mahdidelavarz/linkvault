@@ -21,8 +21,13 @@ const app = express();
 
 // Middleware
 app.use(helmet());
+// In development, reflect the requesting origin so any LAN device works.
+// In production, restrict to the configured CORS_ORIGIN.
+const isDev = process.env.NODE_ENV !== 'production';
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || process.env.ALLOWED_ORIGINS || '*',
+    origin: isDev
+        ? (origin, cb) => cb(null, origin || '*')   // allow any origin in dev
+        : process.env.CORS_ORIGIN || process.env.ALLOWED_ORIGINS || '*',
     credentials: true,
 }));
 app.use(express.json());

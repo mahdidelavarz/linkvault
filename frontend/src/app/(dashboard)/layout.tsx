@@ -3,6 +3,7 @@
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import BottomTabBar from "@/components/layout/BottomNavBar";
+import InstallBanner from "@/components/pwa/InstallBanner";
 
 export default function DashboardLayout({
   children,
@@ -26,6 +27,9 @@ export default function DashboardLayout({
 
       {/* BottomTabBar is fixed-position on mobile — placing it outside body is fine */}
       <BottomTabBar />
+
+      {/* PWA install prompt + SW update toast */}
+      <InstallBanner />
 
       <style jsx>{`
         .dashboard-layout {
