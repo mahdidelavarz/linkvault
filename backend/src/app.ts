@@ -16,6 +16,7 @@ import promptRoutes from './routes/prompt.route';
 import dashboardRoutes from './routes/dashboard.route';
 import apiRoutes from './routes/api.route';
 import infraRoutes from './routes/Infra.route';
+import swaggerRouter from './config/swagger';
 
 const app = express();
 
@@ -33,6 +34,15 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Swagger UI
+app.use('/api/docs', swaggerRouter);
+
+// Disable HTTP caching for all API responses so browsers never return 304 stale data
+app.use('/api', (_req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/links', linkRoutes);
@@ -47,7 +57,7 @@ app.use('/api/api-client', apiRoutes);
 app.use('/api/infrastructure', infraRoutes);
 
 // Health check
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (_req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
