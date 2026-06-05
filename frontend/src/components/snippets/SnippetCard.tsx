@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { type Snippet, SNIPPET_TYPES } from '@/types/snippet'
 import { getLanguageName }             from '@/lib/languageDetector'
+import { testRegex }                   from '@/lib/snippetUtils'
 import { useToggleSnippetFavorite, useDeleteSnippet } from '@/hooks/useSnippet'
 import Badge  from '@/components/ui/Badge'
 import CodeBlock from '@/components/ui/CodeBlock'
@@ -12,6 +13,29 @@ import ActionButtons from '@/components/shared/ActionButtons'
 import TagSection from '@/components/shared/TagSection'
 import ConfirmDeleteModal from '@/components/shared/ConfirmDeleteModal'
 import { LucideChevronDown, LucideChevronUp, LucideFolder } from '@/Icons/Icons'
+
+const FLAG_TITLES: Record<string, string> = {
+  g: 'Global', i: 'Case insensitive', m: 'Multiline', s: 'Dot matches newline',
+}
+
+function getMatchParts(text: string, pattern: string, flags: string) {
+  try {
+    const gFlags = flags.includes('g') ? flags : flags + 'g'
+    const re = new RegExp(pattern, gFlags)
+    const parts: { text: string; match: boolean }[] = []
+    let last = 0, m: RegExpExecArray | null
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) parts.push({ text: text.slice(last, m.index), match: false })
+      if (m[0].length === 0) { re.lastIndex++; continue }
+      parts.push({ text: m[0], match: true })
+      last = m.index + m[0].length
+    }
+    if (last < text.length) parts.push({ text: text.slice(last), match: false })
+    return parts
+  } catch {
+    return [{ text, match: false }]
+  }
+}
 
 const LANG_COLORS: Record<string, string> = {
   js: 'orange', jsx: 'orange', ts: 'cyan', tsx: 'cyan',
@@ -93,6 +117,49 @@ export default function SnippetCard({ snippet, onEdit }: SnippetCardProps) {
             </button>
           )}
         </div>
+
+        {/* ── Regex metadata: flags + test string with highlighted matches ── */}
+        {snippet.snippetType === 'regex' && (snippet.metadata?.flags || snippet.metadata?.testString) && (() => {
+          const flags      = snippet.metadata?.flags      ?? ''
+          const testStr    = snippet.metadata?.testString ?? ''
+          const truncated  = testStr.slice(0, 300)
+          const hasMore    = testStr.length > 300
+          const { matches } = testStr ? testRegex(snippet.content, testStr, flags) : { matches: [] }
+          const parts      = testStr ? getMatchParts(truncated, snippet.content, flags) : []
+
+          return (
+            <div className="sc-regex">
+              {flags && (
+                <div className="sc-regex-flags">
+                  <span className="sc-regex-lbl">Flags</span>
+                  {flags.split('').map(f => (
+                    <span key={f} className="sc-regex-flag" title={FLAG_TITLES[f]}>{f}</span>
+                  ))}
+                </div>
+              )}
+              {testStr && (
+                <div className="sc-regex-test">
+                  <div className="sc-regex-test-header">
+                    <span className="sc-regex-lbl">Test</span>
+                    {matches.length > 0 && (
+                      <span className="sc-regex-count">
+                        {matches.length} match{matches.length !== 1 ? 'es' : ''}
+                      </span>
+                    )}
+                  </div>
+                  <div className="sc-regex-test-str">
+                    {parts.map((p, i) =>
+                      p.match
+                        ? <mark key={i} className="sc-regex-match">{p.text}</mark>
+                        : <span key={i}>{p.text}</span>
+                    )}
+                    {hasMore && <span className="sc-regex-ellipsis">…</span>}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {/* ── Tags ── */}
         <TagSection tags={snippet.tags} />
@@ -239,6 +306,46 @@ const CSS = `
   transition:  color var(--transition-fast), background var(--transition-fast);
 }
 .sc-expand-btn:hover { color: var(--text-primary); background: var(--bg-subtle); }
+
+/* Regex display */
+.sc-regex {
+  display:        flex;
+  flex-direction: column;
+  gap:            8px;
+  padding:        10px 12px;
+  background:     var(--bg-elevated);
+  border:         1px solid var(--border-subtle);
+  border-radius:  var(--radius-md);
+}
+.sc-regex-flags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sc-regex-lbl   { font-size: var(--text-xs); font-weight: 500; color: var(--text-tertiary); min-width: 32px; }
+.sc-regex-flag  {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           20px;
+  height:          20px;
+  background:      var(--accent-subtle);
+  border:          1px solid var(--accent-border);
+  border-radius:   var(--radius-sm);
+  color:           var(--cyan-300);
+  font-size:       11px;
+  font-family:     var(--font-mono);
+  font-weight:     700;
+}
+.sc-regex-test        { display: flex; flex-direction: column; gap: 4px; }
+.sc-regex-test-header { display: flex; align-items: center; gap: 8px; }
+.sc-regex-count       { font-size: var(--text-xs); color: #86efac; font-weight: 500; }
+.sc-regex-test-str    {
+  font-size:   var(--text-xs);
+  font-family: var(--font-mono);
+  line-height: var(--leading-relaxed);
+  color:       var(--text-secondary);
+  word-break:  break-all;
+  white-space: pre-wrap;
+}
+.sc-regex-match    { background: rgba(244,114,182,.18); color: #f472b6; border-radius: 2px; padding: 0 1px; }
+.sc-regex-ellipsis { color: var(--text-tertiary); }
 
 /* Footer */
 .sc-footer {

@@ -12,7 +12,7 @@ import {
   type SnippetType,
 } from "@/types/snippet";
 import { getLanguageName, detectLanguage, detectSnippetType } from "@/lib/languageDetector";
-import { formatSQL, formatJSON } from "@/lib/snippetUtils";
+import { formatSQL, formatJSON, testRegex } from "@/lib/snippetUtils";
 import { useCreateSnippet, useUpdateSnippet } from "@/hooks/useSnippet";
 import { useCategories } from "@/hooks/useCategories";
 import FormLayout from "@/components/layout/FormLayout";
@@ -31,6 +31,7 @@ import {
   LucideDatabase,
   LucideFileCode2,
   LucideFolder,
+  LucideRegex,
   LucideServer,
   LucideSettings2,
   LucideStar,
@@ -121,6 +122,23 @@ export default function SnippetForm({
       setValue('content', formatSQL(watchedContent), { shouldDirty: true })
     }
   }
+
+  // Regex tester state (only relevant when snippetType === 'regex')
+  const watchedMeta       = (watch('metadata') ?? {}) as Record<string, unknown>
+  const watchedFlags      = (watchedMeta.flags      as string) ?? ''
+  const watchedTestString = (watchedMeta.testString as string) ?? ''
+
+  const toggleFlag = (flag: string) => {
+    const next = watchedFlags.includes(flag)
+      ? watchedFlags.replace(flag, '')
+      : watchedFlags + flag
+    setValue('metadata.flags' as any, next, { shouldDirty: true })
+  }
+
+  const regexResult =
+    watchedType === 'regex' && watchedContent.trim() && watchedTestString.trim()
+      ? testRegex(watchedContent, watchedTestString, watchedFlags)
+      : null
 
   // When type changes, reset language to first of that type
   const handleTypeChange = (type: SnippetType) => {
@@ -363,6 +381,65 @@ export default function SnippetForm({
                 </p>
               )}
             </div>
+
+            {/* Regex tester — only when type is regex */}
+            {watchedType === 'regex' && (
+              <div className="sform-regex">
+                <p className="sform-meta-title">
+                  <LucideRegex width={12} />
+                  Regex tester
+                </p>
+
+                {/* Flag toggles */}
+                <div className="sform-regex-flags">
+                  <span className="sform-regex-flags-lbl">Flags</span>
+                  {(['g', 'i', 'm', 's'] as const).map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      className={['sform-regex-flag', watchedFlags.includes(f) ? 'sform-regex-flag--on' : ''].filter(Boolean).join(' ')}
+                      onClick={() => toggleFlag(f)}
+                      title={{ g: 'Global — find all matches', i: 'Case insensitive', m: 'Multiline — ^ and $ match line start/end', s: 'Dotall — . matches newlines' }[f]}
+                    >
+                      {f}
+                    </button>
+                  ))}
+                  {watchedFlags && (
+                    <span className="sform-regex-flags-preview">/{watchedFlags}</span>
+                  )}
+                </div>
+
+                {/* Test string */}
+                <div className="sform-field">
+                  <label className="sform-label">
+                    Test string <span className="sform-optional">optional</span>
+                  </label>
+                  <textarea
+                    className="sform-regex-test"
+                    placeholder="Paste text to test your pattern against…"
+                    rows={3}
+                    spellCheck={false}
+                    {...register('metadata.testString' as any)}
+                  />
+                </div>
+
+                {/* Live result */}
+                {regexResult && (
+                  <div className={[
+                    'sform-regex-result',
+                    !regexResult.isValid          ? 'sform-regex-result--error'    :
+                    regexResult.matches.length > 0 ? 'sform-regex-result--match'    :
+                                                     'sform-regex-result--no-match',
+                  ].join(' ')}>
+                    {!regexResult.isValid
+                      ? '✕ Invalid pattern'
+                      : regexResult.matches.length === 0
+                        ? '○ No matches'
+                        : `✓ ${regexResult.matches.length} match${regexResult.matches.length !== 1 ? 'es' : ''} found`}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Description */}
             <Textarea
@@ -762,4 +839,76 @@ const CSS = `
 .sform-check-label { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-secondary); }
 
 .sform-footer-right { display: flex; align-items: center; gap: 8px; }
+
+/* ── Regex tester ────────────────────────────────────────────────── */
+.sform-regex {
+  display:        flex;
+  flex-direction: column;
+  gap:            12px;
+  padding:        14px;
+  background:     var(--bg-elevated);
+  border:         1px solid var(--border-subtle);
+  border-radius:  var(--radius-md);
+}
+
+.sform-regex-flags {
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+  flex-wrap:   wrap;
+}
+.sform-regex-flags-lbl {
+  font-size:   var(--text-xs);
+  font-weight: 500;
+  color:       var(--text-tertiary);
+  min-width:   36px;
+}
+.sform-regex-flag {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  width:           28px;
+  height:          28px;
+  background:      var(--bg-overlay);
+  border:          1px solid var(--border-default);
+  border-radius:   var(--radius-sm);
+  color:           var(--text-tertiary);
+  font-size:       var(--text-sm);
+  font-family:     var(--font-mono);
+  font-weight:     600;
+  cursor:          pointer;
+  transition:      background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+.sform-regex-flag:hover      { border-color: var(--border-strong); color: var(--text-primary); }
+.sform-regex-flag--on        { background: var(--accent-subtle); border-color: var(--accent-border); color: var(--cyan-300); }
+.sform-regex-flags-preview   { font-size: var(--text-xs); font-family: var(--font-mono); color: var(--text-tertiary); margin-left: 4px; }
+
+.sform-regex-test {
+  display:     block;
+  width:       100%;
+  padding:     10px 12px;
+  background:  var(--bg-surface);
+  border:      1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color:       var(--text-primary);
+  font-family: var(--font-mono);
+  font-size:   var(--text-xs);
+  line-height: var(--leading-relaxed);
+  resize:      vertical;
+  outline:     none;
+  transition:  border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.sform-regex-test:focus        { border-color: var(--border-focus); box-shadow: 0 0 0 3px var(--accent-muted); }
+.sform-regex-test::placeholder { color: var(--text-tertiary); font-style: italic; }
+
+.sform-regex-result {
+  padding:     7px 12px;
+  border-radius: var(--radius-sm);
+  font-size:   var(--text-xs);
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+.sform-regex-result--match    { background: rgba(134,239,172,.08); border: 1px solid rgba(134,239,172,.25); color: #86efac; }
+.sform-regex-result--no-match { background: rgba(251,191, 36,.08); border: 1px solid rgba(251,191, 36,.25); color: #fbbf24; }
+.sform-regex-result--error    { background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.25); color: #f87171; }
 `;
