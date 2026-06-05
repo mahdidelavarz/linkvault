@@ -63,8 +63,9 @@ const ALL_LANGUAGES: Record<string, string> = {
 
 export default function SnippetsPage() {
   const searchParams   = useSearchParams();
-  const [formOpen, setFormOpen] = useState(false);
+  const [formOpen, setFormOpen]           = useState(false);
   const [editingSnippet, setEditingSnippet] = useState<Snippet | null>(null);
+  const [duplicateFrom, setDuplicateFrom]   = useState<Snippet | null>(null);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [selectedType, setSelectedType] = useState("");
@@ -133,15 +134,23 @@ export default function SnippetsPage() {
 
   const openCreate = () => {
     setEditingSnippet(null);
+    setDuplicateFrom(null);
     setFormOpen(true);
   };
   const openEdit = (s: Snippet) => {
     setEditingSnippet(s);
+    setDuplicateFrom(null);
+    setFormOpen(true);
+  };
+  const openDuplicate = (s: Snippet) => {
+    setEditingSnippet(null);
+    setDuplicateFrom(s);
     setFormOpen(true);
   };
   const closeForm = () => {
     setFormOpen(false);
     setEditingSnippet(null);
+    setDuplicateFrom(null);
   };
 
 
@@ -337,7 +346,7 @@ export default function SnippetsPage() {
           <>
             <CardGrid minCardWidth={320}>
               {snippets.map((snippet) => (
-                <SnippetCard key={snippet.id} snippet={snippet} onEdit={openEdit} />
+                <SnippetCard key={snippet.id} snippet={snippet} onEdit={openEdit} onDuplicate={openDuplicate} />
               ))}
             </CardGrid>
             <div ref={sentinelRef} style={{ height: 1 }} />
@@ -361,10 +370,14 @@ export default function SnippetsPage() {
       <Modal
         isOpen={formOpen}
         onClose={closeForm}
-        title={editingSnippet ? "Edit Snippet" : "New Snippet"}
+        title={editingSnippet ? "Edit Snippet" : duplicateFrom ? "Duplicate Snippet" : "New Snippet"}
         size="xl"
       >
-        <SnippetForm snippet={editingSnippet} onClose={closeForm} />
+        <SnippetForm
+          snippet={editingSnippet}
+          initialValues={duplicateFrom ?? undefined}
+          onClose={closeForm}
+        />
       </Modal>
     </>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -62,13 +62,17 @@ type FormData = z.infer<typeof schema>;
 
 export default function SnippetForm({
   snippet,
+  initialValues,
   onClose,
 }: {
   snippet?: Snippet | null;
+  initialValues?: Snippet;
   onClose: () => void;
 }) {
   const isEditing = !!snippet;
-  const [activeTab, setActiveTab] = useState<"basic" | "meta">("basic");
+  const [activeTab, setActiveTab]   = useState<"basic" | "meta">("basic");
+  const [pasteToast, setPasteToast] = useState<string | null>(null);
+  const pasteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: categories } = useCategories();
   const createSnippet = useCreateSnippet();
@@ -162,6 +166,53 @@ export default function SnippetForm({
       });
     }
   }, [snippet, reset]);
+
+  // Pre-fill form when duplicating (create mode with copied values)
+  useEffect(() => {
+    if (!snippet && initialValues) {
+      reset({
+        title:       `Copy of ${initialValues.title}`,
+        snippetType: initialValues.snippetType ?? "code",
+        language:    initialValues.language    ?? "txt",
+        content:     initialValues.content     ?? "",
+        description: initialValues.description ?? "",
+        isFavorite:  false,
+        categoryId:  initialValues.categoryId,
+        tagIds:      initialValues.tags?.map((t: any) => t.id) ?? [],
+        metadata:    (initialValues.metadata ?? {}) as Record<string, unknown>,
+      });
+    }
+  }, [initialValues, snippet, reset]);
+
+  // Smart paste detection — auto-apply type + language on paste
+  const handleContentPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const pasted = e.clipboardData.getData("text");
+    if (!pasted.trim()) return;
+
+    const detType = detectSnippetType(pasted);
+    const detLang = detectLanguage(pasted);
+    const labels: string[] = [];
+
+    if (detType && detType !== watchedType) {
+      handleTypeChange(detType as SnippetType);
+      labels.push(SNIPPET_TYPES[detType as SnippetType]?.label ?? detType);
+    }
+
+    if (detLang) {
+      const targetLangs = TYPE_LANGUAGES[(detType ?? watchedType) as SnippetType] ?? [];
+      if (targetLangs.includes(detLang) && detLang !== watchedLang) {
+        setValue("language", detLang);
+        if (!labels.some((l) => l === getLanguageName(detLang)))
+          labels.push(getLanguageName(detLang));
+      }
+    }
+
+    if (labels.length > 0) {
+      if (pasteTimer.current) clearTimeout(pasteTimer.current);
+      setPasteToast(`Auto-detected: ${labels.join(" · ")}`);
+      pasteTimer.current = setTimeout(() => setPasteToast(null), 2500);
+    }
+  };
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -371,6 +422,7 @@ export default function SnippetForm({
                   }
                   rows={12}
                   spellCheck={false}
+                  onPaste={handleContentPaste}
                   {...register("content")}
                 />
               </div>
@@ -379,6 +431,12 @@ export default function SnippetForm({
                   <LucideCircleAlert width={12} />
                   {errors.content.message}
                 </p>
+              )}
+              {pasteToast && (
+                <div className="sform-paste-toast">
+                  <LucideZap width={12} />
+                  {pasteToast}
+                </div>
               )}
             </div>
 
@@ -710,6 +768,21 @@ const CSS = `
 .sform-optional { font-size: var(--text-xs); font-weight: 400; color: var(--text-tertiary); }
 
 /* Language detect hint */
+.sform-paste-toast {
+  display:     flex;
+  align-items: center;
+  gap:         5px;
+  font-size:   var(--text-xs);
+  color:       var(--text-accent);
+  background:  var(--accent-subtle);
+  border:      1px solid var(--accent-border);
+  border-radius: var(--radius-sm);
+  padding:     4px 10px;
+  width:       fit-content;
+  animation:   fadeIn 0.15s ease;
+}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+
 .sform-detect-hint {
   display:     flex;
   align-items: center;

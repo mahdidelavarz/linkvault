@@ -12,7 +12,7 @@ import CopyButton from '@/components/shared/CopyButton'
 import ActionButtons from '@/components/shared/ActionButtons'
 import TagSection from '@/components/shared/TagSection'
 import ConfirmDeleteModal from '@/components/shared/ConfirmDeleteModal'
-import { LucideChevronDown, LucideChevronUp, LucideFolder } from '@/Icons/Icons'
+import { LucideChevronDown, LucideChevronUp, LucideCopy, LucideFolder } from '@/Icons/Icons'
 
 const FLAG_TITLES: Record<string, string> = {
   g: 'Global', i: 'Case insensitive', m: 'Multiline', s: 'Dot matches newline',
@@ -46,11 +46,12 @@ const LANG_COLORS: Record<string, string> = {
 }
 
 interface SnippetCardProps {
-  snippet: Snippet
-  onEdit:  (s: Snippet) => void
+  snippet:      Snippet
+  onEdit:       (s: Snippet) => void
+  onDuplicate?: (s: Snippet) => void
 }
 
-export default function SnippetCard({ snippet, onEdit }: SnippetCardProps) {
+export default function SnippetCard({ snippet, onEdit, onDuplicate }: SnippetCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [expanded,      setExpanded]      = useState(false)
 
@@ -167,7 +168,21 @@ export default function SnippetCard({ snippet, onEdit }: SnippetCardProps) {
         {/* ── Footer: copy + actions ── */}
         <div className="sc-footer">
           <CopyButton text={snippet.content} label="Copy" />
-          <ActionButtons onEdit={() => onEdit(snippet)} onDelete={() => setConfirmDelete(true)} />
+          <ActionButtons
+            onEdit={() => onEdit(snippet)}
+            onDelete={() => setConfirmDelete(true)}
+            extra={onDuplicate && (
+              <button
+                className="ab-btn"
+                type="button"
+                aria-label="Duplicate"
+                title="Duplicate snippet"
+                onClick={(e) => { e.stopPropagation(); onDuplicate(snippet); }}
+              >
+                <LucideCopy width={14} />
+              </button>
+            )}
+          />
           <span className="sc-date">
             {new Date(snippet.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
