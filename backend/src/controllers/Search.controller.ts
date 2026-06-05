@@ -21,17 +21,12 @@ export class SearchController {
             options.tagIds = (tagIds as string).split(',').map(Number).filter((id: number) => !isNaN(id));
         }
 
-        const results = await searchService.globalSearch(req.userId!, options);
-        const totalResults =
-            results.links.length +
-            results.notes.length +
-            results.snippets.length +
-            results.prompts.length +
-            results.infrastructures.length;
+        const { totals, ...groups } = await searchService.globalSearch(req.userId!, options);
 
         res.json({
-            results,
-            totalResults,
+            results: groups,
+            totals,
+            totalResults: totals.links + totals.notes + totals.snippets + totals.prompts + totals.infrastructures,
             query: q || '',
             filters: {
                 categoryId: options.categoryId,

@@ -6,14 +6,25 @@ import { useSearchParams, useRouter } from "next/navigation";
 import SearchResultCard from "@/components/search/SearchResultCard";
 import SearchFilters from "@/components/search/SearchFilters";
 import SearchEmptyState from "@/components/search/SearchEmptyState";
+import type { SearchResult } from "@/types/search";
 import {
   LucideSearch,
   LucideX,
   LucideCommand,
+  LucideLink2,
+  LucideNotebookPen,
+  LucideCodeXml,
+  LucideMessageSquare,
+  LucideServer,
   SvgSpinnersRingResize,
 } from "@/Icons/Icons";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
+
+const INITIAL_SHOWN = 20;
+const LOAD_MORE_STEP = 20;
+
+const ZERO_SHOWN = { links: INITIAL_SHOWN, notes: INITIAL_SHOWN, snippets: INITIAL_SHOWN, prompts: INITIAL_SHOWN, infrastructures: INITIAL_SHOWN };
 
 export default function SearchPage() {
   const router = useRouter();
@@ -23,6 +34,7 @@ export default function SearchPage() {
   const [type, setType] = useState<string>("all");
   const [categoryId, setCategoryId] = useState<number | undefined>();
   const [tagIds, setTagIds] = useState<number[]>([]);
+  const [shownCounts, setShownCounts] = useState(ZERO_SHOWN);
 
   const { data: results, isLoading } = useGlobalSearch({
     query,
@@ -31,39 +43,40 @@ export default function SearchPage() {
     tagIds,
   });
 
-  // Update URL with search params
+  // Reset visible counts whenever the search changes
+  useEffect(() => { setShownCounts(ZERO_SHOWN); }, [query, type, categoryId]);
+
+  // Sync URL
   useEffect(() => {
     const params = new URLSearchParams();
     if (query) params.set("q", query);
     if (type !== "all") params.set("type", type);
     if (categoryId) params.set("categoryId", categoryId.toString());
     if (tagIds.length > 0) params.set("tagIds", tagIds.join(","));
-
-    const newUrl = `/search${params.toString() ? "?" + params.toString() : ""}`;
-    router.replace(newUrl);
+    router.replace(`/search${params.toString() ? "?" + params.toString() : ""}`);
   }, [query, type, categoryId, tagIds, router]);
 
-  // Keyboard shortcut: Ctrl+K / Cmd+K to focus search
+  // Ctrl+K / Cmd+K
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
         e.preventDefault();
         document.getElementById("search-input")?.focus();
       }
     };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, []);
 
   const clearFilters = useCallback(() => {
-    setQuery("");
-    setType("all");
-    setCategoryId(undefined);
-    setTagIds([]);
+    setQuery(""); setType("all"); setCategoryId(undefined); setTagIds([]);
   }, []);
 
-  const hasQuery = query.length > 0;
+  const loadMore = useCallback((key: keyof typeof ZERO_SHOWN) => {
+    setShownCounts(s => ({ ...s, [key]: s[key] + LOAD_MORE_STEP }));
+  }, []);
+
+  const hasQuery   = query.length > 0;
   const hasResults = results && results.totalResults > 0;
 
   return (
@@ -93,15 +106,11 @@ export default function SearchPage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search links, notes, snippets & prompts…"
+            placeholder="Search links, notes, snippets, prompts & infrastructure…"
             autoFocus
           />
           {query ? (
-            <button
-              className="search-input-clear"
-              onClick={() => setQuery("")}
-              aria-label="Clear search"
-            >
+            <button className="search-input-clear" onClick={() => setQuery("")} aria-label="Clear search">
               <LucideX width={16} />
             </button>
           ) : (
@@ -113,7 +122,6 @@ export default function SearchPage() {
 
         {/* ── Content ── */}
         <div className="search-body">
-          {/* Filters Sidebar */}
           <aside className="search-filters">
             <SearchFilters
               type={type}
@@ -126,7 +134,6 @@ export default function SearchPage() {
             />
           </aside>
 
-          {/* Results Area */}
           <div className="search-results">
             {isLoading ? (
               <div className="search-loading">
@@ -136,80 +143,41 @@ export default function SearchPage() {
             ) : !hasResults ? (
               <SearchEmptyState
                 hasQuery={hasQuery}
-                hasFilters={
-                  type !== "all" ||
-                  categoryId !== undefined ||
-                  tagIds.length > 0
-                }
+                hasFilters={type !== "all" || categoryId !== undefined || tagIds.length > 0}
               />
             ) : (
               results && (
                 <>
-                  {/* Links */}
-                  {results.results.links.length > 0 && (
-                    <div className="search-section">
-                      <h3 className="search-section-title">
-                        <LucideSearch width={16} />
-                        Links
-                        <span className="search-section-count">
-                          {results.results.links.length}
-                        </span>
-                      </h3>
-                      <div className="search-cards">
-                        {results.results.links.map((link) => (
-                          <SearchResultCard
-                            key={link.id}
-                            result={link}
-                            searchTerm={query}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Notes */}
-                  {results.results.notes.length > 0 && (
-                    <div className="search-section">
-                      <h3 className="search-section-title">
-                        <LucideSearch width={16} />
-                        Notes
-                        <span className="search-section-count">
-                          {results.results.notes.length}
-                        </span>
-                      </h3>
-                      <div className="search-cards">
-                        {results.results.notes.map((note) => (
-                          <SearchResultCard
-                            key={note.id}
-                            result={note}
-                            searchTerm={query}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Snippets */}
-                  {results.results.snippets.length > 0 && (
-                    <div className="search-section">
-                      <h3 className="search-section-title">
-                        <LucideSearch width={16} />
-                        Snippets
-                        <span className="search-section-count">
-                          {results.results.snippets.length}
-                        </span>
-                      </h3>
-                      <div className="search-cards">
-                        {results.results.snippets.map((snippet) => (
-                          <SearchResultCard
-                            key={snippet.id}
-                            result={snippet}
-                            searchTerm={query}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <ResultSection
+                    label="Links"      icon={LucideLink2}
+                    items={results.results.links}          total={results.totals.links}
+                    shown={shownCounts.links}              onLoadMore={() => loadMore("links")}
+                    searchTerm={query}
+                  />
+                  <ResultSection
+                    label="Notes"     icon={LucideNotebookPen}
+                    items={results.results.notes}          total={results.totals.notes}
+                    shown={shownCounts.notes}              onLoadMore={() => loadMore("notes")}
+                    searchTerm={query}
+                  />
+                  <ResultSection
+                    label="Snippets"  icon={LucideCodeXml}
+                    items={results.results.snippets}       total={results.totals.snippets}
+                    shown={shownCounts.snippets}           onLoadMore={() => loadMore("snippets")}
+                    searchTerm={query}
+                  />
+                  <ResultSection
+                    label="Prompts"   icon={LucideMessageSquare}
+                    items={results.results.prompts}        total={results.totals.prompts}
+                    shown={shownCounts.prompts}            onLoadMore={() => loadMore("prompts")}
+                    searchTerm={query}
+                  />
+                  <ResultSection
+                    label="Infrastructure" icon={LucideServer}
+                    items={results.results.infrastructures} total={results.totals.infrastructures}
+                    shown={shownCounts.infrastructures}    onLoadMore={() => loadMore("infrastructures")}
+                    searchTerm={query}
+                  />
                 </>
               )
             )}
@@ -217,6 +185,51 @@ export default function SearchPage() {
         </div>
       </div>
     </>
+  );
+}
+
+// ─── Result Section ───────────────────────────────────────────────────────────
+
+interface ResultSectionProps {
+  label: string;
+  icon: React.ComponentType<{ width?: number; className?: string }>;
+  items: SearchResult[];
+  total: number;
+  shown: number;
+  onLoadMore: () => void;
+  searchTerm: string;
+}
+
+function ResultSection({ label, icon: Icon, items, total, shown, onLoadMore, searchTerm }: ResultSectionProps) {
+  if (items.length === 0) return null;
+
+  const visibleItems = items.slice(0, shown);
+  const hasMore = shown < items.length;
+
+  return (
+    <div className="search-section">
+      <h3 className="search-section-title">
+        <Icon width={16} />
+        {label}
+        <span className="search-section-count">
+          {shown < items.length
+            ? `${shown} of ${total}`
+            : total > items.length
+              ? `${items.length} of ${total}`
+              : items.length}
+        </span>
+      </h3>
+      <div className="search-cards">
+        {visibleItems.map((item) => (
+          <SearchResultCard key={item.id} result={item} searchTerm={searchTerm} />
+        ))}
+      </div>
+      {hasMore && (
+        <button className="search-load-more" onClick={onLoadMore}>
+          Load {Math.min(LOAD_MORE_STEP, items.length - shown)} more
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -234,7 +247,6 @@ const CSS = `
 .page-header      { flex-shrink: 0; }
 .search-input-wrap { flex-shrink: 0; }
 
-/* Header */
 .page-header {
   display:         flex;
   align-items:     center;
@@ -254,7 +266,6 @@ const CSS = `
   margin-top: 2px;
 }
 
-/* Search Input */
 .search-input-wrap {
   position:    relative;
   display:     flex;
@@ -322,7 +333,6 @@ const CSS = `
   .search-input { padding-right: 16px; font-size: var(--text-base); height: 46px; }
 }
 
-/* Body — fills remaining space, clips overflow so only the inner panels scroll */
 .search-body {
   display:    flex;
   gap:        20px;
@@ -335,7 +345,6 @@ const CSS = `
   .search-body { flex-direction: column; overflow-y: auto; }
 }
 
-/* Filters — sticky on desktop, full-width on mobile */
 .search-filters {
   width:      240px;
   flex-shrink: 0;
@@ -346,7 +355,6 @@ const CSS = `
   .search-filters { width: 100%; height: auto; overflow: visible; }
 }
 
-/* Results — only this panel scrolls on desktop */
 .search-results {
   flex:       1;
   min-width:  0;
@@ -357,7 +365,6 @@ const CSS = `
   .search-results { height: auto; overflow: visible; }
 }
 
-/* Loading */
 .search-loading {
   display:         flex;
   flex-direction:  column;
@@ -377,11 +384,8 @@ const CSS = `
   font-size: var(--text-sm);
   color:     var(--text-tertiary);
 }
-@keyframes search-spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes search-spin { to { transform: rotate(360deg); } }
 
-/* Section */
 .search-section {
   margin-bottom: 28px;
 }
@@ -407,10 +411,30 @@ const CSS = `
   margin-left: auto;
 }
 
-/* Cards */
 .search-cards {
   display:        flex;
   flex-direction: column;
   gap:            8px;
+}
+
+/* P3-12: Load More button */
+.search-load-more {
+  display:       block;
+  width:         100%;
+  margin-top:    10px;
+  padding:       9px 0;
+  background:    var(--bg-overlay);
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-size:     var(--text-sm);
+  color:         var(--text-secondary);
+  cursor:        pointer;
+  transition:    background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+  text-align:    center;
+}
+.search-load-more:hover {
+  background:    var(--bg-subtle);
+  border-color:  var(--border-strong);
+  color:         var(--text-primary);
 }
 `;

@@ -11,6 +11,8 @@ import {
   LucideNotebookPen,
   LucideCodeXml,
   LucideLayers,
+  LucideMessageSquare,
+  LucideServer,
 } from "@/Icons/Icons";
 
 interface SearchFiltersProps {
@@ -24,10 +26,12 @@ interface SearchFiltersProps {
 }
 
 const typeOptions = [
-  { value: "all", label: "All", icon: LucideLayers },
-  { value: "link", label: "Links", icon: LucideLink2 },
-  { value: "note", label: "Notes", icon: LucideNotebookPen },
-  { value: "snippet", label: "Snippets", icon: LucideCodeXml },
+  { value: "all",            label: "All",            icon: LucideLayers },
+  { value: "link",           label: "Links",          icon: LucideLink2 },
+  { value: "note",           label: "Notes",          icon: LucideNotebookPen },
+  { value: "snippet",        label: "Snippets",       icon: LucideCodeXml },
+  { value: "prompt",         label: "Prompts",        icon: LucideMessageSquare },
+  { value: "infrastructure", label: "Infrastructure", icon: LucideServer },
 ];
 
 export default function SearchFilters({
