@@ -47,7 +47,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://192.168.1.100:5000/api
+      # Next.js server-side rewrite target — use the docker service name, not localhost
+      BACKEND_INTERNAL_URL: http://backend:5000
+      NODE_ENV: development
     volumes:
       - ./frontend:/app
       - /app/node_modules
