@@ -5,6 +5,7 @@ import { type Snippet, SNIPPET_TYPES } from '@/types/snippet'
 import { getLanguageName }             from '@/lib/languageDetector'
 import { useToggleSnippetFavorite, useDeleteSnippet } from '@/hooks/useSnippet'
 import Badge  from '@/components/ui/Badge'
+import CodeBlock from '@/components/ui/CodeBlock'
 import FavoriteButton from '@/components/shared/FavoriteButton'
 import CopyButton from '@/components/shared/CopyButton'
 import ActionButtons from '@/components/shared/ActionButtons'
@@ -36,8 +37,7 @@ export default function SnippetCard({ snippet, onEdit }: SnippetCardProps) {
   const langName   = getLanguageName(snippet.language)
   const langColor  = (LANG_COLORS[snippet.language] ?? 'default') as any
 
-  // Preview: first 6 lines of code
-  const lines        = snippet.content.split('\n')
+    const lines        = snippet.content.split('\n')
   const previewLines = lines.slice(0, 6)
   const hasMore      = lines.length > 6
 
@@ -80,9 +80,11 @@ export default function SnippetCard({ snippet, onEdit }: SnippetCardProps) {
           {/* Language label in corner */}
           <span className="sc-code-lang">{snippet.language}</span>
 
-          <pre className={['sc-code', expanded ? 'sc-code--expanded' : ''].filter(Boolean).join(' ')}>
-            <code>{expanded ? snippet.content : previewLines.join('\n')}</code>
-          </pre>
+          <CodeBlock
+            code={expanded ? snippet.content : previewLines.join('\n')}
+            language={snippet.language}
+            className={['sc-code', expanded ? 'sc-code--expanded' : ''].filter(Boolean).join(' ')}
+          />
 
           {hasMore && (
             <button className="sc-expand-btn" onClick={() => setExpanded((p) => !p)}>
@@ -205,18 +207,17 @@ const CSS = `
   pointer-events: none;
 }
 .sc-code {
-  display:    block;
-  padding:    12px 14px;
-  margin:     0;
+  display:     block;
+  margin:      0;
   font-family: var(--font-mono);
   font-size:   var(--text-xs);
   line-height: var(--leading-relaxed);
-  color:       var(--cyan-200);
   overflow-x:  auto;
   white-space: pre;
   max-height:  140px;
   overflow-y:  hidden;
   transition:  max-height var(--transition-slow);
+  background:  transparent !important;
 }
 .sc-code--expanded { max-height: 400px; overflow-y: auto; }
 .sc-code::-webkit-scrollbar { height: 4px; width: 4px; }
