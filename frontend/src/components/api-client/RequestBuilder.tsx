@@ -462,7 +462,13 @@ const CSS = `
 }
 .rb-send-btn:hover:not(:disabled) { background: var(--accent-hover); box-shadow: var(--shadow-glow); }
 .rb-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-@media (max-width: 479px) { .rb-send-label { display: none; } }
+@media (max-width: 479px) {
+  .rb-send-label { display: none; }
+  .rb-url-bar    { flex-wrap: wrap; padding: 10px 12px; gap: 6px; }
+  .rb-url        { order: -1; width: 100%; flex: none; }
+  .rb-method-wrap { flex: 1; }
+  .rb-send-btn   { flex: 1; justify-content: center; }
+}
 
 /* Resolved URL preview */
 .rb-resolved {

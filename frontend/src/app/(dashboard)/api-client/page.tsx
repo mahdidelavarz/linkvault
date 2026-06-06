@@ -70,6 +70,9 @@ export default function ApiClientPage() {
   // Draft restore notice (P3-14)
   const [draftRestored, setDraftRestored] = useState(false)
 
+  // Mobile tab switcher (Option B)
+  const [mobileTab, setMobileTab] = useState<'request' | 'response'>('request')
+
   // P3-17: resizable splitter
   const [splitPx,  setSplitPx]  = useState(400)
   const rightRef   = useRef<HTMLDivElement>(null)
@@ -132,6 +135,13 @@ export default function ApiClientPage() {
   useEffect(() => {
     localStorage.setItem(DRAFT_KEY, JSON.stringify({ method, url, headers, body, bodyType, queryParams }))
   }, [method, url, headers, body, bodyType, queryParams])
+
+  // Auto-switch to response tab on mobile when response arrives
+  useEffect(() => {
+    if (response && typeof window !== 'undefined' && window.innerWidth < 768) {
+      setMobileTab('response')
+    }
+  }, [response])
 
   // ─── P3-15: URL ↔ params bidirectional sync ──────────────────────────────────
 
@@ -268,13 +278,14 @@ export default function ApiClientPage() {
     setBodyType((ep.bodyType as any) ?? 'json')
     setQueryParams((ep.queryParams ?? []).map((p) => ({ ...p, id: (p as any).id ?? crypto.randomUUID() })))
     setDraftRestored(false)
+    setMobileTab('request')
     setResponse(null)
   }
 
   const handleNewRequest = () => {
     setSelectedEndpoint(null)
     setMethod('GET'); setUrl(''); setHeaders(''); setBody(''); setBodyType('json')
-    setQueryParams([]); setDraftRestored(false); setResponse(null)
+    setQueryParams([]); setDraftRestored(false); setMobileTab('request'); setResponse(null)
   }
 
   const handleDelete = async () => {
@@ -286,6 +297,13 @@ export default function ApiClientPage() {
   }
 
   const requestTitle = selectedEndpoint ? selectedEndpoint.title : 'New Request'
+
+  const pillColor = (status: number) => {
+    if (status === 0 || status >= 500) return 'var(--danger)'
+    if (status < 300) return 'var(--success)'
+    if (status < 400) return 'var(--warning)'
+    return 'var(--danger)'
+  }
 
   return (
     <>
@@ -320,7 +338,7 @@ export default function ApiClientPage() {
           />
 
           {/* ── Right pane ── */}
-          <div className="acp-right" ref={rightRef}>
+          <div className="acp-right" ref={rightRef} data-mobile-tab={mobileTab}>
             {draftRestored && (
               <div className="acp-draft-notice">
                 <Icon icon="lucide:clock-3" width={13} />
@@ -330,6 +348,29 @@ export default function ApiClientPage() {
                 </button>
               </div>
             )}
+
+            {/* ── Mobile tab bar (hidden on desktop) ── */}
+            <div className="acp-mobile-tabs">
+              <button
+                className={['acp-mobile-tab', mobileTab === 'request' ? 'acp-mobile-tab--active' : ''].filter(Boolean).join(' ')}
+                onClick={() => setMobileTab('request')}
+              >
+                <Icon icon="lucide:send" width={14} />
+                Request
+              </button>
+              <button
+                className={['acp-mobile-tab', mobileTab === 'response' ? 'acp-mobile-tab--active' : ''].filter(Boolean).join(' ')}
+                onClick={() => setMobileTab('response')}
+              >
+                <Icon icon="lucide:inbox" width={14} />
+                Response
+                {response && (
+                  <span className="acp-mobile-tab-badge" style={{ color: pillColor(response.status) }}>
+                    {response.status}
+                  </span>
+                )}
+              </button>
+            </div>
 
             {/* Request section — fixed height, draggable */}
             <div className="acp-request-wrap" style={{ height: splitPx }}>
@@ -575,12 +616,50 @@ const CSS = `
 .acp-response-wrap > * { flex: 1; min-height: 0; }
 
 @media (max-width: 767px) {
-  .acp-layout        { flex-direction: column; overflow-y: auto; }
-  .acp-right         { overflow: unset; height: auto; }
-  .acp-request-wrap  { height: auto !important; }
-  .acp-splitter      { display: none; }
-  .acp-response-wrap { flex: unset; min-height: 300px; }
-  .acp               { height: auto; }
+  .acp         { height: auto; }
+  .acp-layout  { flex-direction: column; overflow: visible; height: auto; }
+  .acp-right   { overflow: visible; height: auto; }
+  .acp-splitter { display: none; }
+  /* Request tab */
+  .acp-right[data-mobile-tab="request"] .acp-request-wrap  { height: auto !important; overflow: visible; }
+  .acp-right[data-mobile-tab="request"] .acp-response-wrap { display: none; }
+  /* Response tab */
+  .acp-right[data-mobile-tab="response"] .acp-request-wrap { display: none; }
+  .acp-right[data-mobile-tab="response"] .acp-response-wrap {
+    display: flex; flex: unset; min-height: 60dvh; overflow: visible;
+  }
+}
+
+/* ── Mobile tab bar ── */
+.acp-mobile-tabs { display: none; }
+@media (max-width: 767px) {
+  .acp-mobile-tabs {
+    display:       flex;
+    flex-shrink:   0;
+    background:    var(--bg-surface);
+    border:        1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    overflow:      hidden;
+    margin-bottom: 8px;
+  }
+}
+.acp-mobile-tab {
+  flex:            1;
+  display:         flex; align-items: center; justify-content: center;
+  gap:             6px;
+  height:          44px;
+  background:      transparent; border: none;
+  color:           var(--text-tertiary);
+  font-size:       var(--text-sm); font-family: var(--font-sans); font-weight: 500;
+  cursor:          pointer;
+  transition:      background var(--transition-fast), color var(--transition-fast);
+}
+.acp-mobile-tab:hover     { background: var(--bg-overlay); color: var(--text-primary); }
+.acp-mobile-tab--active   { background: var(--bg-overlay); color: var(--text-primary); }
+.acp-mobile-tab-badge {
+  font-size:     var(--text-xs); font-weight: 700; font-family: var(--font-mono);
+  padding:       1px 7px; border-radius: 99px;
+  background:    var(--bg-elevated); border: 1px solid var(--border-default);
 }
 
 /* Save form */
