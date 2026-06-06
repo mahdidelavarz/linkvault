@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Icon } from '@iconify/react'
+import JsonTree from './JsonTree'
 
 interface ApiResponse {
   status:     number
@@ -39,10 +40,19 @@ function formatSize(bytes: number): string {
   return `${(bytes / 1024).toFixed(1)} KB`
 }
 
+function tryParseJson(body: any): { ok: true; data: any } | { ok: false } {
+  if (body !== null && typeof body === 'object') return { ok: true, data: body }
+  if (typeof body === 'string') {
+    try { return { ok: true, data: JSON.parse(body) } } catch {}
+  }
+  return { ok: false }
+}
+
 export default function ResponseViewer({ response, isLoading }: ResponseViewerProps) {
   const [tab,      setTab]      = useState<Tab>('body')
   const [copied,   setCopied]   = useState(false)
   const [wordWrap, setWordWrap] = useState(true)
+  const [viewMode, setViewMode] = useState<'tree' | 'raw'>('tree')
 
   const handleCopyBody = async () => {
     if (!response) return
@@ -79,6 +89,8 @@ export default function ResponseViewer({ response, isLoading }: ResponseViewerPr
   const formattedBody = formatBody(response.body)
   const statusColor   = getStatusColor(response.status)
   const headerCount   = Object.keys(response.headers ?? {}).length
+  const parsed        = tryParseJson(response.body)
+  const isJson        = parsed.ok
 
   return (
     <>
@@ -98,13 +110,35 @@ export default function ResponseViewer({ response, isLoading }: ResponseViewerPr
           </div>
 
           <div className="rv-status-right">
-            <button
-              className={['rv-tool-btn', wordWrap ? 'rv-tool-btn--active' : ''].filter(Boolean).join(' ')}
-              onClick={() => setWordWrap((p) => !p)}
-              title="Toggle word wrap"
-            >
-              <Icon icon="lucide:wrap-text" width={13} />
-            </button>
+            {isJson && tab === 'body' && (
+              <div className="rv-view-toggle">
+                <button
+                  className={['rv-view-btn', viewMode === 'tree' ? 'rv-view-btn--active' : ''].filter(Boolean).join(' ')}
+                  onClick={() => setViewMode('tree')}
+                  title="Tree view"
+                >
+                  <Icon icon="lucide:git-branch" width={13} />
+                  Tree
+                </button>
+                <button
+                  className={['rv-view-btn', viewMode === 'raw' ? 'rv-view-btn--active' : ''].filter(Boolean).join(' ')}
+                  onClick={() => setViewMode('raw')}
+                  title="Raw view"
+                >
+                  <Icon icon="lucide:code" width={13} />
+                  Raw
+                </button>
+              </div>
+            )}
+            {(!isJson || viewMode === 'raw') && tab === 'body' && (
+              <button
+                className={['rv-tool-btn', wordWrap ? 'rv-tool-btn--active' : ''].filter(Boolean).join(' ')}
+                onClick={() => setWordWrap((p) => !p)}
+                title="Toggle word wrap"
+              >
+                <Icon icon="lucide:wrap-text" width={13} />
+              </button>
+            )}
             <button
               className={['rv-copy-btn', copied ? 'rv-copy-btn--copied' : ''].filter(Boolean).join(' ')}
               onClick={handleCopyBody}
@@ -132,8 +166,15 @@ export default function ResponseViewer({ response, isLoading }: ResponseViewerPr
           </button>
         </div>
 
-        {/* ── Body ── */}
-        {tab === 'body' && (
+        {/* ── Body: tree ── */}
+        {tab === 'body' && isJson && viewMode === 'tree' && (
+          <div className="rv-body-wrap">
+            <JsonTree data={parsed.data} />
+          </div>
+        )}
+
+        {/* ── Body: raw ── */}
+        {tab === 'body' && (!isJson || viewMode === 'raw') && (
           <div className="rv-body-wrap">
             <pre className={['rv-body', wordWrap ? 'rv-body--wrap' : ''].filter(Boolean).join(' ')}>
               <code>{formattedBody}</code>
@@ -170,7 +211,8 @@ const CSS = `
   border:         1px solid var(--border-default);
   border-radius:  var(--radius-lg);
   overflow:       hidden;
-  min-height:     200px;
+  height:         100%;
+  min-height:     160px;
 }
 
 /* Loading / Empty */
@@ -217,6 +259,24 @@ const CSS = `
   font-size:   var(--text-xs); color: var(--text-tertiary); font-family: var(--font-mono);
 }
 .rv-status-right { display: flex; align-items: center; gap: 6px; }
+
+.rv-view-toggle {
+  display:       flex;
+  background:    var(--bg-elevated);
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  overflow:      hidden;
+}
+.rv-view-btn {
+  display:     flex; align-items: center; gap: 4px;
+  height:      28px; padding: 0 9px;
+  background:  transparent; border: none;
+  color:       var(--text-tertiary); font-size: var(--text-xs); font-family: var(--font-sans); font-weight: 500;
+  cursor:      pointer; min-height: 40px;
+  transition:  background var(--transition-fast), color var(--transition-fast);
+}
+.rv-view-btn:hover      { background: var(--bg-overlay); color: var(--text-primary); }
+.rv-view-btn--active    { background: var(--accent-muted); color: var(--cyan-300); }
 
 .rv-tool-btn {
   display:         flex; align-items: center; justify-content: center;

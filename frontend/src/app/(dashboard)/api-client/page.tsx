@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -11,7 +11,7 @@ import {
   useTestEndpoint, useEnvironments,
 } from '@/hooks/useApiClient'
 import { useCategories } from '@/hooks/useCategories'
-import { type ApiEndpoint, type HttpMethod } from '@/types/api'
+import { type ApiEndpoint, type HttpMethod, type KeyValue } from '@/types/api'
 import CollectionSidebar  from '@/components/api-client/CollectionSidebar'
 import RequestBuilder     from '@/components/api-client/RequestBuilder'
 import ResponseViewer     from '@/components/api-client/ResponseViewer'
@@ -60,9 +60,36 @@ export default function ApiClientPage() {
   // Confirm delete
   const [confirmDel, setConfirmDel] = useState(false)
 
+  // Query params (P3-15)
+  const [queryParams,   setQueryParams]   = useState<KeyValue[]>([])
+
   // Environment
   const [activeEnvId,   setActiveEnvId]   = useState<number | null>(null)
   const [envModalOpen,  setEnvModalOpen]  = useState(false)
+
+  // Draft restore notice (P3-14)
+  const [draftRestored, setDraftRestored] = useState(false)
+
+  // P3-17: resizable splitter
+  const [splitPx,  setSplitPx]  = useState(400)
+  const rightRef   = useRef<HTMLDivElement>(null)
+
+  const handleSplitterDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    const startY = e.clientY
+    const startH = splitPx
+    const onMove = (ev: MouseEvent) => {
+      const rightH = rightRef.current?.clientHeight ?? 0
+      const delta  = ev.clientY - startY
+      setSplitPx(Math.max(200, Math.min(rightH - 160, startH + delta)))
+    }
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup',   onUp)
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup',   onUp)
+  }, [splitPx])
 
   const { data: environments }          = useEnvironments()
   const { data: collections }           = useCollections()
@@ -72,6 +99,75 @@ export default function ApiClientPage() {
   const updateEndpoint                 = useUpdateEndpoint()
   const deleteEndpoint                 = useDeleteEndpoint()
   const testEndpoint                   = useTestEndpoint()
+
+  // ─── P3-14: localStorage draft ──────────────────────────────────────────────
+  const DRAFT_KEY = 'linkvault:api-draft'
+
+  // Restore draft on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY)
+      if (!raw) return
+      const d = JSON.parse(raw)
+      if (!d.url) return
+      setMethod(d.method ?? 'GET')
+      setUrl(d.url)
+      setHeaders(d.headers ?? '')
+      setBody(d.body ?? '')
+      setBodyType(d.bodyType ?? 'json')
+      setQueryParams((d.queryParams ?? []).map((p: any) => ({ ...p, id: p.id ?? crypto.randomUUID() })))
+      setDraftRestored(true)
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Auto-dismiss draft notice after 4 s
+  useEffect(() => {
+    if (!draftRestored) return
+    const t = setTimeout(() => setDraftRestored(false), 4000)
+    return () => clearTimeout(t)
+  }, [draftRestored])
+
+  // Persist draft on every change
+  useEffect(() => {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ method, url, headers, body, bodyType, queryParams }))
+  }, [method, url, headers, body, bodyType, queryParams])
+
+  // ─── P3-15: URL ↔ params bidirectional sync ──────────────────────────────────
+
+  // Parse query string from a raw URL string into KeyValue rows
+  const parseUrlParams = (rawUrl: string, existing: KeyValue[] = []): KeyValue[] => {
+    const idx = rawUrl.indexOf('?')
+    if (idx === -1) return []
+    return rawUrl.slice(idx + 1).split('&').filter(Boolean).map((pair) => {
+      const eqIdx = pair.indexOf('=')
+      const key   = decodeURIComponent(eqIdx === -1 ? pair : pair.slice(0, eqIdx))
+      const value = eqIdx === -1 ? '' : decodeURIComponent(pair.slice(eqIdx + 1))
+      const found = existing.find((p) => p.key === key)
+      return { id: found?.id ?? crypto.randomUUID(), key, value, enabled: found?.enabled ?? true }
+    })
+  }
+
+  // Rebuild the URL from a base URL + enabled params
+  const buildUrl = (base: string, params: KeyValue[]): string => {
+    const enabled = params.filter((p) => p.key.trim() && p.enabled)
+    if (!enabled.length) return base
+    const qs = enabled.map((p) => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`).join('&')
+    return `${base}?${qs}`
+  }
+
+  // URL bar changed by user → re-parse params from it
+  const handleUrlChange = (newUrl: string) => {
+    setUrl(newUrl)
+    setQueryParams(parseUrlParams(newUrl, queryParams))
+  }
+
+  // Params table changed → rebuild URL
+  const handleParamsChange = (newParams: KeyValue[]) => {
+    setQueryParams(newParams)
+    const base = url.includes('?') ? url.slice(0, url.indexOf('?')) : url
+    setUrl(buildUrl(base, newParams))
+  }
 
   // ─── Save form ──────────────────────────────────────────────────────────────
   const { register, handleSubmit, control, reset, formState: { errors } } =
@@ -110,7 +206,7 @@ export default function ApiClientPage() {
       ...data,
       url, method,
       headers:     parsedHeaders,
-      queryParams: [],
+      queryParams: queryParams.filter((p) => p.key.trim()),
       body:        body || undefined,
       bodyType:    bodyType as any,
       authType:    'none' as const,
@@ -165,17 +261,20 @@ export default function ApiClientPage() {
   // ─── Select endpoint ─────────────────────────────────────────────────────────
   const handleSelectEndpoint = (ep: ApiEndpoint) => {
     setSelectedEndpoint(ep)
-    setMethod(ep.method)
+    setMethod(ep.method as HttpMethod)
     setUrl(ep.url)
     setHeaders(ep.headers?.filter((h) => h.enabled !== false).map((h) => `${h.key}: ${h.value}`).join('\n') ?? '')
     setBody(ep.body ?? '')
     setBodyType((ep.bodyType as any) ?? 'json')
+    setQueryParams((ep.queryParams ?? []).map((p) => ({ ...p, id: (p as any).id ?? crypto.randomUUID() })))
+    setDraftRestored(false)
     setResponse(null)
   }
 
   const handleNewRequest = () => {
     setSelectedEndpoint(null)
-    setMethod('GET'); setUrl(''); setHeaders(''); setBody(''); setBodyType('json'); setResponse(null)
+    setMethod('GET'); setUrl(''); setHeaders(''); setBody(''); setBodyType('json')
+    setQueryParams([]); setDraftRestored(false); setResponse(null)
   }
 
   const handleDelete = async () => {
@@ -221,26 +320,49 @@ export default function ApiClientPage() {
           />
 
           {/* ── Right pane ── */}
-          <div className="acp-right">
-            <RequestBuilder
-              method={method}       url={url}
-              headers={headers}     body={body}
-              bodyType={bodyType}   isSaved={!!selectedEndpoint}
-              isSending={testEndpoint.isPending}
-              title={requestTitle}
-              environments={environments ?? []}
-              activeEnvId={activeEnvId}
-              onMethodChange={setMethod}       onUrlChange={setUrl}
-              onHeadersChange={setHeaders}     onBodyChange={setBody}
-              onBodyTypeChange={setBodyType}
-              onSend={handleSend}
-              onSave={openSave}
-              onDelete={() => setConfirmDel(true)}
-              onEnvChange={setActiveEnvId}
-              onManageEnvs={() => setEnvModalOpen(true)}
-            />
+          <div className="acp-right" ref={rightRef}>
+            {draftRestored && (
+              <div className="acp-draft-notice">
+                <Icon icon="lucide:clock-3" width={13} />
+                Draft restored from your last session
+                <button className="acp-draft-dismiss" onClick={() => setDraftRestored(false)}>
+                  <Icon icon="lucide:x" width={12} />
+                </button>
+              </div>
+            )}
 
-            <ResponseViewer response={response} isLoading={testEndpoint.isPending} />
+            {/* Request section — fixed height, draggable */}
+            <div className="acp-request-wrap" style={{ height: splitPx }}>
+              <RequestBuilder
+                method={method}       url={url}
+                headers={headers}     body={body}
+                bodyType={bodyType}   isSaved={!!selectedEndpoint}
+                isSending={testEndpoint.isPending}
+                title={requestTitle}
+                environments={environments ?? []}
+                activeEnvId={activeEnvId}
+                queryParams={queryParams}
+                onMethodChange={setMethod}       onUrlChange={handleUrlChange}
+                onHeadersChange={setHeaders}     onBodyChange={setBody}
+                onBodyTypeChange={setBodyType}
+                onQueryParamsChange={handleParamsChange}
+                onSend={handleSend}
+                onSave={openSave}
+                onDelete={() => setConfirmDel(true)}
+                onEnvChange={setActiveEnvId}
+                onManageEnvs={() => setEnvModalOpen(true)}
+              />
+            </div>
+
+            {/* Drag handle */}
+            <div className="acp-splitter" onMouseDown={handleSplitterDown}>
+              <div className="acp-splitter-dots" />
+            </div>
+
+            {/* Response section — fills remaining height */}
+            <div className="acp-response-wrap">
+              <ResponseViewer response={response} isLoading={testEndpoint.isPending} />
+            </div>
           </div>
         </div>
       </div>
@@ -404,17 +526,61 @@ const CSS = `
   flex:           1;
   display:        flex;
   flex-direction: column;
-  gap:            12px;
   min-width:      0;
-  overflow-y:     auto;
+  overflow:       hidden;
+  gap:            0;
 }
-.acp-right::-webkit-scrollbar { width: 4px; }
-.acp-right::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+
+/* Request section wrapper — height controlled by JS */
+.acp-request-wrap {
+  flex-shrink: 0;
+  min-height:  0;
+  overflow:    hidden;
+}
+.acp-request-wrap > * { height: 100%; }
+
+/* Drag handle */
+.acp-splitter {
+  flex-shrink:     0;
+  height:          10px;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  cursor:          ns-resize;
+  background:      transparent;
+  border-top:      1px solid var(--border-subtle);
+  border-bottom:   1px solid var(--border-subtle);
+  z-index:         10;
+  transition:      background var(--transition-fast);
+  user-select:     none;
+}
+.acp-splitter:hover { background: var(--accent-muted); }
+.acp-splitter-dots {
+  width:            28px;
+  height:           3px;
+  border-radius:    99px;
+  background:       var(--border-strong);
+  transition:       background var(--transition-fast);
+}
+.acp-splitter:hover .acp-splitter-dots { background: var(--accent); }
+
+/* Response section wrapper — fills the remaining space */
+.acp-response-wrap {
+  flex:       1;
+  min-height: 0;
+  overflow:   hidden;
+  display:    flex;
+  flex-direction: column;
+}
+.acp-response-wrap > * { flex: 1; min-height: 0; }
 
 @media (max-width: 767px) {
-  .acp-layout  { flex-direction: column; overflow-y: auto; }
-  .acp-right   { overflow-y: unset; }
-  .acp         { height: auto; }
+  .acp-layout        { flex-direction: column; overflow-y: auto; }
+  .acp-right         { overflow: unset; height: auto; }
+  .acp-request-wrap  { height: auto !important; }
+  .acp-splitter      { display: none; }
+  .acp-response-wrap { flex: unset; min-height: 300px; }
+  .acp               { height: auto; }
 }
 
 /* Save form */
@@ -439,4 +605,27 @@ const CSS = `
 .del-confirm-text    { font-size: var(--text-sm); color: var(--text-secondary); line-height: var(--leading-relaxed); }
 .del-confirm-text strong { color: var(--text-primary); }
 .del-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Draft restored notice */
+.acp-draft-notice {
+  display:       flex;
+  align-items:   center;
+  gap:           8px;
+  padding:       8px 14px;
+  background:    var(--accent-muted);
+  border:        1px solid var(--accent-border);
+  border-radius: var(--radius-md);
+  color:         var(--cyan-300);
+  font-size:     var(--text-xs);
+  flex-shrink:   0;
+}
+.acp-draft-dismiss {
+  margin-left:     auto;
+  display:         flex; align-items: center; justify-content: center;
+  width:           22px; height: 22px;
+  background:      transparent; border: none;
+  border-radius:   var(--radius-sm); color: var(--cyan-300); cursor: pointer;
+  transition:      background var(--transition-fast);
+}
+.acp-draft-dismiss:hover { background: var(--accent-border); }
 `

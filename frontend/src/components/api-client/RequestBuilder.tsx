@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Icon } from '@iconify/react'
-import { type HttpMethod, type Environment, HTTP_METHODS } from '@/types/api'
+import { type HttpMethod, type Environment, type KeyValue, HTTP_METHODS } from '@/types/api'
 
 const METHOD_COLORS: Record<HttpMethod, string> = {
   GET:     '#34d399', POST:    '#60a5fa', PUT:     '#fbbf24',
@@ -19,6 +19,7 @@ interface RequestBuilderProps {
   isSending:    boolean
   environments:   Environment[]
   activeEnvId:    number | null
+  queryParams:    KeyValue[]
   onMethodChange:   (m: HttpMethod) => void
   onUrlChange:      (u: string) => void
   onHeadersChange:  (h: string) => void
@@ -27,23 +28,25 @@ interface RequestBuilderProps {
   onSend:       () => void
   onSave:       () => void
   onDelete:     () => void
-  onEnvChange:      (id: number | null) => void
-  onManageEnvs:     () => void
+  onEnvChange:        (id: number | null) => void
+  onManageEnvs:       () => void
+  onQueryParamsChange: (params: KeyValue[]) => void
   title:        string
 }
 
-type Tab = 'headers' | 'body'
+type Tab = 'params' | 'headers' | 'body'
 
 export default function RequestBuilder({
   method, url, headers, body, bodyType,
   isSaved, isSending,
-  environments, activeEnvId,
+  environments, activeEnvId, queryParams,
   onMethodChange, onUrlChange, onHeadersChange, onBodyChange, onBodyTypeChange,
-  onSend, onSave, onDelete, onEnvChange, onManageEnvs,
+  onSend, onSave, onDelete, onEnvChange, onManageEnvs, onQueryParamsChange,
   title,
 }: RequestBuilderProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('headers')
+  const [activeTab, setActiveTab] = useState<Tab>('params')
   const hasBody = ['POST', 'PUT', 'PATCH'].includes(method)
+  const enabledParamCount = queryParams.filter((p) => p.key.trim() && p.enabled).length
 
   // Resolve {{VAR}} tokens against the active environment for the preview line
   const activeEnv = environments.find((e) => e.id === activeEnvId) ?? null
@@ -156,8 +159,16 @@ export default function RequestBuilder({
           </div>
         )}
 
-        {/* ── Tabs: Headers / Body ── */}
+        {/* ── Tabs: Params / Headers / Body ── */}
         <div className="rb-tabs">
+          <button
+            className={['rb-tab', activeTab === 'params' ? 'rb-tab--active' : ''].filter(Boolean).join(' ')}
+            onClick={() => setActiveTab('params')}
+          >
+            <Icon icon="lucide:sliders-horizontal" width={13} />
+            Params
+            {enabledParamCount > 0 && <span className="rb-tab-badge">{enabledParamCount}</span>}
+          </button>
           <button
             className={['rb-tab', activeTab === 'headers' ? 'rb-tab--active' : ''].filter(Boolean).join(' ')}
             onClick={() => setActiveTab('headers')}
@@ -178,6 +189,64 @@ export default function RequestBuilder({
             {hasBody && body.trim() && <span className="rb-tab-dot" />}
           </button>
         </div>
+
+        {/* ── Params panel ── */}
+        {activeTab === 'params' && (
+          <div className="rb-panel">
+            {queryParams.length > 0 && (
+              <div className="rb-params-header">
+                <span />
+                <span className="rb-params-col-label">Key</span>
+                <span className="rb-params-col-label">Value</span>
+                <span />
+              </div>
+            )}
+            <div className="rb-params-list">
+              {queryParams.map((param) => (
+                <div key={param.id} className="rb-params-row">
+                  <button
+                    className={['rb-param-toggle', param.enabled ? 'rb-param-toggle--on' : ''].filter(Boolean).join(' ')}
+                    onClick={() => onQueryParamsChange(queryParams.map((p) => p.id === param.id ? { ...p, enabled: !p.enabled } : p))}
+                    title={param.enabled ? 'Disable' : 'Enable'}
+                  />
+                  <input
+                    className="rb-param-input rb-param-input--key"
+                    placeholder="key"
+                    value={param.key}
+                    onChange={(e) => onQueryParamsChange(queryParams.map((p) => p.id === param.id ? { ...p, key: e.target.value } : p))}
+                    spellCheck={false}
+                  />
+                  <input
+                    className="rb-param-input rb-param-input--value"
+                    placeholder="value"
+                    value={param.value}
+                    onChange={(e) => onQueryParamsChange(queryParams.map((p) => p.id === param.id ? { ...p, value: e.target.value } : p))}
+                    spellCheck={false}
+                  />
+                  <button
+                    className="rb-param-remove"
+                    onClick={() => onQueryParamsChange(queryParams.filter((p) => p.id !== param.id))}
+                    title="Remove"
+                  >
+                    <Icon icon="lucide:x" width={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              className="rb-params-add"
+              onClick={() => onQueryParamsChange([...queryParams, { id: crypto.randomUUID(), key: '', value: '', enabled: true }])}
+            >
+              <Icon icon="lucide:plus" width={13} />
+              Add parameter
+            </button>
+            {queryParams.length === 0 && (
+              <p className="rb-panel-hint">
+                Add query parameters here, or type them directly in the URL bar — they sync automatically.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* ── Headers panel ── */}
         {activeTab === 'headers' && (
@@ -233,6 +302,7 @@ const CSS = `
   border:         1px solid var(--border-default);
   border-radius:  var(--radius-lg);
   overflow:       hidden;
+  height:         100%;
 }
 
 /* Title row */
@@ -438,9 +508,15 @@ const CSS = `
   width: 5px; height: 5px; border-radius: 50%;
   background: var(--accent); position: absolute; top: 6px; right: 6px;
 }
+.rb-tab-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 16px; height: 16px; padding: 0 4px;
+  background: var(--accent-muted); border: 1px solid var(--accent-border);
+  border-radius: 8px; color: var(--cyan-300); font-size: 10px; font-weight: 600;
+}
 
 /* Panel */
-.rb-panel { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+.rb-panel { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; min-height: 0; }
 .rb-panel-hint { font-size: var(--text-xs); color: var(--text-tertiary); }
 .rb-panel-hint code { background: var(--bg-overlay); color: var(--cyan-300); padding: 1px 5px; border-radius: 3px; font-family: var(--font-mono); }
 
@@ -473,4 +549,47 @@ const CSS = `
 }
 .rb-body-type-btn:hover       { border-color: var(--border-strong); color: var(--text-primary); }
 .rb-body-type-btn--active     { background: var(--accent-muted); border-color: var(--accent-border); color: var(--cyan-300); }
+
+/* Params table */
+.rb-params-header {
+  display: grid; grid-template-columns: 24px 1fr 1fr 28px;
+  gap: 6px; padding: 0 2px; margin-bottom: 2px;
+}
+.rb-params-col-label { font-size: 10px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; }
+.rb-params-list { display: flex; flex-direction: column; gap: 4px; }
+.rb-params-row {
+  display: grid; grid-template-columns: 24px 1fr 1fr 28px;
+  gap: 6px; align-items: center;
+}
+.rb-param-toggle {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--border-default); background: transparent; cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+  flex-shrink: 0;
+}
+.rb-param-toggle--on { background: var(--accent); border-color: var(--accent); }
+.rb-param-input {
+  height: 32px; padding: 0 10px;
+  background: var(--bg-elevated); border: 1px solid var(--border-default); border-radius: var(--radius-sm);
+  color: var(--text-primary); font-size: var(--text-xs); font-family: var(--font-mono);
+  outline: none; transition: border-color var(--transition-fast);
+}
+.rb-param-input::placeholder { color: var(--text-tertiary); }
+.rb-param-input:focus { border-color: var(--border-focus); }
+.rb-param-remove {
+  display: flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; background: transparent;
+  border: 1px solid transparent; border-radius: var(--radius-sm);
+  color: var(--text-tertiary); cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+.rb-param-remove:hover { background: var(--bg-overlay); border-color: var(--border-default); color: var(--red-400, #f87171); }
+.rb-params-add {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 30px; padding: 0 10px; margin-top: 4px; align-self: flex-start;
+  background: transparent; border: 1px dashed var(--border-default); border-radius: var(--radius-sm);
+  color: var(--text-tertiary); font-size: var(--text-xs); font-family: var(--font-sans); cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+.rb-params-add:hover { border-color: var(--border-strong); color: var(--text-secondary); }
 `
