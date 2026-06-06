@@ -8,6 +8,12 @@ const apiController = new ApiController();
 
 router.use(authMiddleware);
 
+// Environments
+router.get('/environments', apiController.getEnvironments);
+router.post('/environments', apiController.createEnvironment);
+router.put('/environments/:id', apiController.updateEnvironment);
+router.delete('/environments/:id', apiController.deleteEnvironment);
+
 // Collections
 router.get('/collections', apiController.getCollections);
 router.post('/collections', apiController.createCollection);

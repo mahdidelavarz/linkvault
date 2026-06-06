@@ -1,6 +1,7 @@
 import { AppDataSource } from '../config/database';
 import { ApiEndpoint } from '../entities/ApiEndpoint';
 import { ApiCollection } from '../entities/ApiCollection';
+import { ApiEnvironment } from '../entities/ApiEnvironment';
 import { Taggable } from '../entities/Taggable';
 import { encrypt, decrypt } from '../utils/crypto';
 import { validateRequestUrl } from '../utils/ssrf.util';
@@ -9,6 +10,7 @@ import axios from 'axios';
 export class ApiService {
     private endpointRepository = AppDataSource.getRepository(ApiEndpoint);
     private collectionRepository = AppDataSource.getRepository(ApiCollection);
+    private environmentRepository = AppDataSource.getRepository(ApiEnvironment);
     private taggableRepository = AppDataSource.getRepository(Taggable);
 
     // ─── Collections ────────────────────────────────────────────────────────────
@@ -53,6 +55,38 @@ export class ApiService {
 
         await this.collectionRepository.remove(collection);
         return { message: 'Collection deleted' };
+    }
+
+    // ─── Environments ────────────────────────────────────────────────────────────
+
+    async getEnvironments(userId: number) {
+        return this.environmentRepository.find({
+            where: { userId },
+            order: { name: 'ASC' },
+        });
+    }
+
+    async createEnvironment(userId: number, data: { name: string; variables?: { key: string; value: string; enabled: boolean }[] }) {
+        const env = new ApiEnvironment();
+        env.name = data.name;
+        env.variables = data.variables ?? [];
+        env.userId = userId;
+        return this.environmentRepository.save(env);
+    }
+
+    async updateEnvironment(id: number, userId: number, data: { name?: string; variables?: { key: string; value: string; enabled: boolean }[] }) {
+        const env = await this.environmentRepository.findOne({ where: { id, userId } });
+        if (!env) throw new Error('Environment not found');
+        if (data.name !== undefined) env.name = data.name;
+        if (data.variables !== undefined) env.variables = data.variables;
+        return this.environmentRepository.save(env);
+    }
+
+    async deleteEnvironment(id: number, userId: number) {
+        const env = await this.environmentRepository.findOne({ where: { id, userId } });
+        if (!env) throw new Error('Environment not found');
+        await this.environmentRepository.remove(env);
+        return { message: 'Environment deleted' };
     }
 
     // ─── Endpoints ──────────────────────────────────────────────────────────────

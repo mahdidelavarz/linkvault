@@ -29,6 +29,35 @@ export class ApiController {
         } catch (error) { next(error); }
     }
 
+    // Environments
+    async getEnvironments(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            const environments = await apiService.getEnvironments(req.userId!);
+            res.json({ environments });
+        } catch (error) { next(error); }
+    }
+
+    async createEnvironment(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            const environment = await apiService.createEnvironment(req.userId!, req.body);
+            res.status(201).json({ environment });
+        } catch (error) { next(error); }
+    }
+
+    async updateEnvironment(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            const environment = await apiService.updateEnvironment(parseParamId(req.params.id)!, req.userId!, req.body);
+            res.json({ environment });
+        } catch (error) { next(error); }
+    }
+
+    async deleteEnvironment(req: AuthRequest, res: Response, next: NextFunction) {
+        try {
+            const result = await apiService.deleteEnvironment(parseParamId(req.params.id)!, req.userId!);
+            res.json(result);
+        } catch (error) { next(error); }
+    }
+
     // Endpoints
     async getEndpoints(req: AuthRequest, res: Response, next: NextFunction) {
         try {

@@ -8,13 +8,14 @@ import { Icon } from '@iconify/react'
 import {
   useCollections, useEndpoints,
   useCreateEndpoint, useUpdateEndpoint, useDeleteEndpoint,
-  useTestEndpoint,
+  useTestEndpoint, useEnvironments,
 } from '@/hooks/useApiClient'
 import { useCategories } from '@/hooks/useCategories'
 import { type ApiEndpoint, type HttpMethod } from '@/types/api'
-import CollectionSidebar from '@/components/api-client/CollectionSidebar'
-import RequestBuilder    from '@/components/api-client/RequestBuilder'
-import ResponseViewer    from '@/components/api-client/ResponseViewer'
+import CollectionSidebar  from '@/components/api-client/CollectionSidebar'
+import RequestBuilder     from '@/components/api-client/RequestBuilder'
+import ResponseViewer     from '@/components/api-client/ResponseViewer'
+import EnvironmentModal   from '@/components/api-client/EnvironmentModal'
 import Button            from '@/components/ui/Button'
 import Modal             from '@/components/ui/Modal'
 import FormLayout        from '@/components/layout/FormLayout'
@@ -59,7 +60,12 @@ export default function ApiClientPage() {
   // Confirm delete
   const [confirmDel, setConfirmDel] = useState(false)
 
-  const { data: collections }          = useCollections()
+  // Environment
+  const [activeEnvId,   setActiveEnvId]   = useState<number | null>(null)
+  const [envModalOpen,  setEnvModalOpen]  = useState(false)
+
+  const { data: environments }          = useEnvironments()
+  const { data: collections }           = useCollections()
   const { data: categories }           = useCategories()
   const { data: endpoints, refetch }   = useEndpoints({ collectionId: selectedCollection || undefined })
   const createEndpoint                 = useCreateEndpoint()
@@ -121,21 +127,35 @@ export default function ApiClientPage() {
     } catch { /* shown via Alert */ }
   }
 
+  // ─── Variable interpolation ──────────────────────────────────────────────────
+  const activeEnv = (environments ?? []).find((e) => e.id === activeEnvId) ?? null
+  const interpolateVars = (text: string): string => {
+    if (!activeEnv?.variables?.length || !text) return text
+    return text.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+      const v = activeEnv.variables!.find((v) => v.key === key.trim() && v.enabled)
+      return v ? v.value : match
+    })
+  }
+
   // ─── Send request ────────────────────────────────────────────────────────────
   const handleSend = async () => {
     if (!url.trim()) return
     try {
+      const resolvedUrl     = interpolateVars(url)
+      const resolvedHeaders = interpolateVars(headers)
+      const resolvedBody    = interpolateVars(body)
+
       let parsedHeaders: Record<string, string> = {}
-      if (headers.trim()) {
-        try { parsedHeaders = JSON.parse(headers) }
+      if (resolvedHeaders.trim()) {
+        try { parsedHeaders = JSON.parse(resolvedHeaders) }
         catch {
-          headers.split('\n').forEach((line) => {
+          resolvedHeaders.split('\n').forEach((line) => {
             const [key, ...vals] = line.split(':')
             if (key && vals.length) parsedHeaders[key.trim()] = vals.join(':').trim()
           })
         }
       }
-      const result = await testEndpoint.mutateAsync({ method, url, headers: parsedHeaders, body: body || undefined, bodyType })
+      const result = await testEndpoint.mutateAsync({ method, url: resolvedUrl, headers: parsedHeaders, body: resolvedBody || undefined, bodyType })
       setResponse(result)
     } catch (err: any) {
       setResponse({ status: 0, statusText: 'Error', body: JSON.stringify({ error: err.message }, null, 2), headers: {}, size: 0, time: 0 })
@@ -208,12 +228,16 @@ export default function ApiClientPage() {
               bodyType={bodyType}   isSaved={!!selectedEndpoint}
               isSending={testEndpoint.isPending}
               title={requestTitle}
-              onMethodChange={setMethod}     onUrlChange={setUrl}
-              onHeadersChange={setHeaders}   onBodyChange={setBody}
+              environments={environments ?? []}
+              activeEnvId={activeEnvId}
+              onMethodChange={setMethod}       onUrlChange={setUrl}
+              onHeadersChange={setHeaders}     onBodyChange={setBody}
               onBodyTypeChange={setBodyType}
               onSend={handleSend}
               onSave={openSave}
               onDelete={() => setConfirmDel(true)}
+              onEnvChange={setActiveEnvId}
+              onManageEnvs={() => setEnvModalOpen(true)}
             />
 
             <ResponseViewer response={response} isLoading={testEndpoint.isPending} />
@@ -313,6 +337,14 @@ export default function ApiClientPage() {
           />
         </FormLayout>
       </Modal>
+
+      {/* ── Environment manager ── */}
+      {envModalOpen && (
+        <EnvironmentModal
+          environments={environments ?? []}
+          onClose={() => setEnvModalOpen(false)}
+        />
+      )}
 
       {/* ── Delete confirm ── */}
       <Modal isOpen={confirmDel} onClose={() => setConfirmDel(false)} title="Delete endpoint" size="sm">

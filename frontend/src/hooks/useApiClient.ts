@@ -1,6 +1,49 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/http';
-import { ApiEndpoint, ApiCollection, CreateEndpointDto, TestRequestDto, TestResponseDto } from '@/types/api';
+import { ApiEndpoint, ApiCollection, Environment, CreateEndpointDto, CreateEnvironmentDto, TestRequestDto, TestResponseDto } from '@/types/api';
+
+// Environments
+export const useEnvironments = () => {
+  return useQuery({
+    queryKey: ['api-environments'],
+    queryFn: async () => {
+      const { data } = await api.get('/api-client/environments');
+      return data.environments as Environment[];
+    },
+  });
+};
+
+export const useCreateEnvironment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: CreateEnvironmentDto) => {
+      const { data: res } = await api.post('/api-client/environments', data);
+      return res.environment as Environment;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['api-environments'] }),
+  });
+};
+
+export const useUpdateEnvironment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...data }: CreateEnvironmentDto & { id: number }) => {
+      const { data: res } = await api.put(`/api-client/environments/${id}`, data);
+      return res.environment as Environment;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['api-environments'] }),
+  });
+};
+
+export const useDeleteEnvironment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await api.delete(`/api-client/environments/${id}`);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['api-environments'] }),
+  });
+};
 
 // Collections
 export const useCollections = () => {

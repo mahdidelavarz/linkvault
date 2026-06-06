@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Icon } from '@iconify/react'
-import { type HttpMethod, HTTP_METHODS } from '@/types/api'
+import { type HttpMethod, type Environment, HTTP_METHODS } from '@/types/api'
 
 const METHOD_COLORS: Record<HttpMethod, string> = {
   GET:     '#34d399', POST:    '#60a5fa', PUT:     '#fbbf24',
@@ -17,6 +17,8 @@ interface RequestBuilderProps {
   bodyType:     'json' | 'raw' | 'form-data'
   isSaved:      boolean
   isSending:    boolean
+  environments:   Environment[]
+  activeEnvId:    number | null
   onMethodChange:   (m: HttpMethod) => void
   onUrlChange:      (u: string) => void
   onHeadersChange:  (h: string) => void
@@ -25,6 +27,8 @@ interface RequestBuilderProps {
   onSend:       () => void
   onSave:       () => void
   onDelete:     () => void
+  onEnvChange:      (id: number | null) => void
+  onManageEnvs:     () => void
   title:        string
 }
 
@@ -33,12 +37,23 @@ type Tab = 'headers' | 'body'
 export default function RequestBuilder({
   method, url, headers, body, bodyType,
   isSaved, isSending,
+  environments, activeEnvId,
   onMethodChange, onUrlChange, onHeadersChange, onBodyChange, onBodyTypeChange,
-  onSend, onSave, onDelete,
+  onSend, onSave, onDelete, onEnvChange, onManageEnvs,
   title,
 }: RequestBuilderProps) {
   const [activeTab, setActiveTab] = useState<Tab>('headers')
   const hasBody = ['POST', 'PUT', 'PATCH'].includes(method)
+
+  // Resolve {{VAR}} tokens against the active environment for the preview line
+  const activeEnv = environments.find((e) => e.id === activeEnvId) ?? null
+  const resolvedUrl = activeEnv?.variables?.length && url
+    ? url.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+        const v = activeEnv.variables!.find((v) => v.key === key.trim() && v.enabled)
+        return v ? v.value : match
+      })
+    : url
+  const hasSubstitution = resolvedUrl !== url
 
   return (
     <>
@@ -61,7 +76,35 @@ export default function RequestBuilder({
           </div>
         </div>
 
-        {/* ── URL bar ── */}
+        {/* ── Environment bar ── */}
+        <div className="rb-env-bar">
+          <div className="rb-env-pill">
+            <Icon icon="lucide:layers" width={12} className="rb-env-pill-icon" />
+            <select
+              className="rb-env-select"
+              value={activeEnvId ?? ''}
+              onChange={(e) => onEnvChange(e.target.value ? parseInt(e.target.value) : null)}
+              title="Active environment"
+            >
+              <option value="">No environment</option>
+              {environments.map((env) => (
+                <option key={env.id} value={env.id}>{env.name}</option>
+              ))}
+            </select>
+            <Icon icon="lucide:chevron-down" width={11} className="rb-env-pill-chevron" />
+          </div>
+          <button className="rb-env-manage" onClick={onManageEnvs} title="Manage environments">
+            <Icon icon="lucide:settings-2" width={13} />
+            Manage
+          </button>
+          {activeEnv && (
+            <span className="rb-env-count">
+              {(activeEnv.variables ?? []).filter((v) => v.enabled).length} var{(activeEnv.variables ?? []).filter((v) => v.enabled).length !== 1 ? 's' : ''} active
+            </span>
+          )}
+        </div>
+
+        {/* ── URL bar — structure unchanged from before env feature ── */}
         <div className="rb-url-bar">
           {/* Method select */}
           <div className="rb-method-wrap">
@@ -84,13 +127,14 @@ export default function RequestBuilder({
             type="url"
             value={url}
             onChange={(e) => onUrlChange(e.target.value)}
-            placeholder="https://api.example.com/endpoint"
+            placeholder="https://api.example.com/endpoint  or  {{BASE_URL}}/path"
             onKeyDown={(e) => e.key === 'Enter' && onSend()}
             spellCheck={false}
           />
 
           {/* Send button */}
           <button
+            suppressHydrationWarning
             className="rb-send-btn"
             onClick={onSend}
             disabled={!url.trim() || isSending}
@@ -104,6 +148,14 @@ export default function RequestBuilder({
           </button>
         </div>
 
+        {/* ── Resolved URL preview — shows when a variable is substituted ── */}
+        {hasSubstitution && (
+          <div className="rb-resolved">
+            <Icon icon="lucide:arrow-right" width={11} className="rb-resolved-arrow" />
+            <span className="rb-resolved-url">{resolvedUrl}</span>
+          </div>
+        )}
+
         {/* ── Tabs: Headers / Body ── */}
         <div className="rb-tabs">
           <button
@@ -115,6 +167,7 @@ export default function RequestBuilder({
             {headers.trim() && <span className="rb-tab-dot" />}
           </button>
           <button
+            suppressHydrationWarning
             className={['rb-tab', activeTab === 'body' ? 'rb-tab--active' : '', !hasBody ? 'rb-tab--disabled' : ''].filter(Boolean).join(' ')}
             onClick={() => hasBody && setActiveTab('body')}
             disabled={!hasBody}
@@ -130,13 +183,13 @@ export default function RequestBuilder({
         {activeTab === 'headers' && (
           <div className="rb-panel">
             <p className="rb-panel-hint">
-              One header per line: <code>Key: Value</code>
+              One header per line: <code>Key: Value</code>. Use <code>{'{{VAR}}'}</code> for environment variables.
             </p>
             <textarea
               className="rb-textarea rb-textarea--mono"
               value={headers}
               onChange={(e) => onHeadersChange(e.target.value)}
-              placeholder={'Content-Type: application/json\nAuthorization: Bearer token'}
+              placeholder={'Content-Type: application/json\nAuthorization: Bearer {{TOKEN}}'}
               rows={6}
               spellCheck={false}
             />
@@ -213,14 +266,82 @@ const CSS = `
 }
 .rb-del-btn:hover { background: var(--danger-muted); border-color: rgba(239,68,68,0.3); color: var(--danger); }
 
+/* Environment bar */
+.rb-env-bar {
+  display:       flex;
+  align-items:   center;
+  gap:           8px;
+  padding:       6px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  background:    var(--bg-elevated);
+  flex-shrink:   0;
+}
+
+.rb-env-pill {
+  position:      relative;
+  display:       flex;
+  align-items:   center;
+  gap:           5px;
+  height:        26px;
+  padding:       0 22px 0 8px;
+  background:    var(--bg-surface);
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  cursor:        pointer;
+  transition:    border-color var(--transition-fast);
+}
+.rb-env-pill:focus-within { border-color: var(--border-focus); }
+.rb-env-pill-icon    { color: var(--text-tertiary); flex-shrink: 0; }
+.rb-env-pill-chevron { position: absolute; right: 6px; color: var(--text-tertiary); pointer-events: none; }
+
+.rb-env-select {
+  background:         transparent;
+  border:             none;
+  color:              var(--text-secondary);
+  font-size:          var(--text-xs);
+  font-family:        var(--font-sans);
+  outline:            none;
+  cursor:             pointer;
+  appearance:         none;
+  -webkit-appearance: none;
+  max-width:          140px;
+}
+.rb-env-select option { background: var(--bg-elevated); color: var(--text-primary); }
+
+.rb-env-manage {
+  display:       flex; align-items: center; gap: 4px;
+  height:        26px; padding: 0 10px;
+  background:    transparent; border: 1px solid var(--border-default);
+  border-radius: var(--radius-md); color: var(--text-tertiary);
+  font-size:     var(--text-xs); font-family: var(--font-sans);
+  cursor:        pointer;
+  transition:    background var(--transition-fast), color var(--transition-fast);
+}
+.rb-env-manage:hover { background: var(--bg-overlay); color: var(--text-primary); }
+
+.rb-env-count {
+  font-size:   var(--text-xs);
+  color:       var(--text-tertiary);
+  background:  var(--accent-muted);
+  border:      1px solid var(--accent-border);
+  color:       var(--cyan-400);
+  border-radius: 99px;
+  padding:     1px 8px;
+}
+
+@media (max-width: 479px) {
+  .rb-env-manage span { display: none; }
+  .rb-env-count       { display: none; }
+}
+
 /* URL bar */
 .rb-url-bar {
-  display:     flex;
-  align-items: center;
-  gap:         8px;
-  padding:     12px 16px;
+  display:       flex;
+  align-items:   center;
+  gap:           8px;
+  padding:       12px 16px;
   border-bottom: 1px solid var(--border-subtle);
-  flex-shrink: 0;
+  flex-shrink:   0;
 }
 
 .rb-method-wrap { position: relative; display: flex; align-items: center; flex-shrink: 0; }
@@ -272,6 +393,27 @@ const CSS = `
 .rb-send-btn:hover:not(:disabled) { background: var(--accent-hover); box-shadow: var(--shadow-glow); }
 .rb-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 @media (max-width: 479px) { .rb-send-label { display: none; } }
+
+/* Resolved URL preview */
+.rb-resolved {
+  display:       flex;
+  align-items:   center;
+  gap:           6px;
+  padding:       5px 16px;
+  background:    var(--bg-elevated);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink:   0;
+}
+.rb-resolved-arrow { color: var(--cyan-400); flex-shrink: 0; }
+.rb-resolved-url {
+  font-family:   var(--font-mono);
+  font-size:     var(--text-xs);
+  color:         var(--cyan-300);
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  min-width:     0;
+}
 
 /* Tabs */
 .rb-tabs {
