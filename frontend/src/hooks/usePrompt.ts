@@ -13,7 +13,7 @@ export const usePrompts = (filters?: {
   tagIds?: number[];
 }) => {
   return useInfiniteQuery<Page<Prompt>>({
-    queryKey: ['prompts'],
+    queryKey: ['prompts', filters],
     queryFn: async ({ pageParam }) => {
       const params = new URLSearchParams();
       if (filters?.search) params.append('search', filters.search);
@@ -64,9 +64,7 @@ export const useUpdatePrompt = () => {
     onSuccess: (updatedPrompt, variables) => {
       // Write fresh data directly into the single-prompt cache
       queryClient.setQueryData(['prompt', variables.id], updatedPrompt);
-      // Force-refetch the list so cards show updated data immediately
-      queryClient.refetchQueries({ queryKey: ['prompts'] });
-      queryClient.invalidateQueries({queryKey : ['prompts']})
+      queryClient.invalidateQueries({ queryKey: ['prompts'] });
     },
   });
 };

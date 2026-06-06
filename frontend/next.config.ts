@@ -12,9 +12,6 @@ const nextConfig: NextConfig = {
   output: "standalone",
   reactStrictMode: true,
 
-  // silence turbopack warning
-  turbopack: {},
-
   // Proxy all /api/* requests to the backend server.
   // This means the frontend can use a relative /api base URL and works from
   // any device on the same network — the Next.js process (running on this machine)

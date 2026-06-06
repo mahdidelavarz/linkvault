@@ -103,8 +103,8 @@ export default function SnippetsPage() {
   const snippets = data?.pages.flatMap((p) => p.items) ?? [];
   const total = data?.pages[0]?.total ?? 0;
 
-  const onReach = useCallback(() => { if (hasNextPage) fetchNextPage(); }, [hasNextPage, fetchNextPage]);
-  const sentinelRef = useInfiniteScroll(onReach, !!hasNextPage && !isLoading);
+  const onReach = useCallback(() => { if (hasNextPage && !isFetchingNextPage) fetchNextPage(); }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  const sentinelRef = useInfiniteScroll(onReach, !!hasNextPage && !isLoading && !isFetchingNextPage);
 
   const availableLanguages = useMemo(() => {
     if (!selectedType) return ALL_LANGUAGES;

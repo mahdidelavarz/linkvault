@@ -6,6 +6,8 @@ export function useInfiniteScroll(
     root?: Element | null,
 ): React.RefObject<HTMLDivElement | null> {
     const sentinelRef = useRef<HTMLDivElement | null>(null);
+    const onReachRef  = useRef(onReach);
+    onReachRef.current = onReach;
 
     useEffect(() => {
         if (!active) return;
@@ -13,12 +15,12 @@ export function useInfiniteScroll(
         if (!sentinel) return;
 
         const observer = new IntersectionObserver(
-            (entries) => { if (entries[0].isIntersecting) onReach(); },
+            (entries) => { if (entries[0].isIntersecting) onReachRef.current(); },
             { root: root ?? null, threshold: 0.1 },
         );
         observer.observe(sentinel);
         return () => observer.disconnect();
-    }, [onReach, active, root]);
+    }, [active, root]);
 
     return sentinelRef;
 }

@@ -42,6 +42,7 @@ import {
 import TypeSelector from "./TypeSelector";
 import FormSelect from "./FormSelect";
 import Textarea from "../ui/TextArea";
+import CodeEditor from "./CodeEditor";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -72,7 +73,8 @@ export default function SnippetForm({
   const isEditing = !!snippet;
   const [activeTab, setActiveTab]   = useState<"basic" | "meta">("basic");
   const [pasteToast, setPasteToast] = useState<string | null>(null);
-  const pasteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pasteTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevCodeLen   = useRef<number>(-1); // -1 = not yet initialised
 
   const { data: categories } = useCategories();
   const createSnippet = useCreateSnippet();
@@ -184,20 +186,17 @@ export default function SnippetForm({
     }
   }, [initialValues, snippet, reset]);
 
-  // Smart paste detection — auto-apply type + language on paste
-  const handleContentPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const pasted = e.clipboardData.getData("text");
-    if (!pasted.trim()) return;
-
-    const detType = detectSnippetType(pasted);
-    const detLang = detectLanguage(pasted);
+  // Smart paste detection — called from CodeEditor onChange when a large content delta is detected
+  const runPasteDetection = (text: string) => {
+    if (!text.trim()) return;
+    const detType = detectSnippetType(text);
+    const detLang = detectLanguage(text);
     const labels: string[] = [];
 
     if (detType && detType !== watchedType) {
       handleTypeChange(detType as SnippetType);
       labels.push(SNIPPET_TYPES[detType as SnippetType]?.label ?? detType);
     }
-
     if (detLang) {
       const targetLangs = TYPE_LANGUAGES[(detType ?? watchedType) as SnippetType] ?? [];
       if (targetLangs.includes(detLang) && detLang !== watchedLang) {
@@ -206,7 +205,6 @@ export default function SnippetForm({
           labels.push(getLanguageName(detLang));
       }
     }
-
     if (labels.length > 0) {
       if (pasteTimer.current) clearTimeout(pasteTimer.current);
       setPasteToast(`Auto-detected: ${labels.join(" · ")}`);
@@ -407,23 +405,28 @@ export default function SnippetForm({
                   .filter(Boolean)
                   .join(" ")}
               >
-                <textarea
-                  className="sform-code"
-                  placeholder={
-                    watchedType === "command"
-                      ? 'git commit -m "feat: add feature"'
-                      : watchedType === "regex"
-                        ? "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
-                        : watchedType === "json"
-                          ? '{\n  "key": "value"\n}'
-                          : watchedType === "sql"
-                            ? "SELECT u.*, p.name\nFROM users u\nJOIN profiles p ON p.user_id = u.id\nWHERE u.active = true;"
-                            : "// Your code here"
-                  }
-                  rows={12}
-                  spellCheck={false}
-                  onPaste={handleContentPaste}
-                  {...register("content")}
+                <Controller
+                  name="content"
+                  control={control}
+                  render={({ field }) => (
+                    <CodeEditor
+                      value={field.value}
+                      language={watchedLang}
+                      height="280px"
+                      className=""
+                      onChange={(val) => {
+                        // Detect paste via large content delta
+                        if (prevCodeLen.current === -1) {
+                          prevCodeLen.current = val.length;
+                        } else {
+                          const delta = val.length - prevCodeLen.current;
+                          prevCodeLen.current = val.length;
+                          if (delta > 15) runPasteDetection(val);
+                        }
+                        field.onChange(val);
+                      }}
+                    />
+                  )}
                 />
               </div>
               {errors.content && (

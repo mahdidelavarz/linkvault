@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { javascript } from '@codemirror/lang-javascript';
 import { python } from '@codemirror/lang-python';
@@ -27,6 +27,7 @@ interface CodeEditorProps {
   language?: string;
   readOnly?: boolean;
   height?: string;
+  className?: string;
 }
 
 const languageExtensions: Record<string, any> = {
@@ -55,28 +56,36 @@ const languageExtensions: Record<string, any> = {
   dockerfile: StreamLanguage.define(dockerFileMode),
 };
 
-export default function CodeEditor({ 
-  value, 
-  onChange, 
-  language = 'txt', 
-  readOnly = false, 
-  height = '400px' 
+export default function CodeEditor({
+  value,
+  onChange,
+  language = 'txt',
+  readOnly = false,
+  height = '400px',
+  className = 'border rounded-lg overflow-hidden',
 }: CodeEditorProps) {
   const [detectedLang, setDetectedLang] = useState(language);
 
+  // Keep internal language in sync when the parent changes the language prop
+  useEffect(() => { setDetectedLang(language); }, [language]);
+
   const handleChange = useCallback((val: string) => {
-    // Auto-detect language on change (only after enough content)
-    const detected = detectLanguage(val);
-    if (detected !== detectedLang && val.trim().length > 10) {
-      setDetectedLang(detected);
+    // Only run internal auto-detect when no explicit language is set
+    let effective = language;
+    if (!language || language === 'txt') {
+      const detected = detectLanguage(val);
+      if (detected !== detectedLang && val.trim().length > 10) {
+        setDetectedLang(detected);
+        effective = detected;
+      }
     }
-    onChange(val, detected);
-  }, [onChange, detectedLang]);
+    onChange(val, effective);
+  }, [onChange, detectedLang, language]);
 
   const extension = languageExtensions[detectedLang];
 
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className={className}>
       <CodeMirror
         value={value}
         height={height}

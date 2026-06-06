@@ -76,17 +76,17 @@ export const updateSnippetSchema = createSnippetSchema.partial();
 export const createPromptSchema = z.object({
     title: z.string().min(1).max(255),
     content: z.string().min(1),
-    description: z.string().max(2000).optional(),
+    description: z.string().max(2000).nullable().optional(),
     promptType: z.string().max(50),
-    targetAI: z.string().max(50).optional(),
-    expectedOutput: z.string().optional(),
+    targetAI: z.string().max(50).nullable().optional(),
+    expectedOutput: z.string().nullable().optional(),
     isFavorite: z.boolean().optional(),
     categoryId: z.number().int().positive().nullable().optional(),
     tagIds: z.array(z.number().int().positive()).optional(),
     variables: z.array(z.object({
         name: z.string().max(100),
         defaultValue: z.string().max(500),
-        description: z.string().max(500).optional(),
+        description: z.string().max(500).nullable().optional(),
     })).optional(),
 });
 
