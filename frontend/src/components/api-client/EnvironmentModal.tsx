@@ -8,6 +8,8 @@ import {
   useUpdateEnvironment,
   useDeleteEnvironment,
 } from '@/hooks/useApiClient'
+import { VaultGuard } from '@/components/vault/VaultGuard'
+import { useVault } from '@/hooks/useVault'
 
 interface Props {
   environments: Environment[]
@@ -31,6 +33,7 @@ export default function EnvironmentModal({ environments, onClose }: Props) {
   const createEnv = useCreateEnvironment()
   const updateEnv = useUpdateEnvironment()
   const deleteEnv = useDeleteEnvironment()
+  const { isEnabled } = useVault()
 
   const selectedEnv = environments.find((e) => e.id === selectedId) ?? null
 
@@ -173,50 +176,52 @@ export default function EnvironmentModal({ environments, onClose }: Props) {
                     </button>
                   </div>
 
-                  {/* Variable table */}
-                  <div className="em-vars-header">
-                    <span className="em-vars-col em-vars-col--key">Variable</span>
-                    <span className="em-vars-col em-vars-col--value">Value</span>
-                    <span className="em-vars-col em-vars-col--actions" />
-                  </div>
+                  {/* Variable table — guarded when vault is enabled + locked */}
+                  <VaultGuard enabled={isEnabled}>
+                    <div className="em-vars-header">
+                      <span className="em-vars-col em-vars-col--key">Variable</span>
+                      <span className="em-vars-col em-vars-col--value">Value</span>
+                      <span className="em-vars-col em-vars-col--actions" />
+                    </div>
 
-                  <div className="em-vars-list">
-                    {editVars.map((v) => (
-                      <div key={v.id} className="em-var-row">
-                        <button
-                          className={['em-var-toggle', v.enabled ? 'em-var-toggle--on' : ''].filter(Boolean).join(' ')}
-                          onClick={() => updateVar(v.id!, 'enabled', !v.enabled)}
-                          title={v.enabled ? 'Disable variable' : 'Enable variable'}
-                        />
-                        <input
-                          className="em-var-input em-var-input--key"
-                          placeholder="KEY"
-                          value={v.key}
-                          onChange={(e) => updateVar(v.id!, 'key', e.target.value)}
-                          spellCheck={false}
-                        />
-                        <input
-                          className="em-var-input em-var-input--value"
-                          placeholder="value"
-                          value={v.value}
-                          onChange={(e) => updateVar(v.id!, 'value', e.target.value)}
-                          spellCheck={false}
-                        />
-                        <button className="em-var-remove" onClick={() => removeVar(v.id!)} title="Remove variable">
-                          <Icon icon="lucide:x" width={12} />
-                        </button>
-                      </div>
-                    ))}
+                    <div className="em-vars-list">
+                      {editVars.map((v) => (
+                        <div key={v.id} className="em-var-row">
+                          <button
+                            className={['em-var-toggle', v.enabled ? 'em-var-toggle--on' : ''].filter(Boolean).join(' ')}
+                            onClick={() => updateVar(v.id!, 'enabled', !v.enabled)}
+                            title={v.enabled ? 'Disable variable' : 'Enable variable'}
+                          />
+                          <input
+                            className="em-var-input em-var-input--key"
+                            placeholder="KEY"
+                            value={v.key}
+                            onChange={(e) => updateVar(v.id!, 'key', e.target.value)}
+                            spellCheck={false}
+                          />
+                          <input
+                            className="em-var-input em-var-input--value"
+                            placeholder="value"
+                            value={v.value}
+                            onChange={(e) => updateVar(v.id!, 'value', e.target.value)}
+                            spellCheck={false}
+                          />
+                          <button className="em-var-remove" onClick={() => removeVar(v.id!)} title="Remove variable">
+                            <Icon icon="lucide:x" width={12} />
+                          </button>
+                        </div>
+                      ))}
 
-                    <button className="em-add-var-btn" onClick={addVar}>
-                      <Icon icon="lucide:plus" width={13} />
-                      Add variable
-                    </button>
-                  </div>
+                      <button className="em-add-var-btn" onClick={addVar}>
+                        <Icon icon="lucide:plus" width={13} />
+                        Add variable
+                      </button>
+                    </div>
 
-                  <p className="em-vars-hint">
-                    Use <code>{'{{VARIABLE_NAME}}'}</code> in URLs, headers, and request body.
-                  </p>
+                    <p className="em-vars-hint">
+                      Use <code>{'{{VARIABLE_NAME}}'}</code> in URLs, headers, and request body.
+                    </p>
+                  </VaultGuard>
                 </>
               ) : (
                 <div className="em-empty">

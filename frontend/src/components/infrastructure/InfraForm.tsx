@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
@@ -14,6 +14,10 @@ import {
   useCreateInfrastructure,
   useUpdateInfrastructure,
 } from "@/hooks/useInfrastructure";
+import { useVault } from "@/hooks/useVault";
+import { VaultGuard } from "@/components/vault/VaultGuard";
+import { VaultSecretHint } from "@/components/vault/VaultSecretHint";
+import { detectSecret } from "@/lib/vault/detectSecret";
 import { useCategories } from "@/hooks/useCategories";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -103,12 +107,15 @@ export default function InfraForm({ item, onClose }: InfraFormProps) {
   const isLoading = createItem.isPending || updateItem.isPending;
   const error = createItem.error || updateItem.error;
 
+  const { isEnabled, isUnlocked, encrypt, decrypt } = useVault();
+
   const {
     register,
     handleSubmit,
     control,
     watch,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -125,33 +132,53 @@ export default function InfraForm({ item, onClose }: InfraFormProps) {
   });
 
   const watchedType = watch("infraType") as InfraType;
+  const watchedContent = useWatch({ control, name: "content" });
+
+  const isEnvType = watchedType === "env";
+  const isVaultProtected = isEnvType && isEnabled;
 
   useEffect(() => {
     if (item) {
       reset({
         title: item.title,
         infraType: item.infraType,
-        content: item.content,
+        content: item.content === 'vault:encrypted' ? '' : item.content,
         description: item.description ?? "",
         isFavorite: item.isFavorite,
         categoryId: item.categoryId,
         tagIds: item.tags?.map((t: any) => t.id) ?? [],
-        metadata: (item.metadata ?? {}) as Record<string, unknown>, // Fixed: proper type assertion syntax
+        metadata: (item.metadata ?? {}) as Record<string, unknown>,
       });
     }
   }, [item, reset]);
 
+  // Load decrypted content when editing a vault-protected env item
+  useEffect(() => {
+    if (!isVaultProtected || !isUnlocked || !item) return;
+    decrypt('infrastructure', String(item.id), 'content').then(v => {
+      if (v) setValue('content', v, { shouldDirty: false });
+    });
+  }, [isUnlocked, isVaultProtected]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const onSubmit = async (data: FormData) => {
     try {
+      const willEncrypt = isEnvType && isEnabled && isUnlocked && !!data.content;
       const payload: CreateInfraDto = {
         ...data,
-        infraType: data.infraType as InfraType, // Fixed: ensure infraType is typed correctly
+        infraType: data.infraType as InfraType,
         description: data.description || undefined,
+        content: willEncrypt ? 'vault:encrypted' : data.content,
       };
       if (isEditing && item) {
         await updateItem.mutateAsync({ id: item.id, ...payload });
+        if (willEncrypt) {
+          await encrypt('infrastructure', String(item.id), 'content', data.content);
+        }
       } else {
-        await createItem.mutateAsync(payload);
+        const created = await createItem.mutateAsync(payload);
+        if (willEncrypt) {
+          await encrypt('infrastructure', String(created.id), 'content', data.content);
+        }
       }
       onClose();
     } catch {
@@ -262,34 +289,46 @@ export default function InfraForm({ item, onClose }: InfraFormProps) {
             <label className="iform-label">
               {CONTENT_LABELS[watchedType] ?? "Content"}
             </label>
-            {watchedType === "env" && (
+            {isEnvType && (
               <span className="iform-env-hint">
                 <LucideShield width={11} />
-                Values are masked when viewing
+                {isEnabled ? 'Vault protected' : 'Values are masked when viewing'}
               </span>
             )}
           </div>
-          <div
-            className={[
-              "iform-code-wrap",
-              errors.content ? "iform-code-wrap--error" : "",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-          >
-            <textarea
-              className="iform-code"
-              placeholder={PLACEHOLDERS[watchedType] ?? "Enter configuration…"}
-              rows={10}
-              spellCheck={false}
-              {...register("content")}
-            />
-          </div>
+          <VaultGuard enabled={isVaultProtected}>
+            <div
+              className={[
+                "iform-code-wrap",
+                errors.content ? "iform-code-wrap--error" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              <textarea
+                className="iform-code"
+                placeholder={PLACEHOLDERS[watchedType] ?? "Enter configuration…"}
+                rows={10}
+                spellCheck={false}
+                {...register("content")}
+              />
+            </div>
+          </VaultGuard>
           {errors.content && (
             <p className="iform-field-error">
               <LucideCircleAlert width={12} />
               {errors.content.message}
             </p>
+          )}
+          {isEnvType && (
+            <VaultSecretHint
+              secretType={detectSecret(watchedContent, 'ENV_CONTENT')}
+              onEncrypt={
+                isEditing && isEnabled && isUnlocked && item
+                  ? () => encrypt('infrastructure', String(item.id), 'content', watchedContent)
+                  : undefined
+              }
+            />
           )}
         </div>
 

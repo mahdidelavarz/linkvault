@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import { type Link as LinkType } from "@/types/link";
 import { useToggleFavorite, useDeleteLink } from "@/hooks/useLinks";
+import { useVault } from "@/hooks/useVault";
 import FavoriteButton from "@/components/shared/FavoriteButton";
 import ActionButtons from "@/components/shared/ActionButtons";
 import TagSection from "@/components/shared/TagSection";
@@ -18,6 +20,114 @@ import {
   LucideUser,
 } from "@/Icons/Icons";
 
+// ─── Vault-aware password row ────────────────────────────────────────────────
+
+function VaultPasswordRow({ link }: { link: LinkType }) {
+  const { isEnabled, isUnlocked, decrypt, requestUnlock, isLoading: vaultLoading } = useVault();
+
+  const [vaultValue, setVaultValue] = useState<string | null>(null);
+  const [show, setShow] = useState(false);
+
+  const isVaultProtected =
+    isEnabled && (!link.passwordEncrypted || link.passwordEncrypted === 'vault:encrypted');
+
+  useEffect(() => {
+    if (!isVaultProtected || !isUnlocked) { setVaultValue(null); return; }
+    decrypt('link', String(link.id), 'password').then(v => setVaultValue(v));
+  }, [isUnlocked, isVaultProtected, link.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Pre-vault plaintext password (backward compat)
+  if (!isVaultProtected && link.passwordEncrypted) {
+    return (
+      <div className="lcard-cred-row">
+        <LucideLock width={12} />
+        <span className="lcard-password">{show ? link.passwordEncrypted : '••••••••'}</span>
+        <button className="lcard-eye" onClick={(e) => { e.stopPropagation(); setShow(p => !p); }}>
+          {show ? <LucideEyeOff width={11} /> : <LucideEye width={11} />}
+        </button>
+      </div>
+    );
+  }
+
+  // Vault not set up
+  if (!isEnabled) {
+    return (
+      <div className="lcard-cred-row lcard-cred-row--vault">
+        <LucideLock width={12} />
+        <span className="lcard-password">••••••••</span>
+        <Link href="/settings/vault" className="lcard-vault-hint" onClick={e => e.stopPropagation()}>
+          Enable vault
+        </Link>
+      </div>
+    );
+  }
+
+  // Vault enabled but locked
+  if (!isUnlocked) {
+    return (
+      <div className="lcard-cred-row lcard-cred-row--vault">
+        <LucideLock width={12} />
+        <span className="lcard-password">••••••••</span>
+        <button className="lcard-eye lcard-eye--lock" onClick={(e) => { e.stopPropagation(); requestUnlock(); }} disabled={vaultLoading}>
+          🔒
+        </button>
+      </div>
+    );
+  }
+
+  // Vault unlocked
+  const displayValue = vaultValue ?? '(not set)';
+  return (
+    <div className="lcard-cred-row">
+      <LucideLock width={12} />
+      <span className="lcard-password">{show ? displayValue : '••••••••'}</span>
+      <button className="lcard-eye" onClick={(e) => { e.stopPropagation(); setShow(p => !p); }}>
+        {show ? <LucideEyeOff width={11} /> : <LucideEye width={11} />}
+      </button>
+    </div>
+  );
+}
+
+// ─── Credentials section ─────────────────────────────────────────────────────
+// When vault is enabled + locked: ALL credential rows are masked and not in the DOM.
+// When vault is disabled or unlocked: render normally.
+
+function CredentialsSection({ link, isSelectMode }: { link: LinkType; isSelectMode: boolean }) {
+  const { isEnabled, isUnlocked, requestUnlock } = useVault();
+  const vaultLocked = isEnabled && !isUnlocked;
+
+  if (vaultLocked) {
+    return (
+      <div className="lcard-creds">
+        <div className="lcard-cred-row lcard-cred-row--vault">
+          <LucideLock width={12} />
+          <span className="lcard-password lcard-cred-masked">Credentials hidden</span>
+          <button
+            className="lcard-eye lcard-eye--lock"
+            onClick={e => { e.stopPropagation(); requestUnlock(); }}
+            title="Unlock vault to view"
+          >
+            🔒
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="lcard-creds">
+      {link.username && <div className="lcard-cred-row"><LucideUser width={12} /><span>{link.username}</span></div>}
+      {link.email    && <div className="lcard-cred-row"><LucideMail width={12} /><span>{link.email}</span></div>}
+      {link.phone    && <div className="lcard-cred-row"><LucidePhone width={12} /><span>{link.phone}</span></div>}
+      {link.passwordEncrypted && (
+        !isSelectMode ? <VaultPasswordRow link={link} /> : (
+          <div className="lcard-cred-row"><LucideLock width={12} /><span className="lcard-password">••••••••</span></div>
+        )
+      )}
+    </div>
+  );
+}
+
 interface LinkCardProps {
   link: LinkType;
   onEdit: (link: LinkType) => void;
@@ -31,7 +141,6 @@ export default function LinkCard({
   isSelectMode = false, isSelected = false, onToggleSelect,
 }: LinkCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   const toggleFavorite = useToggleFavorite();
   const deleteLink = useDeleteLink();
@@ -96,25 +205,7 @@ export default function LinkCard({
 
         {/* Credentials */}
         {hasCredentials && (
-          <div className="lcard-creds">
-            {link.username && <div className="lcard-cred-row"><LucideUser width={12} /><span>{link.username}</span></div>}
-            {link.email    && <div className="lcard-cred-row"><LucideMail width={12} /><span>{link.email}</span></div>}
-            {link.phone    && <div className="lcard-cred-row"><LucidePhone width={12} /><span>{link.phone}</span></div>}
-            {link.passwordEncrypted && (
-              <div className="lcard-cred-row">
-                <LucideLock width={12} />
-                <span className="lcard-password">{showPassword ? link.passwordEncrypted : "••••••••"}</span>
-                {!isSelectMode && (
-                  <button className="lcard-eye"
-                    onClick={(e) => { e.stopPropagation(); setShowPassword((p) => !p); }}
-                    aria-label={showPassword ? "Hide" : "Show"}
-                  >
-                    {showPassword ? <LucideEyeOff width={11} /> : <LucideEye width={11} />}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+          <CredentialsSection link={link} isSelectMode={isSelectMode} />
         )}
 
         {/* Tags & category */}
@@ -223,6 +314,18 @@ const CSS = `
   transition: color var(--transition-fast);
 }
 .lcard-eye:hover { color: var(--text-primary); }
+.lcard-eye--lock { font-size: 11px; }
+.lcard-eye:disabled { opacity: 0.5; cursor: default; }
+
+.lcard-cred-row--vault .lcard-password { color: var(--text-muted); }
+.lcard-cred-masked { font-style: italic; font-size: 11px; }
+.lcard-vault-hint {
+  font-size: 10px; font-weight: 600;
+  color: var(--accent); text-decoration: none; flex-shrink: 0;
+  padding: 1px 6px; border: 1px solid rgba(6,182,212,0.3); border-radius: 4px;
+  white-space: nowrap;
+}
+.lcard-vault-hint:hover { opacity: 0.8; }
 
 .lcard-footer {
   display: flex; align-items: center; justify-content: space-between;

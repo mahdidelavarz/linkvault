@@ -1,0 +1,26 @@
+{
+  "version": "0.2",
+  "words": [
+    "ciphertext",
+    "decryptable",
+    "linkvault",
+    "GHASH",
+    "PBKDF2",
+    "AES-GCM",
+    "BIP39",
+    "mnemonic",
+    "mnemonics",
+    "upserts",
+    "upsert",
+    "mousemove",
+    "touchstart",
+    "visibilitychange",
+    "extractable",
+    "TypeORM",
+    "bcrypt",
+    "SameSite",
+    "HttpOnly",
+    "WebAuthn",
+    "WASM"
+  ]
+}

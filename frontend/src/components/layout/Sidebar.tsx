@@ -16,6 +16,7 @@ import {
   LucideLink2,
   LucideMessageSquare,
   LucideServer,
+  LucideSettings,
   LucideTag,
   LucideUser,
   LucideVault,
@@ -37,6 +38,10 @@ const NAV_MAIN = [
 const NAV_MANAGE = [
   { name: "Categories", href: "/categories", icon: LucideFolder },
   { name: "Tags", href: "/tags", icon: LucideTag },
+];
+
+const NAV_SETTINGS = [
+  { name: "Vault", href: "/settings/vault", icon: LucideSettings },
 ];
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
@@ -127,6 +132,17 @@ export default function Sidebar() {
             />
           ))}
         </NavSection>
+
+        <NavSection label="Settings" collapsed={collapsed}>
+          {NAV_SETTINGS.map((item) => (
+            <NavItem
+              key={item.href}
+              {...item}
+              active={pathname.startsWith(item.href)}
+              collapsed={collapsed}
+            />
+          ))}
+        </NavSection>
       </nav>
 
       {/* Footer */}
@@ -198,6 +214,17 @@ export default function Sidebar() {
             </NavSection>
             <NavSection label="Manage" collapsed={false}>
               {NAV_MANAGE.map((item) => (
+                <NavItem
+                  key={item.href}
+                  {...item}
+                  active={pathname.startsWith(item.href)}
+                  collapsed={false}
+                />
+              ))}
+            </NavSection>
+
+            <NavSection label="Settings" collapsed={false}>
+              {NAV_SETTINGS.map((item) => (
                 <NavItem
                   key={item.href}
                   {...item}

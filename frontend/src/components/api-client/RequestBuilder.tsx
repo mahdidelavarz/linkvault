@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Icon } from '@iconify/react'
 import { type HttpMethod, type Environment, type KeyValue, HTTP_METHODS } from '@/types/api'
+import { useVault } from '@/hooks/useVault'
 
 const METHOD_COLORS: Record<HttpMethod, string> = {
   GET:     '#34d399', POST:    '#60a5fa', PUT:     '#fbbf24',
@@ -47,6 +48,8 @@ export default function RequestBuilder({
   const [activeTab, setActiveTab] = useState<Tab>('params')
   const hasBody = ['POST', 'PUT', 'PATCH'].includes(method)
   const enabledParamCount = queryParams.filter((p) => p.key.trim() && p.enabled).length
+  const { isEnabled: vaultEnabled, isUnlocked: vaultUnlocked } = useVault()
+  const vaultLocked = vaultEnabled && !vaultUnlocked
 
   // Resolve {{VAR}} tokens against the active environment for the preview line
   const activeEnv = environments.find((e) => e.id === activeEnvId) ?? null
@@ -57,6 +60,14 @@ export default function RequestBuilder({
       })
     : url
   const hasSubstitution = resolvedUrl !== url
+
+  // When vault is locked, replace substituted variable values with bullets
+  const maskedUrl = vaultLocked
+    ? url.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+        const v = activeEnv?.variables?.find((v) => v.key === key.trim() && v.enabled)
+        return v ? '••••••••' : match
+      })
+    : resolvedUrl
 
   return (
     <>
@@ -155,7 +166,7 @@ export default function RequestBuilder({
         {hasSubstitution && (
           <div className="rb-resolved">
             <Icon icon="lucide:arrow-right" width={11} className="rb-resolved-arrow" />
-            <span className="rb-resolved-url">{resolvedUrl}</span>
+            <span className="rb-resolved-url">{maskedUrl}</span>
           </div>
         )}
 

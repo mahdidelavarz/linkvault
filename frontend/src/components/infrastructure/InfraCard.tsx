@@ -1,6 +1,6 @@
 "use client";
 
-import { ComponentType, SVGProps, useState } from "react";
+import { ComponentType, SVGProps, useState, useEffect } from "react";
 import { type Infrastructure, INFRA_TYPES } from "@/types/infrastructure";
 import {
   useToggleInfraFavorite,
@@ -12,6 +12,8 @@ import CopyButton from "@/components/shared/CopyButton";
 import ActionButtons from "@/components/shared/ActionButtons";
 import TagSection from "@/components/shared/TagSection";
 import ConfirmDeleteModal from "@/components/shared/ConfirmDeleteModal";
+import { VaultGuard } from "@/components/vault/VaultGuard";
+import { useVault } from "@/hooks/useVault";
 import {
   LucideChevronDown,
   LucideChevronUp,
@@ -73,7 +75,9 @@ export default function InfraCard({ item, onEdit }: InfraCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [revealed, setRevealed] = useState(false);
+  const [vaultContent, setVaultContent] = useState<string | null>(null);
 
+  const { isEnabled, isUnlocked, decrypt } = useVault();
   const toggleFav = useToggleInfraFavorite();
   const deleteInfra = useDeleteInfrastructure();
 
@@ -84,8 +88,19 @@ export default function InfraCard({ item, onEdit }: InfraCardProps) {
   const badgeVar = INFRA_BADGE_VARIANT[item.infraType] ?? "default";
   const isEnv = item.infraType === "env";
 
+  const isVaultProtected = isEnv && isEnabled &&
+    (!item.content || item.content === 'vault:encrypted');
+
+  useEffect(() => {
+    if (!isVaultProtected || !isUnlocked) { setVaultContent(null); return; }
+    decrypt('infrastructure', String(item.id), 'content').then(v => setVaultContent(v));
+  }, [isUnlocked, isVaultProtected, item.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Use decrypted content if available; fall back to stored content
+  const displayContent = isVaultProtected ? (vaultContent ?? '') : item.content;
+
   // Preview: first 5 lines
-  const allLines = item.content.split("\n");
+  const allLines = displayContent.split("\n");
   const previewLines = allLines.slice(0, 5);
   const hasMore = allLines.length > 5;
 
@@ -143,60 +158,65 @@ export default function InfraCard({ item, onEdit }: InfraCardProps) {
         {item.description && <p className="ic-desc">{item.description}</p>}
 
         {/* ── Content preview ── */}
-        <div className="ic-code-wrap">
-          {/* ENV reveal toggle */}
-          {isEnv && (
-            <button
-              className="ic-reveal-btn"
-              onClick={() => setRevealed((p) => !p)}
-              aria-label={revealed ? "Mask values" : "Reveal values"}
+        {/* Guard ALL env items when vault is enabled — not just vault-encrypted ones */}
+        <VaultGuard enabled={isEnv && isEnabled}>
+          <div className="ic-code-wrap">
+            {/* ENV reveal toggle */}
+            {isEnv && (
+              <button
+                className="ic-reveal-btn"
+                onClick={() => setRevealed((p) => !p)}
+                aria-label={revealed ? "Mask values" : "Reveal values"}
+              >
+                {revealed ? (
+                  <LucideEyeOff width={12} />
+                ) : (
+                  <LucideEye width={12} />
+                )}
+                {revealed ? "Mask" : "Reveal"}
+              </button>
+            )}
+
+            <pre
+              className={["ic-code", expanded ? "ic-code--expanded" : ""]
+                .filter(Boolean)
+                .join(" ")}
             >
-              {revealed ? (
-                <LucideEyeOff width={12} />
-              ) : (
-                <LucideEye width={12} />
-              )}
-              {revealed ? "Mask" : "Reveal"}
-            </button>
-          )}
+              <code>
+                {expanded
+                  ? (isEnv && !revealed
+                      ? allLines.map(maskEnvLine)
+                      : allLines
+                    ).join("\n")
+                  : displayLines.join("\n")}
+              </code>
+            </pre>
 
-          <pre
-            className={["ic-code", expanded ? "ic-code--expanded" : ""]
-              .filter(Boolean)
-              .join(" ")}
-          >
-            <code>
-              {expanded
-                ? (isEnv && !revealed
-                    ? allLines.map(maskEnvLine)
-                    : allLines
-                  ).join("\n")
-                : displayLines.join("\n")}
-            </code>
-          </pre>
+            {hasMore && (
+              <button
+                className="ic-expand-btn"
+                onClick={() => setExpanded((p) => !p)}
+              >
+                {expanded ? (
+                  <LucideChevronUp width={12} />
+                ) : (
+                  <LucideChevronDown width={12} />
+                )}
 
-          {hasMore && (
-            <button
-              className="ic-expand-btn"
-              onClick={() => setExpanded((p) => !p)}
-            >
-              {expanded ? (
-                <LucideChevronUp width={12} />
-              ) : (
-                <LucideChevronDown width={12} />
-              )}
-
-              {expanded ? "Show less" : `${allLines.length - 5} more lines`}
-            </button>
-          )}
-        </div>
+                {expanded ? "Show less" : `${allLines.length - 5} more lines`}
+              </button>
+            )}
+          </div>
+        </VaultGuard>
 
         {/* ── Tags ── */}
         <TagSection tags={item.tags} category={item.category} />
 
         {/* ── Footer: copy + actions ── */}
         <div className="ic-footer">
-          <CopyButton text={item.content} label="Copy" />
+          {!(isEnv && isEnabled && !isUnlocked) && (
+            <CopyButton text={displayContent} label="Copy" />
+          )}
           <ActionButtons onEdit={() => onEdit(item)} onDelete={() => setConfirmDelete(true)} />
           <span className="ic-date">
             {new Date(item.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}

@@ -13,6 +13,8 @@ import {
   LucideUser,
 } from "@/Icons/Icons";
 import ThemeSwitcher from "../ui/ThemeSwitcher";
+import { useVault } from "@/hooks/useVault";
+import { PinModal } from "@/components/vault/PinModal";
 // import ThemeSwitcher from "../ui/ThemeSwitcher";
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -22,9 +24,18 @@ export default function Header() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const { theme, toggleTheme } = useTheme();
+  const { isEnabled, isUnlocked, unlock, requestUnlock, lock } = useVault();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Listen for global unlock requests (from VaultGuard, ActiveView, etc.)
+  useEffect(() => {
+    const handler = () => setPinOpen(true);
+    window.addEventListener('vault:unlock-requested', handler);
+    return () => window.removeEventListener('vault:unlock-requested', handler);
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -73,6 +84,18 @@ export default function Header() {
 
         {/* Right — actions */}
         <div className="header-right">
+
+          {/* Vault lock indicator — only shown when vault is enabled */}
+          {isEnabled && (
+            <button
+              className={`header-icon-btn header-vault-btn${isUnlocked ? ' header-vault-btn--unlocked' : ''}`}
+              onClick={isUnlocked ? lock : requestUnlock}
+              title={isUnlocked ? 'Vault unlocked — click to lock' : 'Vault locked — click to unlock'}
+              aria-label={isUnlocked ? 'Lock vault' : 'Unlock vault'}
+            >
+              <span className="header-vault-icon">{isUnlocked ? '🔓' : '🔒'}</span>
+            </button>
+          )}
 
           <ThemeSwitcher />
           {/* Theme toggle */}
@@ -143,6 +166,12 @@ export default function Header() {
           </div>
         </div>
       </header>
+
+      <PinModal
+        isOpen={pinOpen}
+        onClose={() => setPinOpen(false)}
+        onSubmit={unlock}
+      />
     </>
   );
 }
@@ -242,6 +271,10 @@ const CSS = `
   border-color: var(--border-default);
   color:        var(--text-primary);
 }
+
+.header-vault-btn { font-size: 15px; }
+.header-vault-btn--unlocked { border-color: rgba(34,197,94,0.35); }
+.header-vault-icon { line-height: 1; }
 
 .header-divider {
   width:      1px;

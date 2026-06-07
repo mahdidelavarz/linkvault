@@ -6,6 +6,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { type Link, type CreateLinkDto } from "@/types/link";
 import { useCreateLink, useUpdateLink, useFetchLinkMeta } from "@/hooks/useLinks";
+import { useVault } from "@/hooks/useVault";
+import { VaultGuard } from "@/components/vault/VaultGuard";
+import { VaultSecretHint } from "@/components/vault/VaultSecretHint";
+import { detectSecret } from "@/lib/vault/detectSecret";
 import { useCategories } from "@/hooks/useCategories";
 import FormLayout from "@/components/layout/FormLayout";
 import FormSection from "@/components/ui/FormSection";
@@ -59,10 +63,12 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [metaLoading, setMetaLoading] = useState(false);
   const [autoFilled, setAutoFilled] = useState(false);
+  const [passwordValue, setPasswordValue] = useState('');
   const isEditing = !!link;
   const fetchMeta = useFetchLinkMeta();
   const initialUrlRef = useRef(link?.url ?? "");
 
+  const { isEnabled, isUnlocked, encrypt } = useVault();
   const { data: categories } = useCategories();
   const createLink = useCreateLink();
   const updateLink = useUpdateLink();
@@ -120,17 +126,29 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
   };
 
   const onSubmit = async (data: FormData) => {
+    const password = data.password || undefined;
     const payload: CreateLinkDto = {
       ...data,
       description: data.description || undefined,
       username: data.username || undefined,
-      password: data.password || undefined,
+      // Always send the password to backend (server-side encrypted). Vault encrypts it additionally.
+      password,
       email: data.email || undefined,
       phone: data.phone || undefined,
     };
     try {
-      if (isEditing && link) { await updateLink.mutateAsync({ id: link.id, ...payload }); }
-      else { await createLink.mutateAsync(payload); }
+      if (isEditing && link) {
+        await updateLink.mutateAsync({ id: link.id, ...payload });
+        // Also encrypt to vault if enabled and unlocked
+        if (isEnabled && isUnlocked && password) {
+          await encrypt('link', String(link.id), 'password', password);
+        }
+      } else {
+        const created = await createLink.mutateAsync(payload);
+        if (isEnabled && isUnlocked && password) {
+          await encrypt('link', String(created.id), 'password', password);
+        }
+      }
       onClose();
     } catch { /* shown via Alert */ }
   };
@@ -234,24 +252,38 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
 
         {/* Credentials */}
         <FormSection icon={LucideLock} title="Credentials" hint="optional">
-          <div className="lf-grid-2">
-            <Input label="Username" type="text" placeholder="username" leftIcon={LucideUser} optional error={errors.username?.message} {...register("username")} />
-            <Input
-              label="Password" type={showPassword ? "text" : "password"}
-              placeholder={isEditing ? "Leave blank to keep" : "password"}
-              leftIcon={LucideLock} optional error={errors.password?.message}
-              rightNode={
-                <button type="button" className="lf-eye" onClick={() => setShowPassword((p) => !p)} tabIndex={-1}>
-                  {showPassword ? <LucideEyeOff width={13} /> : <LucideEye width={13} />}
-                </button>
-              }
-              {...register("password")}
-            />
-          </div>
-          <div className="lf-grid-2">
-            <Input label="Email" type="email" placeholder="email@example.com" leftIcon={LucideMail} optional error={errors.email?.message} {...register("email")} />
-            <Input label="Phone" type="tel" placeholder="+1 234 567 890" leftIcon={LucidePhone} optional error={errors.phone?.message} {...register("phone")} />
-          </div>
+          <VaultGuard>
+            <div className="lf-grid-2">
+              <Input label="Username" type="text" placeholder="username" leftIcon={LucideUser} optional error={errors.username?.message} {...register("username")} />
+              <div>
+                <Input
+                  label="Password" type={showPassword ? "text" : "password"}
+                  placeholder={isEditing ? "Leave blank to keep" : "password"}
+                  leftIcon={LucideLock} optional error={errors.password?.message}
+                  rightNode={
+                    <button type="button" className="lf-eye" onClick={() => setShowPassword((p) => !p)} tabIndex={-1}>
+                      {showPassword ? <LucideEyeOff width={13} /> : <LucideEye width={13} />}
+                    </button>
+                  }
+                  {...register("password", {
+                    onChange: (e) => setPasswordValue(e.target.value),
+                  })}
+                />
+                <VaultSecretHint
+                  secretType={detectSecret(passwordValue, 'PASSWORD')}
+                  onEncrypt={
+                    isEnabled && isUnlocked && link
+                      ? () => encrypt('link', String(link.id), 'password', passwordValue)
+                      : undefined
+                  }
+                />
+              </div>
+            </div>
+            <div className="lf-grid-2">
+              <Input label="Email" type="email" placeholder="email@example.com" leftIcon={LucideMail} optional error={errors.email?.message} {...register("email")} />
+              <Input label="Phone" type="tel" placeholder="+1 234 567 890" leftIcon={LucidePhone} optional error={errors.phone?.message} {...register("phone")} />
+            </div>
+          </VaultGuard>
         </FormSection>
       </FormLayout>
     </>

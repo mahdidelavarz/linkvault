@@ -12,6 +12,12 @@ docker-compose -f docker-compose.dev.yml up --build
 # 5. To stop services
 docker-compose -f docker-compose.dev.yml down
 
+# 5b. To restart services
+docker-compose -f docker-compose.dev.yml restart
+
+# 5c. To restart a single service (e.g. backend)
+docker-compose -f docker-compose.dev.yml restart backend
+
 # 6. To stop and remove volumes (clears database)
 docker-compose -f docker-compose.dev.yml down -v
 
