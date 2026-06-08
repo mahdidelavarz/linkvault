@@ -9,6 +9,9 @@ import FavoriteButton from "@/components/shared/FavoriteButton";
 import ActionButtons from "@/components/shared/ActionButtons";
 import TagSection from "@/components/shared/TagSection";
 import ConfirmDeleteModal from "@/components/shared/ConfirmDeleteModal";
+import ProjectBadge from "@/components/projects/ProjectBadge";
+import MultiProjectEditWarning from "@/components/projects/MultiProjectEditWarning";
+import { useProjectAwareEdit } from "@/hooks/useProjectAwareEdit";
 import {
   LucideCheck,
   LucideExternalLink,
@@ -145,6 +148,9 @@ export default function LinkCard({
   const toggleFavorite = useToggleFavorite();
   const deleteLink = useDeleteLink();
 
+  const { handleEdit, confirmEdit, cancelEdit, isWarnOpen, projectNames } =
+    useProjectAwareEdit({ itemType: 'link', itemId: link.id, onEdit });
+
   const hostname = (() => {
     try { return new URL(link.url).hostname.replace("www.", ""); }
     catch { return link.url; }
@@ -217,8 +223,9 @@ export default function LinkCard({
             <span className="lcard-date">
               {new Date(link.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
             </span>
+            <ProjectBadge itemType="link" itemId={link.id} />
             <ActionButtons
-              onEdit={() => onEdit(link)}
+              onEdit={() => handleEdit(link)}
               onDelete={() => setConfirmDelete(true)}
               extra={
                 <button className="ab-btn"
@@ -239,6 +246,12 @@ export default function LinkCard({
         itemName={link.title}
         isLoading={deleteLink.isPending}
         onConfirm={() => deleteLink.mutate(link.id, { onSuccess: () => setConfirmDelete(false) })}
+      />
+      <MultiProjectEditWarning
+        isOpen={isWarnOpen}
+        projectNames={projectNames}
+        onConfirm={confirmEdit}
+        onCancel={cancelEdit}
       />
     </>
   );

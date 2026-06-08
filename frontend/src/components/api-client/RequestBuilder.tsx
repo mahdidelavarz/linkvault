@@ -101,9 +101,20 @@ export default function RequestBuilder({
               title="Active environment"
             >
               <option value="">No environment</option>
-              {environments.map((env) => (
-                <option key={env.id} value={env.id}>{env.name}</option>
-              ))}
+              {environments.filter(e => e.id > 0).length > 0 && (
+                <optgroup label="Environments">
+                  {environments.filter(e => e.id > 0).map((env) => (
+                    <option key={env.id} value={env.id}>{env.name}</option>
+                  ))}
+                </optgroup>
+              )}
+              {environments.filter(e => e.id < 0).length > 0 && (
+                <optgroup label="From Infrastructure">
+                  {environments.filter(e => e.id < 0).map((env) => (
+                    <option key={env.id} value={env.id}>{env.name}</option>
+                  ))}
+                </optgroup>
+              )}
             </select>
             <Icon icon="lucide:chevron-down" width={11} className="rb-env-pill-chevron" />
           </div>

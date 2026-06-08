@@ -17,6 +17,7 @@ import dashboardRoutes from './routes/dashboard.route';
 import apiRoutes from './routes/api.route';
 import infraRoutes from './routes/Infra.route';
 import vaultRoutes from './routes/vault.route';
+import projectRoutes from './routes/project.route';
 import swaggerRouter from './config/swagger';
 
 const app = express();
@@ -57,6 +58,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/api-client', apiRoutes);
 app.use('/api/infrastructure', infraRoutes);
 app.use('/api/vault', vaultRoutes);
+app.use('/api/projects', projectRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

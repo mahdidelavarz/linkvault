@@ -19,6 +19,9 @@ import {
   sendToAI,
 } from "@/lib/promptUtils";
 import VariableForm from "./VariableForm";
+import ProjectBadge from "@/components/projects/ProjectBadge";
+import MultiProjectEditWarning from "@/components/projects/MultiProjectEditWarning";
+import { useProjectAwareEdit } from "@/hooks/useProjectAwareEdit";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
 import {
@@ -61,6 +64,9 @@ export default function PromptCard({ prompt, onEdit, onDuplicate }: PromptCardPr
   const toggleFavorite = useTogglePromptFavorite();
   const deletePrompt = useDeletePrompt();
   const incrementUsage = useIncrementPromptUsage();
+
+  const { handleEdit, confirmEdit, cancelEdit, isWarnOpen, projectNames } =
+    useProjectAwareEdit({ itemType: 'prompt', itemId: prompt.id, onEdit });
 
   // Merge extracted variables with stored defaults (P3-8 persistence)
   const variables = extractVariables(prompt.content).map(v => ({
@@ -316,6 +322,7 @@ export default function PromptCard({ prompt, onEdit, onDuplicate }: PromptCardPr
             </div>
           )}
 
+          <ProjectBadge itemType="prompt" itemId={prompt.id} />
           <div className="prompt-card-actions-right">
             {onDuplicate && (
               <button
@@ -328,7 +335,7 @@ export default function PromptCard({ prompt, onEdit, onDuplicate }: PromptCardPr
             )}
             <button
               className="prompt-card-action-btn"
-              onClick={() => onEdit(prompt)}
+              onClick={() => handleEdit(prompt)}
               title="Edit"
             >
               <LucidePencil width={14} />
@@ -343,6 +350,12 @@ export default function PromptCard({ prompt, onEdit, onDuplicate }: PromptCardPr
           </div>
         </div>
       </div>
+      <MultiProjectEditWarning
+        isOpen={isWarnOpen}
+        projectNames={projectNames}
+        onConfirm={confirmEdit}
+        onCancel={cancelEdit}
+      />
     </>
   );
 }

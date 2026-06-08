@@ -124,3 +124,19 @@ export const createCategorySchema = z.object({
 });
 
 export const updateCategorySchema = createCategorySchema.partial();
+
+// ─── Project ───────────────────────────────────────────────────────────────────
+
+export const createProjectSchema = z.object({
+    title: z.string().min(1).max(255),
+    description: z.string().max(2000).optional(),
+    color: z.string().max(20).optional(),
+    emoji: z.string().max(10).optional(),
+});
+
+export const updateProjectSchema = createProjectSchema.partial();
+
+export const addProjectItemSchema = z.object({
+    itemType: z.enum(['link', 'note', 'snippet', 'prompt', 'infrastructure']),
+    itemId: z.number().int().positive(),
+});

@@ -13,6 +13,9 @@ import ActionButtons from '@/components/shared/ActionButtons'
 import TagSection from '@/components/shared/TagSection'
 import ConfirmDeleteModal from '@/components/shared/ConfirmDeleteModal'
 import { LucideChevronDown, LucideChevronUp, LucideCopy, LucideFolder } from '@/Icons/Icons'
+import ProjectBadge from '@/components/projects/ProjectBadge'
+import MultiProjectEditWarning from '@/components/projects/MultiProjectEditWarning'
+import { useProjectAwareEdit } from '@/hooks/useProjectAwareEdit'
 
 const FLAG_TITLES: Record<string, string> = {
   g: 'Global', i: 'Case insensitive', m: 'Multiline', s: 'Dot matches newline',
@@ -57,6 +60,9 @@ export default function SnippetCard({ snippet, onEdit, onDuplicate }: SnippetCar
 
   const toggleFav  = useToggleSnippetFavorite()
   const deleteSnip = useDeleteSnippet()
+
+  const { handleEdit, confirmEdit, cancelEdit, isWarnOpen, projectNames } =
+    useProjectAwareEdit({ itemType: 'snippet', itemId: snippet.id, onEdit })
 
   const typeConfig = SNIPPET_TYPES[snippet.snippetType]
   const langName   = getLanguageName(snippet.language)
@@ -168,8 +174,9 @@ export default function SnippetCard({ snippet, onEdit, onDuplicate }: SnippetCar
         {/* ── Footer: copy + actions ── */}
         <div className="sc-footer">
           <CopyButton text={snippet.content} label="Copy" />
+          <ProjectBadge itemType="snippet" itemId={snippet.id} />
           <ActionButtons
-            onEdit={() => onEdit(snippet)}
+            onEdit={() => handleEdit(snippet)}
             onDelete={() => setConfirmDelete(true)}
             extra={onDuplicate && (
               <button
@@ -195,6 +202,12 @@ export default function SnippetCard({ snippet, onEdit, onDuplicate }: SnippetCar
         itemName={snippet.title}
         isLoading={deleteSnip.isPending}
         onConfirm={() => deleteSnip.mutate(snippet.id, { onSuccess: () => setConfirmDelete(false) })}
+      />
+      <MultiProjectEditWarning
+        isOpen={isWarnOpen}
+        projectNames={projectNames}
+        onConfirm={confirmEdit}
+        onCancel={cancelEdit}
       />
     </>
   )

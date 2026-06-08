@@ -14,6 +14,9 @@ import TagSection from "@/components/shared/TagSection";
 import ConfirmDeleteModal from "@/components/shared/ConfirmDeleteModal";
 import { VaultGuard } from "@/components/vault/VaultGuard";
 import { useVault } from "@/hooks/useVault";
+import ProjectBadge from "@/components/projects/ProjectBadge";
+import MultiProjectEditWarning from "@/components/projects/MultiProjectEditWarning";
+import { useProjectAwareEdit } from "@/hooks/useProjectAwareEdit";
 import {
   LucideChevronDown,
   LucideChevronUp,
@@ -80,6 +83,9 @@ export default function InfraCard({ item, onEdit }: InfraCardProps) {
   const { isEnabled, isUnlocked, decrypt } = useVault();
   const toggleFav = useToggleInfraFavorite();
   const deleteInfra = useDeleteInfrastructure();
+
+  const { handleEdit, confirmEdit, cancelEdit, isWarnOpen, projectNames } =
+    useProjectAwareEdit({ itemType: 'infrastructure', itemId: item.id, onEdit });
 
   const typeConfig = INFRA_TYPES[item.infraType];
   const Icon = INFRA_ICONS[item.infraType as InfraIconKey] ?? (
@@ -217,7 +223,8 @@ export default function InfraCard({ item, onEdit }: InfraCardProps) {
           {!(isEnv && isEnabled && !isUnlocked) && (
             <CopyButton text={displayContent} label="Copy" />
           )}
-          <ActionButtons onEdit={() => onEdit(item)} onDelete={() => setConfirmDelete(true)} />
+          <ProjectBadge itemType="infrastructure" itemId={item.id} />
+          <ActionButtons onEdit={() => handleEdit(item)} onDelete={() => setConfirmDelete(true)} />
           <span className="ic-date">
             {new Date(item.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
           </span>
@@ -230,6 +237,12 @@ export default function InfraCard({ item, onEdit }: InfraCardProps) {
         itemName={item.title}
         isLoading={deleteInfra.isPending}
         onConfirm={() => deleteInfra.mutate(item.id, { onSuccess: () => setConfirmDelete(false) })}
+      />
+      <MultiProjectEditWarning
+        isOpen={isWarnOpen}
+        projectNames={projectNames}
+        onConfirm={confirmEdit}
+        onCancel={cancelEdit}
       />
     </>
   );

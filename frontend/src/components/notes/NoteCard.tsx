@@ -7,6 +7,9 @@ import Badge from '@/components/ui/Badge'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
 import { LucidePencil, LucidePin, LucideTrash2 } from '@/Icons/Icons'
+import ProjectBadge from '@/components/projects/ProjectBadge'
+import MultiProjectEditWarning from '@/components/projects/MultiProjectEditWarning'
+import { useProjectAwareEdit } from '@/hooks/useProjectAwareEdit'
 
 interface NoteCardProps {
   note:          Note
@@ -19,6 +22,9 @@ export default function NoteCard({ note, isActive, onSelect, onEditDetails }: No
   const [confirmDelete, setConfirmDelete] = useState(false)
   const togglePin  = useTogglePin()
   const deleteNote = useDeleteNote()
+
+  const { handleEdit, confirmEdit, cancelEdit, isWarnOpen, projectNames } =
+    useProjectAwareEdit<null>({ itemType: 'note', itemId: note.id, onEdit: () => onEditDetails() })
 
   const preview = note.content
     ? note.content.replace(/[#*`_>\-\[\]()!]/g, '').trim().slice(0, 120)
@@ -57,7 +63,7 @@ export default function NoteCard({ note, isActive, onSelect, onEditDetails }: No
             </button>
             <button
               className="ncard-btn ncard-btn--edit"
-              onClick={(e) => stopProp(e, onEditDetails)}
+              onClick={(e) => stopProp(e, () => handleEdit(null))}
               aria-label="Edit details"
             >
               <LucidePencil width={13} />
@@ -88,6 +94,7 @@ export default function NoteCard({ note, isActive, onSelect, onEditDetails }: No
               <span className="ncard-more">+{note.tags.length - 2}</span>
             )}
           </div>
+          <ProjectBadge itemType="note" itemId={note.id} />
           <span className="ncard-date">
             {new Date(note.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
           </span>
@@ -112,6 +119,12 @@ export default function NoteCard({ note, isActive, onSelect, onEditDetails }: No
           </div>
         </div>
       </Modal>
+      <MultiProjectEditWarning
+        isOpen={isWarnOpen}
+        projectNames={projectNames}
+        onConfirm={confirmEdit}
+        onCancel={cancelEdit}
+      />
     </>
   )
 }

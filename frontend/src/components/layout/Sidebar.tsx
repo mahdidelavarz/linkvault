@@ -11,6 +11,7 @@ import {
   LucideFileCode2,
   LucideFileText,
   LucideFolder,
+  LucideFolderOpen,
   LucideGlobe,
   LucideLayoutDashboard,
   LucideLink2,
@@ -27,6 +28,7 @@ import {
 
 const NAV_MAIN = [
   { name: "Dashboard", href: "/dashboard", icon: LucideLayoutDashboard },
+  { name: "Projects", href: "/projects", icon: LucideFolderOpen },
   { name: "Links", href: "/links", icon: LucideLink2 },
   { name: "Notes", href: "/notes", icon: LucideFileText },
   { name: "Snippets", href: "/snippets", icon: LucideFileCode2 },
