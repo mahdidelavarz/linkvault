@@ -5,12 +5,16 @@ import Sidebar from "@/components/layout/Sidebar";
 import BottomTabBar from "@/components/layout/BottomNavBar";
 import InstallBanner from "@/components/pwa/InstallBanner";
 import OfflineBanner from "@/components/pwa/OfflineBanner";
+import { VaultMigrationModal } from "@/components/vault/VaultMigrationModal";
+import { useVaultMigration } from "@/hooks/useVaultMigration";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { showModal, items, progress, encryptAll, dismiss } = useVaultMigration();
+
   return (
     <div className="dashboard-layout">
       {/* Header stays fixed at top — it's outside the scrollable body */}
@@ -34,6 +38,16 @@ export default function DashboardLayout({
 
       {/* PWA install prompt + SW update toast */}
       <InstallBanner />
+
+      {/* One-time vault migration prompt — shown when vault unlocks and plaintext data exists */}
+      {showModal && (
+        <VaultMigrationModal
+          itemCount={items.length}
+          progress={progress}
+          onEncryptAll={encryptAll}
+          onDismiss={dismiss}
+        />
+      )}
 
       <style jsx>{`
         .dashboard-layout {

@@ -327,7 +327,7 @@ export default function VaultSettingsPage() {
             {error && <div className="vs-error vs-error--page">{error}</div>}
 
             {/* ─── Setup flow ─── */}
-            {mode === 'setup' && !isEnabled && (
+            {mode === 'setup' && (
                 <>
                     {setupStep === 'pin' && (
                         <PinSetupView onConfirm={handlePinConfirmed} />
@@ -359,7 +359,7 @@ export default function VaultSettingsPage() {
             )}
 
             {/* ─── Active ─── */}
-            {isEnabled && (
+            {isEnabled && mode === 'idle' && (
                 <ActiveView
                     isUnlocked={isUnlocked}
                     onLock={lock}

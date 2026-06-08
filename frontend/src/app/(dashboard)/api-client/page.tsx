@@ -13,7 +13,8 @@ import {
 import { useCategories } from '@/hooks/useCategories'
 import { useQuery } from '@tanstack/react-query'
 import api from '@/lib/http'
-import { type ApiEndpoint, type HttpMethod, type KeyValue, type Environment } from '@/types/api'
+import { type ApiEndpoint, type HttpMethod, type KeyValue, type Environment, type AuthType, type AuthData } from '@/types/api'
+import { useVault } from '@/hooks/useVault'
 import { type Infrastructure } from '@/types/infrastructure'
 import CollectionSidebar  from '@/components/api-client/CollectionSidebar'
 import RequestBuilder     from '@/components/api-client/RequestBuilder'
@@ -69,6 +70,12 @@ export default function ApiClientPage() {
   // Environment
   const [activeEnvId,   setActiveEnvId]   = useState<number | null>(null)
   const [envModalOpen,  setEnvModalOpen]  = useState(false)
+
+  // Auth
+  const [authType, setAuthType] = useState<AuthType>('none')
+  const [authData, setAuthData] = useState<Partial<AuthData>>({})
+
+  const { isEnabled: vaultEnabled, isUnlocked: vaultUnlocked, encrypt, decrypt } = useVault()
 
   // Draft restore notice (P3-14)
   const [draftRestored, setDraftRestored] = useState(false)
@@ -229,14 +236,24 @@ export default function ApiClientPage() {
       queryParams: queryParams.filter((p) => p.key.trim()),
       body:        body || undefined,
       bodyType:    bodyType as any,
-      authType:    'none' as const,
+      authType,
     }
 
     try {
+      let savedId: number
       if (selectedEndpoint) {
         await updateEndpoint.mutateAsync({ id: selectedEndpoint.id, ...payload })
+        savedId = selectedEndpoint.id
       } else {
-        await createEndpoint.mutateAsync(payload)
+        const created = await createEndpoint.mutateAsync(payload)
+        savedId = (created as any).id
+      }
+      // Encrypt authData to vault if credentials present
+      if (vaultEnabled && vaultUnlocked && authType !== 'none' && savedId) {
+        const hasCredentials = authData.token || authData.username || authData.password || authData.apiKey
+        if (hasCredentials) {
+          await encrypt('api_endpoint', String(savedId), 'authData', JSON.stringify(authData))
+        }
       }
       setSaveOpen(false)
       refetch()
@@ -288,6 +305,14 @@ export default function ApiClientPage() {
           })
         }
       }
+      // Apply auth headers client-side so credentials never touch the backend
+      if (authType === 'bearer' && authData.token) {
+        parsedHeaders['Authorization'] = `Bearer ${authData.token}`
+      } else if (authType === 'basic' && authData.username) {
+        parsedHeaders['Authorization'] = `Basic ${btoa(`${authData.username}:${authData.password ?? ''}`)}`
+      } else if (authType === 'api-key' && authData.apiKey) {
+        parsedHeaders[authData.apiKeyHeader ?? 'X-API-Key'] = authData.apiKey
+      }
       const result = await testEndpoint.mutateAsync({ method, url: resolvedUrl, headers: parsedHeaders, body: resolvedBody || undefined, bodyType })
       setResponse(result)
     } catch (err: any) {
@@ -296,7 +321,7 @@ export default function ApiClientPage() {
   }
 
   // ─── Select endpoint ─────────────────────────────────────────────────────────
-  const handleSelectEndpoint = (ep: ApiEndpoint) => {
+  const handleSelectEndpoint = async (ep: ApiEndpoint) => {
     setSelectedEndpoint(ep)
     setMethod(ep.method as HttpMethod)
     setUrl(ep.url)
@@ -307,12 +332,23 @@ export default function ApiClientPage() {
     setDraftRestored(false)
     setMobileTab('request')
     setResponse(null)
+    // Load auth
+    setAuthType((ep.authType as AuthType) ?? 'none')
+    if (vaultEnabled && vaultUnlocked) {
+      try {
+        const raw = await decrypt('api_endpoint', String(ep.id), 'authData')
+        setAuthData(raw ? JSON.parse(raw) : (ep.authData ?? {}))
+      } catch { setAuthData(ep.authData ?? {}) }
+    } else {
+      setAuthData(ep.authData ?? {})
+    }
   }
 
   const handleNewRequest = () => {
     setSelectedEndpoint(null)
     setMethod('GET'); setUrl(''); setHeaders(''); setBody(''); setBodyType('json')
-    setQueryParams([]); setDraftRestored(false); setMobileTab('request'); setResponse(null)
+    setQueryParams([]); setAuthType('none'); setAuthData({})
+    setDraftRestored(false); setMobileTab('request'); setResponse(null)
   }
 
   const handleDelete = async () => {
@@ -410,10 +446,15 @@ export default function ApiClientPage() {
                 environments={allEnvironments}
                 activeEnvId={activeEnvId}
                 queryParams={queryParams}
+                authType={authType}
+                authData={authData}
+                endpointId={selectedEndpoint?.id ?? null}
                 onMethodChange={setMethod}       onUrlChange={handleUrlChange}
                 onHeadersChange={setHeaders}     onBodyChange={setBody}
                 onBodyTypeChange={setBodyType}
                 onQueryParamsChange={handleParamsChange}
+                onAuthTypeChange={setAuthType}
+                onAuthDataChange={setAuthData}
                 onSend={handleSend}
                 onSave={openSave}
                 onDelete={() => setConfirmDel(true)}

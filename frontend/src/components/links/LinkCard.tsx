@@ -39,6 +39,9 @@ function VaultPasswordRow({ link }: { link: LinkType }) {
     decrypt('link', String(link.id), 'password').then(v => setVaultValue(v));
   }, [isUnlocked, isVaultProtected, link.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Sentinel left after vault was disabled — data is gone
+  if (link.passwordEncrypted === 'vault:encrypted') return null;
+
   // Pre-vault plaintext password (backward compat)
   if (!isVaultProtected && link.passwordEncrypted) {
     return (

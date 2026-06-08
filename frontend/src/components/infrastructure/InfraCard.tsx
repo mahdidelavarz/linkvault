@@ -102,8 +102,9 @@ export default function InfraCard({ item, onEdit }: InfraCardProps) {
     decrypt('infrastructure', String(item.id), 'content').then(v => setVaultContent(v));
   }, [isUnlocked, isVaultProtected, item.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Use decrypted content if available; fall back to stored content
-  const displayContent = isVaultProtected ? (vaultContent ?? '') : item.content;
+  // Use decrypted content if available; never expose the sentinel string as visible text
+  const rawContent = isVaultProtected ? (vaultContent ?? '') : item.content;
+  const displayContent = rawContent === 'vault:encrypted' ? '' : rawContent;
 
   // Preview: first 5 lines
   const allLines = displayContent.split("\n");

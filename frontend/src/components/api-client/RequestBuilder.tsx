@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Icon } from '@iconify/react'
-import { type HttpMethod, type Environment, type KeyValue, HTTP_METHODS } from '@/types/api'
+import { type HttpMethod, type Environment, type KeyValue, type AuthType, type AuthData, HTTP_METHODS, AUTH_TYPES } from '@/types/api'
 import { useVault } from '@/hooks/useVault'
 
 const METHOD_COLORS: Record<HttpMethod, string> = {
@@ -21,6 +21,9 @@ interface RequestBuilderProps {
   environments:   Environment[]
   activeEnvId:    number | null
   queryParams:    KeyValue[]
+  authType:       AuthType
+  authData:       Partial<AuthData>
+  endpointId:     number | null
   onMethodChange:   (m: HttpMethod) => void
   onUrlChange:      (u: string) => void
   onHeadersChange:  (h: string) => void
@@ -32,17 +35,21 @@ interface RequestBuilderProps {
   onEnvChange:        (id: number | null) => void
   onManageEnvs:       () => void
   onQueryParamsChange: (params: KeyValue[]) => void
+  onAuthTypeChange:   (t: AuthType) => void
+  onAuthDataChange:   (d: Partial<AuthData>) => void
   title:        string
 }
 
-type Tab = 'params' | 'headers' | 'body'
+type Tab = 'params' | 'headers' | 'body' | 'auth'
 
 export default function RequestBuilder({
   method, url, headers, body, bodyType,
   isSaved, isSending,
   environments, activeEnvId, queryParams,
+  authType, authData, endpointId,
   onMethodChange, onUrlChange, onHeadersChange, onBodyChange, onBodyTypeChange,
   onSend, onSave, onDelete, onEnvChange, onManageEnvs, onQueryParamsChange,
+  onAuthTypeChange, onAuthDataChange,
   title,
 }: RequestBuilderProps) {
   const [activeTab, setActiveTab] = useState<Tab>('params')
@@ -210,6 +217,14 @@ export default function RequestBuilder({
             Body
             {hasBody && body.trim() && <span className="rb-tab-dot" />}
           </button>
+          <button
+            className={['rb-tab', activeTab === 'auth' ? 'rb-tab--active' : ''].filter(Boolean).join(' ')}
+            onClick={() => setActiveTab('auth')}
+          >
+            <Icon icon="lucide:shield-check" width={13} />
+            Auth
+            {authType !== 'none' && <span className="rb-tab-dot" />}
+          </button>
         </div>
 
         {/* ── Params panel ── */}
@@ -309,6 +324,142 @@ export default function RequestBuilder({
               rows={8}
               spellCheck={false}
             />
+          </div>
+        )}
+
+        {/* ── Auth panel ── */}
+        {activeTab === 'auth' && (
+          <div className="rb-panel">
+            {/* Auth type selector */}
+            <div className="rb-auth-types">
+              {AUTH_TYPES.map((t) => (
+                <button
+                  key={t.value}
+                  className={['rb-auth-type-btn', authType === t.value ? 'rb-auth-type-btn--active' : ''].filter(Boolean).join(' ')}
+                  onClick={() => { onAuthTypeChange(t.value); onAuthDataChange({}); }}
+                >
+                  <span>{t.icon}</span>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Bearer token */}
+            {authType === 'bearer' && (
+              <div className="rb-auth-fields">
+                <label className="rb-auth-label">Bearer Token</label>
+                {vaultLocked ? (
+                  <div className="rb-auth-locked">
+                    <Icon icon="lucide:lock" width={13} />
+                    <span>Unlock vault to view or edit credentials</span>
+                  </div>
+                ) : (
+                  <input
+                    className="rb-auth-input"
+                    type="password"
+                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    value={authData.token ?? ''}
+                    onChange={(e) => onAuthDataChange({ ...authData, token: e.target.value })}
+                    spellCheck={false}
+                  />
+                )}
+                {!vaultLocked && !vaultEnabled && authData.token && (
+                  <p className="rb-auth-hint">
+                    <Icon icon="lucide:shield-alert" width={11} />
+                    Enable vault to encrypt this token at rest
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Basic auth */}
+            {authType === 'basic' && (
+              <div className="rb-auth-fields">
+                {vaultLocked ? (
+                  <div className="rb-auth-locked">
+                    <Icon icon="lucide:lock" width={13} />
+                    <span>Unlock vault to view or edit credentials</span>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="rb-auth-label">Username</label>
+                      <input
+                        className="rb-auth-input"
+                        type="text"
+                        placeholder="username"
+                        value={authData.username ?? ''}
+                        onChange={(e) => onAuthDataChange({ ...authData, username: e.target.value })}
+                        spellCheck={false}
+                      />
+                    </div>
+                    <div>
+                      <label className="rb-auth-label">Password</label>
+                      <input
+                        className="rb-auth-input"
+                        type="password"
+                        placeholder="password"
+                        value={authData.password ?? ''}
+                        onChange={(e) => onAuthDataChange({ ...authData, password: e.target.value })}
+                        spellCheck={false}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* API Key */}
+            {authType === 'api-key' && (
+              <div className="rb-auth-fields">
+                <div>
+                  <label className="rb-auth-label">Header Name</label>
+                  <input
+                    className="rb-auth-input"
+                    type="text"
+                    placeholder="X-API-Key"
+                    value={authData.apiKeyHeader ?? ''}
+                    onChange={(e) => onAuthDataChange({ ...authData, apiKeyHeader: e.target.value })}
+                    spellCheck={false}
+                  />
+                </div>
+                {vaultLocked ? (
+                  <div className="rb-auth-locked">
+                    <Icon icon="lucide:lock" width={13} />
+                    <span>Unlock vault to view or edit the API key value</span>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="rb-auth-label">API Key</label>
+                    <input
+                      className="rb-auth-input"
+                      type="password"
+                      placeholder="sk-••••••••••••••••"
+                      value={authData.apiKey ?? ''}
+                      onChange={(e) => onAuthDataChange({ ...authData, apiKey: e.target.value })}
+                      spellCheck={false}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {authType === 'none' && (
+              <p className="rb-panel-hint">No authentication configured for this request.</p>
+            )}
+
+            {authType === 'oauth2' && (
+              <p className="rb-panel-hint">
+                OAuth 2.0 — paste your access token in Bearer Token mode, or add it directly to the Authorization header.
+              </p>
+            )}
+
+            {vaultEnabled && vaultUnlocked && authType !== 'none' && isSaved && (
+              <p className="rb-auth-vault-note">
+                <Icon icon="lucide:shield-check" width={11} />
+                Credentials will be encrypted in your vault when saved
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -620,4 +771,51 @@ const CSS = `
   transition: border-color var(--transition-fast), color var(--transition-fast);
 }
 .rb-params-add:hover { border-color: var(--border-strong); color: var(--text-secondary); }
+
+/* Auth panel */
+.rb-auth-types {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       6px;
+}
+.rb-auth-type-btn {
+  display:       flex; align-items: center; gap: 5px;
+  height:        30px; padding: 0 12px;
+  background:    transparent; border: 1px solid var(--border-default); border-radius: var(--radius-md);
+  color:         var(--text-tertiary); font-size: var(--text-xs); font-family: var(--font-sans); font-weight: 500;
+  cursor:        pointer; min-height: 40px;
+  transition:    background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+.rb-auth-type-btn:hover       { border-color: var(--border-strong); color: var(--text-primary); }
+.rb-auth-type-btn--active     { background: var(--accent-muted); border-color: var(--accent-border); color: var(--cyan-300); }
+
+.rb-auth-fields { display: flex; flex-direction: column; gap: 10px; padding-top: 4px; }
+.rb-auth-label  { display: block; font-size: var(--text-xs); font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.rb-auth-input {
+  width:         100%;
+  height:        36px; padding: 0 12px;
+  background:    var(--bg-elevated); border: 1px solid var(--border-default); border-radius: var(--radius-md);
+  color:         var(--text-primary); font-family: var(--font-mono); font-size: var(--text-sm);
+  outline:       none; transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.rb-auth-input::placeholder { color: var(--text-tertiary); }
+.rb-auth-input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px var(--accent-muted); }
+
+.rb-auth-locked {
+  display:       flex; align-items: center; gap: 8px;
+  padding:       10px 14px;
+  background:    var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+  color:         var(--text-tertiary); font-size: var(--text-xs);
+}
+.rb-auth-hint {
+  display:     flex; align-items: center; gap: 5px;
+  font-size:   var(--text-xs); color: var(--text-tertiary);
+  margin:      0;
+}
+.rb-auth-vault-note {
+  display:     flex; align-items: center; gap: 5px;
+  font-size:   var(--text-xs); color: var(--cyan-400);
+  background:  var(--accent-muted); border: 1px solid var(--accent-border);
+  border-radius: var(--radius-md); padding: 6px 10px; margin: 0;
+}
 `

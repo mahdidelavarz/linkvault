@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { VaultService } from '@/lib/vault';
 import { VaultSession } from '@/lib/vault/session';
 import { useAuthStore } from '@/store/authStore';
@@ -14,6 +14,7 @@ async function fetchVaultStatus(): Promise<{ isEnabled: boolean }> {
 export function useVault() {
     const user = useAuthStore(s => s.user);
     const userId = String(user?.id ?? '');
+    const queryClient = useQueryClient();
 
     const [isUnlocked, setIsUnlocked] = useState<boolean>(VaultSession.isUnlocked());
     const [isLoading, setIsLoading] = useState(false);
@@ -76,10 +77,12 @@ export function useVault() {
         try {
             await VaultService.disable();
             await refetchStatus();
+            // Wipe all cached data so decrypted values don't linger in the UI
+            queryClient.clear();
         } finally {
             setIsLoading(false);
         }
-    }, [refetchStatus]);
+    }, [refetchStatus, queryClient]);
 
     const encrypt = useCallback(async (
         module: string, recordId: string, fieldName: string, plaintext: string
