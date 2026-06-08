@@ -1,9 +1,11 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { persistQueryClient } from "@tanstack/query-persist-client-core";
 import { useState, useEffect, createContext, useContext } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { SidebarProvider } from "@/components/layout/SidebarContext";
+import { createIdbPersister } from "@/lib/idb-persister";
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 
@@ -52,14 +54,11 @@ function ThemeProvider({ children }: { children: React.ReactNode }) {
 }
 
 // ─── Auth initializer ────────────────────────────────────────────────────────
-// Keeps authStore hydrated on first render (SSR-safe)
 
 function AuthInitializer({ children }: { children: React.ReactNode }) {
   const setLoading = useAuthStore((s) => s.setLoading);
 
   useEffect(() => {
-    // authStore already hydrates itself from localStorage in its module scope.
-    // We just make sure isLoading is resolved after mount.
     setLoading(false);
   }, [setLoading]);
 
@@ -72,11 +71,8 @@ function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
-        // Don't refetch on window focus in a self-hosted vault app
         refetchOnWindowFocus: false,
-        // Retry once on failure, not 3 times
         retry: 1,
-        // Data stays fresh for 30 seconds
         staleTime: 30_000,
       },
       mutations: {
@@ -90,6 +86,24 @@ function makeQueryClient() {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(makeQueryClient);
+
+  // Wire IDB persistence — runs only on the client after mount.
+  // Vault queries are excluded because they contain sensitive encrypted data.
+  useEffect(() => {
+    const [unsubscribe] = persistQueryClient({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      queryClient: queryClient as any,
+      persister: createIdbPersister(),
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      dehydrateOptions: {
+        shouldDehydrateQuery: (query) => {
+          const key = String(query.queryKey[0] ?? "");
+          return !key.startsWith("vault");
+        },
+      },
+    });
+    return unsubscribe;
+  }, [queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>

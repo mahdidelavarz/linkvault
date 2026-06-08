@@ -4,6 +4,7 @@ import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import BottomTabBar from "@/components/layout/BottomNavBar";
 import InstallBanner from "@/components/pwa/InstallBanner";
+import OfflineBanner from "@/components/pwa/OfflineBanner";
 
 export default function DashboardLayout({
   children,
@@ -14,6 +15,9 @@ export default function DashboardLayout({
     <div className="dashboard-layout">
       {/* Header stays fixed at top — it's outside the scrollable body */}
       <Header />
+
+      {/* Offline banner sits between header and body as a flex row — flex-shrink:0 keeps it visible */}
+      <OfflineBanner />
 
       <div className="dashboard-layout-body">
         {/* Sidebar is a flex child with no overflow — it never grows taller than the body */}

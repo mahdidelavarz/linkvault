@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
   output: "standalone",
   reactStrictMode: true,
 
+  // Allow LAN devices (phones, tablets) to receive HMR updates in dev.
+  // Next.js 15+ blocks cross-origin dev resources by default.
+  // Update this list if your machine's LAN IP changes.
+  allowedDevOrigins: ["192.168.1.100"],
+
   // Proxy all /api/* requests to the backend server.
   // This means the frontend can use a relative /api base URL and works from
   // any device on the same network — the Next.js process (running on this machine)
