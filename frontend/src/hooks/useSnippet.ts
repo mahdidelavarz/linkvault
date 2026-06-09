@@ -12,6 +12,7 @@ export const useSnippets = (filters?: {
   language?: string;
   isFavorite?: boolean;
   tagIds?: number[];
+  sortBy?: string;
 }) => {
   return useInfiniteQuery<Page<Snippet>>({
     queryKey: ['snippets', filters],
@@ -23,6 +24,7 @@ export const useSnippets = (filters?: {
       if (filters?.language) params.append('language', filters.language);
       if (filters?.isFavorite) params.append('isFavorite', 'true');
       if (filters?.tagIds) params.append('tagIds', filters.tagIds.join(','));
+      if (filters?.sortBy) params.append('sortBy', filters.sortBy);
       params.append('page', String(pageParam));
       params.append('limit', '20');
       const { data } = await api.get(`/snippets?${params.toString()}`);

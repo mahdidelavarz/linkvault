@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useGlobalSearch } from "@/hooks/useSearch";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useRecentSearches } from "@/hooks/useRecentSearches";
 import SearchResultCard from "@/components/search/SearchResultCard";
 import SearchFilters from "@/components/search/SearchFilters";
 import SearchEmptyState from "@/components/search/SearchEmptyState";
@@ -35,6 +36,9 @@ export default function SearchPage() {
   const [categoryId, setCategoryId] = useState<number | undefined>();
   const [tagIds, setTagIds] = useState<number[]>([]);
   const [shownCounts, setShownCounts] = useState(ZERO_SHOWN);
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+
+  const { searches: recentSearches, addSearch, removeSearch, clearSearches } = useRecentSearches();
 
   const { data: results, isLoading } = useGlobalSearch({
     query,
@@ -43,8 +47,18 @@ export default function SearchPage() {
     tagIds,
   });
 
-  // Reset visible counts whenever the search changes
-  useEffect(() => { setShownCounts(ZERO_SHOWN); }, [query, type, categoryId]);
+  // Save to recent searches when results come back
+  useEffect(() => {
+    if (results && results.totalResults > 0 && query.length >= 2) {
+      addSearch(query);
+    }
+  }, [results]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset visible counts and keyboard focus whenever the search changes
+  useEffect(() => {
+    setShownCounts(ZERO_SHOWN);
+    setFocusedIndex(null);
+  }, [query, type, categoryId]);
 
   // Sync URL
   useEffect(() => {
@@ -56,17 +70,74 @@ export default function SearchPage() {
     router.replace(`/search${params.toString() ? "?" + params.toString() : ""}`);
   }, [query, type, categoryId, tagIds, router]);
 
-  // Ctrl+K / Cmd+K
+  // Total count of currently visible result cards (for Arrow nav bounds)
+  const totalVisible = useMemo(() => {
+    if (!results) return 0;
+    return (
+      Math.min(results.results.links.length, shownCounts.links) +
+      Math.min(results.results.notes.length, shownCounts.notes) +
+      Math.min(results.results.snippets.length, shownCounts.snippets) +
+      Math.min(results.results.prompts.length, shownCounts.prompts) +
+      Math.min(results.results.infrastructures.length, shownCounts.infrastructures)
+    );
+  }, [results, shownCounts]);
+
+  // Section start indices so each card knows its flat position
+  const sectionStarts = useMemo(() => {
+    if (!results) return { links: 0, notes: 0, snippets: 0, prompts: 0, infrastructures: 0 };
+    const links = Math.min(results.results.links.length, shownCounts.links);
+    const notes = Math.min(results.results.notes.length, shownCounts.notes);
+    const snippets = Math.min(results.results.snippets.length, shownCounts.snippets);
+    const prompts = Math.min(results.results.prompts.length, shownCounts.prompts);
+    return {
+      links: 0,
+      notes: links,
+      snippets: links + notes,
+      prompts: links + notes + snippets,
+      infrastructures: links + notes + snippets + prompts,
+    };
+  }, [results, shownCounts]);
+
+  // Keyboard navigation: Arrow Up/Down moves through results, Enter opens, Escape returns to input
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
         e.preventDefault();
         document.getElementById("search-input")?.focus();
+        setFocusedIndex(null);
+        return;
+      }
+      if (e.key === "ArrowDown" && totalVisible > 0) {
+        e.preventDefault();
+        setFocusedIndex(i => i === null ? 0 : Math.min(i + 1, totalVisible - 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setFocusedIndex(i => {
+          if (i === null || i === 0) {
+            document.getElementById("search-input")?.focus();
+            return null;
+          }
+          return i - 1;
+        });
+      } else if (e.key === "Enter" && focusedIndex !== null) {
+        e.preventDefault();
+        const cards = document.querySelectorAll<HTMLElement>("[data-result-card]");
+        cards[focusedIndex]?.click();
+      } else if (e.key === "Escape") {
+        setFocusedIndex(null);
+        document.getElementById("search-input")?.focus();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [totalVisible, focusedIndex]);
+
+  // Scroll focused card into view
+  useEffect(() => {
+    if (focusedIndex === null) return;
+    const cards = document.querySelectorAll<HTMLElement>("[data-result-card]");
+    cards[focusedIndex]?.scrollIntoView({ block: "nearest" });
+  }, [focusedIndex]);
 
   const clearFilters = useCallback(() => {
     setQuery(""); setType("all"); setCategoryId(undefined); setTagIds([]);
@@ -144,6 +215,10 @@ export default function SearchPage() {
               <SearchEmptyState
                 hasQuery={hasQuery}
                 hasFilters={type !== "all" || categoryId !== undefined || tagIds.length > 0}
+                recentSearches={recentSearches}
+                onSelectRecent={(q) => setQuery(q)}
+                onRemoveRecent={removeSearch}
+                onClearRecent={clearSearches}
               />
             ) : (
               results && (
@@ -153,30 +228,40 @@ export default function SearchPage() {
                     items={results.results.links}          total={results.totals.links}
                     shown={shownCounts.links}              onLoadMore={() => loadMore("links")}
                     searchTerm={query}
+                    startIndex={sectionStarts.links}
+                    focusedIndex={focusedIndex}
                   />
                   <ResultSection
                     label="Notes"     icon={LucideNotebookPen}
                     items={results.results.notes}          total={results.totals.notes}
                     shown={shownCounts.notes}              onLoadMore={() => loadMore("notes")}
                     searchTerm={query}
+                    startIndex={sectionStarts.notes}
+                    focusedIndex={focusedIndex}
                   />
                   <ResultSection
                     label="Snippets"  icon={LucideCodeXml}
                     items={results.results.snippets}       total={results.totals.snippets}
                     shown={shownCounts.snippets}           onLoadMore={() => loadMore("snippets")}
                     searchTerm={query}
+                    startIndex={sectionStarts.snippets}
+                    focusedIndex={focusedIndex}
                   />
                   <ResultSection
                     label="Prompts"   icon={LucideMessageSquare}
                     items={results.results.prompts}        total={results.totals.prompts}
                     shown={shownCounts.prompts}            onLoadMore={() => loadMore("prompts")}
                     searchTerm={query}
+                    startIndex={sectionStarts.prompts}
+                    focusedIndex={focusedIndex}
                   />
                   <ResultSection
                     label="Infrastructure" icon={LucideServer}
                     items={results.results.infrastructures} total={results.totals.infrastructures}
                     shown={shownCounts.infrastructures}    onLoadMore={() => loadMore("infrastructures")}
                     searchTerm={query}
+                    startIndex={sectionStarts.infrastructures}
+                    focusedIndex={focusedIndex}
                   />
                 </>
               )
@@ -198,9 +283,11 @@ interface ResultSectionProps {
   shown: number;
   onLoadMore: () => void;
   searchTerm: string;
+  startIndex: number;
+  focusedIndex: number | null;
 }
 
-function ResultSection({ label, icon: Icon, items, total, shown, onLoadMore, searchTerm }: ResultSectionProps) {
+function ResultSection({ label, icon: Icon, items, total, shown, onLoadMore, searchTerm, startIndex, focusedIndex }: ResultSectionProps) {
   if (items.length === 0) return null;
 
   const visibleItems = items.slice(0, shown);
@@ -220,8 +307,13 @@ function ResultSection({ label, icon: Icon, items, total, shown, onLoadMore, sea
         </span>
       </h3>
       <div className="search-cards">
-        {visibleItems.map((item) => (
-          <SearchResultCard key={item.id} result={item} searchTerm={searchTerm} />
+        {visibleItems.map((item, i) => (
+          <SearchResultCard
+            key={item.id}
+            result={item}
+            searchTerm={searchTerm}
+            isFocused={focusedIndex === startIndex + i}
+          />
         ))}
       </div>
       {hasMore && (

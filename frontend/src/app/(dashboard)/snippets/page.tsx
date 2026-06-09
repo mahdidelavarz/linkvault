@@ -22,6 +22,7 @@ import SnippetForm from "@/components/snippets/SnippetForm";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import {
+  LucideArrowDownUp,
   LucideChevronDown,
   LucideCodeXml,
   LucideFileCode2,
@@ -73,6 +74,7 @@ export default function SnippetsPage() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [sortBy, setSortBy] = useState("");
 
   // P1-6: Deep-link from search — ?open=<id> opens that snippet's form directly
   const openParam = searchParams.get("open");
@@ -99,6 +101,7 @@ export default function SnippetsPage() {
     language: selectedLang || undefined,
     isFavorite: showFavorites || undefined,
     tagIds: selectedTagIds.length ? selectedTagIds : undefined,
+    sortBy: sortBy || undefined,
   });
   const snippets = data?.pages.flatMap((p) => p.items) ?? [];
   const total = data?.pages[0]?.total ?? 0;
@@ -116,11 +119,11 @@ export default function SnippetsPage() {
   }, [selectedType]);
 
   const hasFilters = !!(
-    search || categoryId || selectedType || selectedLang || showFavorites || selectedTagIds.length
+    search || categoryId || selectedType || selectedLang || showFavorites || selectedTagIds.length || sortBy
   );
 
   const activeFilterCount = [
-    search, categoryId, selectedType, selectedLang, showFavorites, selectedTagIds.length,
+    search, categoryId, selectedType, selectedLang, showFavorites, selectedTagIds.length, sortBy,
   ].filter(Boolean).length;
 
   const clearFilters = () => {
@@ -130,6 +133,7 @@ export default function SnippetsPage() {
     setSelectedLang("");
     setShowFavorites(false);
     setSelectedTagIds([]);
+    setSortBy("");
   };
 
   const openCreate = () => {
@@ -204,6 +208,12 @@ export default function SnippetsPage() {
                 <span className="sp-filter-count">{activeFilterCount}</span>
               )}
             </button>
+
+            {!isLoading && (
+              <span className="sp-result-count">
+                {total} {total === 1 ? "snippet" : "snippets"}
+              </span>
+            )}
           </div>
 
           {/* Expandable filters */}
@@ -265,6 +275,23 @@ export default function SnippetsPage() {
                     {c.name}
                   </option>
                 ))}
+              </select>
+              <LucideChevronDown className="sp-select-chevron" />
+            </div>
+
+            {/* Sort */}
+            <div className="sp-select-wrap">
+              <LucideArrowDownUp className="sp-select-icon" />
+              <select
+                className="sp-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <option value="">Recently updated</option>
+                <option value="created">Recently created</option>
+                <option value="title_asc">Title A–Z</option>
+                <option value="title_desc">Title Z–A</option>
+                <option value="type">By type</option>
               </select>
               <LucideChevronDown className="sp-select-chevron" />
             </div>
@@ -333,6 +360,12 @@ export default function SnippetsPage() {
                   </button>
                 );
               })}
+              {sortBy && (
+                <button className="sp-chip" onClick={() => setSortBy("")}>
+                  {sortBy === "created" ? "Recently created" : sortBy === "title_asc" ? "Title A–Z" : sortBy === "title_desc" ? "Title Z–A" : "By type"}
+                  <LucideX width={10} />
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -610,6 +643,16 @@ const CSS = `
 }
 .sp-chip:hover      { background: var(--danger-muted); border-color: rgba(239,68,68,0.2); color: var(--danger); }
 .sp-chip--star      { background: var(--warning-muted); border-color: rgba(245,158,11,0.2); color: #fbbf24; }
+
+/* Result count */
+.sp-result-count {
+  flex-shrink:   0;
+  font-size:     var(--text-xs);
+  font-weight:   500;
+  color:         var(--text-tertiary);
+  white-space:   nowrap;
+  padding:       0 4px;
+}
 
 /* Skeleton */
 .sp-skeleton {

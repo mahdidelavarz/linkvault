@@ -9,7 +9,7 @@ const snippetService = new SnippetService();
 export class SnippetController {
     findAll = asyncHandler(async (req: AuthRequest, res: Response) => {
         const userId = req.userId!;
-        const { search, categoryId, language, isFavorite, tagIds, snippetType, page, limit } = req.query;
+        const { search, categoryId, language, isFavorite, tagIds, snippetType, sortBy, page, limit } = req.query;
 
         const filters: any = {};
         if (search) filters.search = search as string;
@@ -18,6 +18,7 @@ export class SnippetController {
         if (isFavorite) filters.isFavorite = isFavorite === 'true';
         if (tagIds) filters.tagIds = (tagIds as string).split(',').map(Number);
         if (snippetType) filters.snippetType = snippetType as string;
+        if (sortBy) filters.sortBy = sortBy as string;
 
         const pagination = {
             page: parseInt(page as string) || 1,

@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/http";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -73,7 +75,9 @@ export default function SnippetForm({
   const isEditing = !!snippet;
   const [activeTab, setActiveTab]   = useState<"basic" | "meta">("basic");
   const [pasteToast, setPasteToast] = useState<string | null>(null);
+  const [dupCheckTitle, setDupCheckTitle] = useState("");
   const pasteTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dupTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevCodeLen   = useRef<number>(-1); // -1 = not yet initialised
 
   const { data: categories } = useCategories();
@@ -105,9 +109,33 @@ export default function SnippetForm({
     },
   });
 
-  const watchedType = watch("snippetType") as SnippetType;
-  const watchedLang = watch("language");
+  const watchedType    = watch("snippetType") as SnippetType;
+  const watchedLang    = watch("language");
   const watchedContent = watch("content");
+  const watchedTitle   = watch("title");
+
+  // Debounce title for duplicate check (create mode only)
+  useEffect(() => {
+    if (isEditing) return;
+    if (dupTimer.current) clearTimeout(dupTimer.current);
+    dupTimer.current = setTimeout(() => setDupCheckTitle(watchedTitle?.trim() ?? ""), 400);
+    return () => { if (dupTimer.current) clearTimeout(dupTimer.current); };
+  }, [watchedTitle, isEditing]);
+
+  const { data: dupResults } = useQuery({
+    queryKey: ["snippets-dup-check", dupCheckTitle],
+    queryFn: async () => {
+      const { data } = await api.get(`/snippets?search=${encodeURIComponent(dupCheckTitle)}&limit=10`);
+      return data as { items: Array<{ id: number; title: string }> };
+    },
+    enabled: !isEditing && dupCheckTitle.length >= 2,
+    staleTime: 15_000,
+  });
+
+  const hasDuplicate = useMemo(() =>
+    dupResults?.items.some(s => s.title.toLowerCase() === dupCheckTitle.toLowerCase()) ?? false,
+    [dupResults, dupCheckTitle]
+  );
 
   // Auto-detect language + type from content
   const detectedLang = watchedContent ? detectLanguage(watchedContent) : null;
@@ -312,6 +340,12 @@ export default function SnippetForm({
               autoFocus
               {...register("title")}
             />
+            {hasDuplicate && (
+              <div className="sform-dup-warning">
+                <LucideCircleAlert width={13} />
+                A snippet named &ldquo;{dupCheckTitle}&rdquo; already exists — you can still create it.
+              </div>
+            )}
 
             {/* Type selector */}
             <div className="sform-field">
@@ -803,6 +837,21 @@ const CSS = `
 }
 .sform-detect-hint:hover { background: var(--accent-muted); }
 .sform-detect-hint strong { color: var(--text-primary); }
+
+/* Duplicate warning */
+.sform-dup-warning {
+  display:       flex;
+  align-items:   center;
+  gap:           6px;
+  padding:       7px 12px;
+  background:    var(--warning-muted, rgba(245,158,11,0.08));
+  border:        1px solid rgba(245,158,11,0.25);
+  border-radius: var(--radius-md);
+  font-size:     var(--text-xs);
+  color:         #d97706;
+  margin-top:    -4px;
+  animation:     fadeIn 0.15s ease both;
+}
 
 /* Code editor */
 .sform-code-header  { display: flex; align-items: center; justify-content: space-between; }

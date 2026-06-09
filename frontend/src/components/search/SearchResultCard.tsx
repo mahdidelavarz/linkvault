@@ -18,6 +18,7 @@ import {
 interface SearchResultCardProps {
   result: SearchResult;
   searchTerm: string;
+  isFocused?: boolean;
 }
 
 const typeConfig: Record<string, { icon: React.ComponentType<any>; color: string; bg: string }> = {
@@ -51,6 +52,7 @@ const typeConfig: Record<string, { icon: React.ComponentType<any>; color: string
 export default function SearchResultCard({
   result,
   searchTerm,
+  isFocused = false,
 }: SearchResultCardProps) {
   const router = useRouter();
 
@@ -110,7 +112,7 @@ export default function SearchResultCard({
   return (
     <>
       <style>{CSS}</style>
-      <div onClick={handleClick} className="result-card">
+      <div onClick={handleClick} className="result-card" data-result-card="" data-focused={isFocused ? "true" : undefined}>
         {/* Type Icon */}
         <div
           className="result-type-icon"
@@ -188,9 +190,14 @@ const CSS = `
   cursor:        pointer;
   transition:    border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
-.result-card:hover {
+.result-card:hover,
+.result-card[data-focused="true"] {
   border-color: var(--border-strong);
   box-shadow:   0 2px 12px rgba(0,0,0,0.08);
+}
+.result-card[data-focused="true"] {
+  border-color: var(--border-focus);
+  box-shadow:   0 0 0 3px rgba(6,182,212,0.12);
 }
 
 /* Type icon */
@@ -237,7 +244,8 @@ const CSS = `
   transition:    color var(--transition-fast);
   line-height:   1.4;
 }
-.result-card:hover .result-title { color: var(--accent); }
+.result-card:hover .result-title,
+.result-card[data-focused="true"] .result-title { color: var(--accent); }
 .result-preview {
   font-size:     var(--text-sm);
   color:         var(--text-tertiary);
@@ -305,7 +313,8 @@ const CSS = `
   opacity:  0;
   transition: opacity var(--transition-fast);
 }
-.result-card:hover .result-action-icon { opacity: 1; }
+.result-card:hover .result-action-icon,
+.result-card[data-focused="true"] .result-action-icon { opacity: 1; }
 
 @media (max-width: 639px) {
   .result-right { display: none; }

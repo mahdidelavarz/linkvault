@@ -4,16 +4,26 @@ import {
   LucideSearch,
   LucideSearchX,
   LucideKeyboard,
+  LucideClock,
+  LucideX,
 } from "@/Icons/Icons";
 
 interface SearchEmptyStateProps {
   hasQuery: boolean;
   hasFilters: boolean;
+  recentSearches?: string[];
+  onSelectRecent?: (query: string) => void;
+  onRemoveRecent?: (query: string) => void;
+  onClearRecent?: () => void;
 }
 
 export default function SearchEmptyState({
   hasQuery,
   hasFilters,
+  recentSearches = [],
+  onSelectRecent,
+  onRemoveRecent,
+  onClearRecent,
 }: SearchEmptyStateProps) {
   if (!hasQuery && !hasFilters) {
     return (
@@ -31,6 +41,38 @@ export default function SearchEmptyState({
             <LucideKeyboard width={14} />
             <kbd>Ctrl</kbd> + <kbd>K</kbd>
           </div>
+
+          {recentSearches.length > 0 && (
+            <div className="recent-searches">
+              <div className="recent-header">
+                <LucideClock width={12} />
+                Recent
+                <button className="recent-clear-all" onClick={onClearRecent}>
+                  Clear all
+                </button>
+              </div>
+              <div className="recent-list">
+                {recentSearches.map((q) => (
+                  <div key={q} className="recent-item">
+                    <button
+                      className="recent-query"
+                      onClick={() => onSelectRecent?.(q)}
+                    >
+                      <LucideSearch width={12} />
+                      {q}
+                    </button>
+                    <button
+                      className="recent-remove"
+                      onClick={() => onRemoveRecent?.(q)}
+                      aria-label={`Remove ${q}`}
+                    >
+                      <LucideX width={11} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </>
     );
@@ -59,7 +101,7 @@ const CSS = `
   align-items:     center;
   justify-content: center;
   gap:             12px;
-  padding:         64px 24px;
+  padding:         48px 24px;
   background:      var(--bg-surface);
   border:          1px solid var(--border-default);
   border-radius:   var(--radius-lg);
@@ -102,4 +144,84 @@ const CSS = `
   font-family:   var(--font-mono);
   font-size:     var(--text-xs);
 }
+
+/* Recent searches */
+.recent-searches {
+  width:      100%;
+  max-width:  400px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border-default);
+  padding-top: 16px;
+}
+.recent-header {
+  display:       flex;
+  align-items:   center;
+  gap:           6px;
+  font-size:     var(--text-xs);
+  font-weight:   500;
+  color:         var(--text-tertiary);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.recent-clear-all {
+  margin-left:  auto;
+  background:   none;
+  border:       none;
+  font-size:    var(--text-xs);
+  color:        var(--text-tertiary);
+  cursor:       pointer;
+  padding:      2px 6px;
+  border-radius: var(--radius-sm);
+  transition:   color var(--transition-fast), background var(--transition-fast);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.recent-clear-all:hover { color: var(--text-primary); background: var(--bg-overlay); }
+
+.recent-list {
+  display:        flex;
+  flex-direction: column;
+  gap:            4px;
+}
+.recent-item {
+  display:     flex;
+  align-items: center;
+  gap:         4px;
+}
+.recent-query {
+  flex:          1;
+  display:       flex;
+  align-items:   center;
+  gap:           8px;
+  padding:       7px 12px;
+  background:    var(--bg-overlay);
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-size:     var(--text-sm);
+  color:         var(--text-secondary);
+  cursor:        pointer;
+  text-align:    left;
+  transition:    background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+.recent-query:hover {
+  background:   var(--bg-subtle);
+  color:        var(--text-primary);
+  border-color: var(--border-strong);
+}
+.recent-remove {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           28px;
+  height:          28px;
+  flex-shrink:     0;
+  background:      none;
+  border:          none;
+  border-radius:   var(--radius-sm);
+  color:           var(--text-tertiary);
+  cursor:          pointer;
+  transition:      color var(--transition-fast), background var(--transition-fast);
+}
+.recent-remove:hover { color: var(--text-primary); background: var(--bg-overlay); }
 `;

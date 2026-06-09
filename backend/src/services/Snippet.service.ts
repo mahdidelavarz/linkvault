@@ -9,7 +9,7 @@ export class SnippetService {
 
     async findAll(
         userId: number,
-        filters?: { search?: string; categoryId?: number; language?: string; isFavorite?: boolean; tagIds?: number[]; snippetType?: string },
+        filters?: { search?: string; categoryId?: number; language?: string; isFavorite?: boolean; tagIds?: number[]; snippetType?: string; sortBy?: string },
         pagination = { page: 1, limit: 20 }
     ) {
         const { page, limit } = pagination;
@@ -43,9 +43,20 @@ export class SnippetService {
             queryBuilder.andWhere('snippet.id IN (:...snippetIds)', { snippetIds });
         }
 
+        switch (filters?.sortBy) {
+            case 'title_asc':
+                queryBuilder.orderBy('snippet.title', 'ASC'); break;
+            case 'title_desc':
+                queryBuilder.orderBy('snippet.title', 'DESC'); break;
+            case 'created':
+                queryBuilder.orderBy('snippet.createdAt', 'DESC'); break;
+            case 'type':
+                queryBuilder.orderBy('snippet.snippetType', 'ASC').addOrderBy('snippet.title', 'ASC'); break;
+            default:
+                queryBuilder.orderBy('snippet.isFavorite', 'DESC').addOrderBy('snippet.updatedAt', 'DESC');
+        }
+
         const [raw, total] = await queryBuilder
-            .orderBy('snippet.isFavorite', 'DESC')
-            .addOrderBy('snippet.updatedAt', 'DESC')
             .skip(skip)
             .take(limit)
             .getManyAndCount();
