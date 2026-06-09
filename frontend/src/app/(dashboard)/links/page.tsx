@@ -17,6 +17,7 @@ import SelectBar from "@/components/shared/SelectBar";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import {
+  LucideArrowDownUp,
   LucideChevronDown,
   LucideFolder,
   LucideLink2,
@@ -38,6 +39,8 @@ export default function LinksPage() {
   const [isBulkProcessing,  setIsBulkProcessing]  = useState(false);
   const [selectedTagIds,    setSelectedTagIds]    = useState<number[]>([]);
   const [filtersExpanded,   setFiltersExpanded]   = useState(false);
+  const [sortBy, setSortBy] = useState<'updatedAt' | 'createdAt' | 'title'>('updatedAt');
+  const [sortDir, setSortDir] = useState<'ASC' | 'DESC'>('DESC');
 
   const deleteLink = useDeleteLink();
   const updateLink = useUpdateLink();
@@ -49,6 +52,8 @@ export default function LinksPage() {
     categoryId: categoryId ? parseInt(categoryId) : undefined,
     isFavorite: showFavorites || undefined,
     tagIds: selectedTagIds.length ? selectedTagIds : undefined,
+    sortBy,
+    sortDir,
   });
   const links = data?.pages.flatMap((p) => p.items) ?? [];
   const total = data?.pages[0]?.total ?? 0;
@@ -64,7 +69,22 @@ export default function LinksPage() {
   const openCreate = () => { bulk.exit(); setEditingLink(null); setModalOpen(true); };
   const openEdit   = (link: Link) => { setEditingLink(link); setModalOpen(true); };
   const closeModal = () => { setModalOpen(false); setEditingLink(null); };
-  const clearFilters = () => { setSearch(""); setCategoryId(""); setShowFavorites(false); setSelectedTagIds([]); };
+  const clearFilters = () => { setSearch(""); setCategoryId(""); setShowFavorites(false); setSelectedTagIds([]); setSortBy('updatedAt'); setSortDir('DESC'); };
+
+  const SORT_OPTIONS = [
+    { value: 'updatedAt|DESC', label: 'Recently updated' },
+    { value: 'updatedAt|ASC',  label: 'Oldest updated' },
+    { value: 'createdAt|DESC', label: 'Recently added' },
+    { value: 'createdAt|ASC',  label: 'Oldest added' },
+    { value: 'title|ASC',      label: 'Title A–Z' },
+    { value: 'title|DESC',     label: 'Title Z–A' },
+  ];
+  const sortValue = `${sortBy}|${sortDir}`;
+  const handleSortChange = (v: string) => {
+    const [by, dir] = v.split('|') as ['updatedAt' | 'createdAt' | 'title', 'ASC' | 'DESC'];
+    setSortBy(by); setSortDir(dir);
+  };
+  const isDefaultSort = sortBy === 'updatedAt' && sortDir === 'DESC';
 
   const handleBulkDelete = async () => {
     setIsBulkProcessing(true);
@@ -120,6 +140,18 @@ export default function LinksPage() {
                     Filters
                     {activeFilterCount > 0 && <span className="filter-count">{activeFilterCount}</span>}
                   </button>
+                  <div className={["sort-select-wrap", !isDefaultSort ? "sort-select-wrap--active" : ""].filter(Boolean).join(" ")}>
+                    <LucideArrowDownUp className="sort-select-icon" />
+                    <select
+                      className="sort-select"
+                      value={sortValue}
+                      onChange={(e) => handleSortChange(e.target.value)}
+                      aria-label="Sort links"
+                    >
+                      {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                    <LucideChevronDown className="sort-select-chevron" />
+                  </div>
                   {links.length > 0 && (
                     <button className="filter-select-mode" onClick={bulk.enter}>
                       <span className="scheck scheck--sm" /> Select
@@ -314,6 +346,25 @@ const CSS = `
   transition: color var(--transition-fast), background var(--transition-fast);
 }
 .filter-clear:hover { color: var(--danger); background: var(--danger-muted); }
+.sort-select-wrap {
+  position: relative; display: flex; align-items: center; flex-shrink: 0;
+  transition: opacity var(--transition-fast);
+}
+.sort-select-icon    { position: absolute; left: 9px; width: 13px; height: 13px; color: var(--text-tertiary); pointer-events: none; }
+.sort-select-chevron { position: absolute; right: 8px; width: 12px; height: 12px; color: var(--text-tertiary); pointer-events: none; }
+.sort-select {
+  height: 34px; padding: 0 28px 0 30px;
+  background: var(--bg-subtle); border: 1px solid var(--border-default); border-radius: var(--radius-md);
+  color: var(--text-primary); font-family: var(--font-sans); font-size: var(--text-sm);
+  outline: none; cursor: pointer; appearance: none; -webkit-appearance: none;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+.sort-select:focus { border-color: var(--border-focus); }
+.sort-select option { background: var(--bg-elevated); }
+.sort-select-wrap--active .sort-select { border-color: var(--accent-border); color: var(--accent); }
+.sort-select-wrap--active .sort-select-icon,
+.sort-select-wrap--active .sort-select-chevron { color: var(--accent); }
+
 .filter-select-mode {
   display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px;
   background: transparent; border: 1px solid var(--border-default); border-radius: var(--radius-md);

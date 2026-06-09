@@ -24,9 +24,17 @@ export class LinkController {
         }
     });
 
+    checkDuplicate = asyncHandler(async (req: AuthRequest, res: Response) => {
+        const { url } = req.query;
+        if (!url || typeof url !== 'string') throw new HttpError(400, 'url query param is required');
+        try { new URL(url); } catch { throw new HttpError(400, 'Invalid URL'); }
+        const existing = await linkService.findByUrl(url, req.userId!);
+        res.json({ duplicate: existing ?? null });
+    });
+
     findAll = asyncHandler(async (req: AuthRequest, res: Response) => {
         const userId = req.userId!;
-        const { search, categoryId, isFavorite, tagIds, page, limit } = req.query;
+        const { search, categoryId, isFavorite, tagIds, page, limit, sortBy, sortDir } = req.query;
 
         const filters: any = {};
         if (search) filters.search = search as string;
@@ -39,7 +47,16 @@ export class LinkController {
             limit: Math.min(parseInt(limit as string) || 20, 100),
         };
 
-        res.json(await linkService.findAll(userId, filters, pagination));
+        const allowedSortBy = ['updatedAt', 'createdAt', 'title'] as const;
+        const allowedSortDir = ['ASC', 'DESC'] as const;
+        const sort = {
+            sortBy: allowedSortBy.includes(sortBy as any) ? (sortBy as any) : undefined,
+            sortDir: allowedSortDir.includes((sortDir as string)?.toUpperCase() as any)
+                ? ((sortDir as string).toUpperCase() as 'ASC' | 'DESC')
+                : undefined,
+        };
+
+        res.json(await linkService.findAll(userId, filters, pagination, sort));
     });
 
     findOne = asyncHandler(async (req: AuthRequest, res: Response) => {

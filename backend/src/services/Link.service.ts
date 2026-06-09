@@ -12,7 +12,8 @@ export class LinkService {
     async findAll(
         userId: number,
         filters?: { search?: string; categoryId?: number; isFavorite?: boolean; tagIds?: number[] },
-        pagination = { page: 1, limit: 20 }
+        pagination = { page: 1, limit: 20 },
+        sort?: { sortBy?: 'updatedAt' | 'createdAt' | 'title'; sortDir?: 'ASC' | 'DESC' }
     ) {
         const { page, limit } = pagination;
         const skip = (page - 1) * limit;
@@ -39,8 +40,12 @@ export class LinkService {
             queryBuilder.andWhere('link.id IN (:...linkIds)', { linkIds });
         }
 
+        const sortBy = sort?.sortBy ?? 'updatedAt';
+        const sortDir = sort?.sortDir ?? 'DESC';
+        const colMap: Record<string, string> = { updatedAt: 'link.updatedAt', createdAt: 'link.createdAt', title: 'link.title' };
+
         const [raw, total] = await queryBuilder
-            .orderBy('link.updatedAt', 'DESC')
+            .orderBy(colMap[sortBy], sortDir)
             .skip(skip)
             .take(limit)
             .getManyAndCount();
@@ -200,6 +205,14 @@ export class LinkService {
             
             await this.taggableRepository.save(taggablesToSave);
         }
+    }
+
+    async findByUrl(url: string, userId: number): Promise<{ id: number; title: string } | null> {
+        const link = await this.linkRepository.findOne({
+            where: { url, userId },
+            select: ['id', 'title'],
+        });
+        return link ? { id: link.id, title: link.title } : null;
     }
 
     async fetchMeta(url: string): Promise<{

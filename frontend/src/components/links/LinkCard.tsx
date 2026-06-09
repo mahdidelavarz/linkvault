@@ -14,6 +14,7 @@ import MultiProjectEditWarning from "@/components/projects/MultiProjectEditWarni
 import { useProjectAwareEdit } from "@/hooks/useProjectAwareEdit";
 import {
   LucideCheck,
+  LucideCopy,
   LucideExternalLink,
   LucideEye,
   LucideEyeOff,
@@ -147,6 +148,15 @@ export default function LinkCard({
   isSelectMode = false, isSelected = false, onToggleSelect,
 }: LinkCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyUrl = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(link.url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
 
   const toggleFavorite = useToggleFavorite();
   const deleteLink = useDeleteLink();
@@ -231,12 +241,19 @@ export default function LinkCard({
               onEdit={() => handleEdit(link)}
               onDelete={() => setConfirmDelete(true)}
               extra={
-                <button className="ab-btn"
-                  onClick={(e) => { e.stopPropagation(); window.open(link.url, "_blank", "noopener,noreferrer"); }}
-                  aria-label="Open link" type="button"
-                >
-                  <LucideExternalLink width={14} />
-                </button>
+                <>
+                  <button className={["ab-btn", copied ? "ab-btn--copied" : ""].filter(Boolean).join(" ")}
+                    onClick={handleCopyUrl} aria-label="Copy URL" type="button" title={copied ? "Copied!" : "Copy URL"}
+                  >
+                    {copied ? <LucideCheck width={14} /> : <LucideCopy width={14} />}
+                  </button>
+                  <button className="ab-btn"
+                    onClick={(e) => { e.stopPropagation(); window.open(link.url, "_blank", "noopener,noreferrer"); }}
+                    aria-label="Open link" type="button"
+                  >
+                    <LucideExternalLink width={14} />
+                  </button>
+                </>
               }
             />
           </div>
@@ -351,4 +368,5 @@ const CSS = `
   font-size: var(--text-xs); color: var(--text-tertiary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex-shrink: 1;
 }
+.ab-btn--copied { color: var(--success) !important; }
 `;

@@ -5,7 +5,7 @@ import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { type Link, type CreateLinkDto } from "@/types/link";
-import { useCreateLink, useUpdateLink, useFetchLinkMeta } from "@/hooks/useLinks";
+import { useCreateLink, useUpdateLink, useFetchLinkMeta, useCheckDuplicateUrl, type DuplicateResult } from "@/hooks/useLinks";
 import { useVault } from "@/hooks/useVault";
 import { VaultGuard } from "@/components/vault/VaultGuard";
 import { VaultSecretHint } from "@/components/vault/VaultSecretHint";
@@ -64,8 +64,10 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
   const [metaLoading, setMetaLoading] = useState(false);
   const [autoFilled, setAutoFilled] = useState(false);
   const [passwordValue, setPasswordValue] = useState('');
+  const [duplicate, setDuplicate] = useState<DuplicateResult>(null);
   const isEditing = !!link;
   const fetchMeta = useFetchLinkMeta();
+  const checkDuplicate = useCheckDuplicateUrl();
   const initialUrlRef = useRef(link?.url ?? "");
 
   const { isEnabled, isUnlocked, encrypt } = useVault();
@@ -98,19 +100,24 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
     }
   }, [link, reset]);
 
-  // Auto-fetch metadata when URL changes (debounced 600ms)
+  // Auto-fetch metadata + duplicate check when URL changes (debounced 600ms)
   useEffect(() => {
+    setDuplicate(null);
     if (!urlValue || urlValue === initialUrlRef.current) return;
     try { new URL(urlValue); } catch { return; }
     setAutoFilled(false);
     const timer = setTimeout(async () => {
       setMetaLoading(true);
       try {
-        const meta = await fetchMeta(urlValue);
+        const [meta, dup] = await Promise.all([
+          fetchMeta(urlValue),
+          !isEditing ? checkDuplicate(urlValue) : Promise.resolve(null),
+        ]);
         let filled = false;
         if (meta.title && !getValues("title")) { setValue("title", meta.title, { shouldValidate: true }); filled = true; }
         if (meta.description && !getValues("description")) { setValue("description", meta.description); filled = true; }
         if (filled) setAutoFilled(true);
+        if (dup) setDuplicate(dup);
       } catch { /* silent */ }
       setMetaLoading(false);
     }, 600);
@@ -183,6 +190,11 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
             onPaste={handleUrlPaste}
             {...register("url")}
           />
+          {duplicate && (
+            <div className="lf-duplicate-warn">
+              Already saved as &ldquo;<strong>{duplicate.title}</strong>&rdquo; — you can still save a second copy.
+            </div>
+          )}
           <div className="lf-title-wrap">
             <Input
               label="Title" type="text" placeholder="My awesome link"
@@ -335,6 +347,12 @@ const CSS = `
 }
 .lf-check-box--checked { background: var(--accent); border-color: var(--accent); color: white; }
 .lf-check-label { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-secondary); }
+
+.lf-duplicate-warn {
+  margin-top: 4px; padding: 7px 10px; font-size: var(--text-xs); color: var(--warning);
+  background: var(--warning-muted); border: 1px solid rgba(245,158,11,0.25); border-radius: var(--radius-md);
+  line-height: 1.4;
+}
 
 .lf-eye {
   display: flex; align-items: center; justify-content: center;

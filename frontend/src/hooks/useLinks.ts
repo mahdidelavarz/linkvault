@@ -10,6 +10,8 @@ export const useLinks = (filters?: {
     categoryId?: number;
     isFavorite?: boolean;
     tagIds?: number[];
+    sortBy?: 'updatedAt' | 'createdAt' | 'title';
+    sortDir?: 'ASC' | 'DESC';
 }) => {
     return useInfiniteQuery<Page<Link>>({
         queryKey: ['links', filters],
@@ -19,6 +21,8 @@ export const useLinks = (filters?: {
             if (filters?.categoryId) params.append('categoryId', filters.categoryId.toString());
             if (filters?.isFavorite) params.append('isFavorite', 'true');
             if (filters?.tagIds) params.append('tagIds', filters.tagIds.join(','));
+            if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+            if (filters?.sortDir) params.append('sortDir', filters.sortDir);
             params.append('page', String(pageParam));
             params.append('limit', '20');
             const { data } = await api.get(`/links?${params.toString()}`);
@@ -108,5 +112,15 @@ export const useFetchLinkMeta = () => {
     return async (url: string): Promise<LinkMeta> => {
         const { data } = await api.get('/links/meta', { params: { url } });
         return data as LinkMeta;
+    };
+};
+
+// Check whether a URL is already saved by this user
+export type DuplicateResult = { id: number; title: string } | null;
+
+export const useCheckDuplicateUrl = () => {
+    return async (url: string): Promise<DuplicateResult> => {
+        const { data } = await api.get('/links/check', { params: { url } });
+        return (data as { duplicate: DuplicateResult }).duplicate;
     };
 };

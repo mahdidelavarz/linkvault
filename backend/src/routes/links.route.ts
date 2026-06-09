@@ -11,6 +11,7 @@ router.use(authMiddleware);
 
 router.get('/', linkController.findAll);
 router.get('/meta', linkController.fetchMeta);
+router.get('/check', linkController.checkDuplicate);
 router.post('/', validate(createLinkSchema), linkController.create);
 router.get('/:id', linkController.findOne);
 router.put('/:id', validate(updateLinkSchema), linkController.update);
