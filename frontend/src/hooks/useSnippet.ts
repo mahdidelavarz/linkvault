@@ -85,9 +85,25 @@ export const useDeleteSnippet = () => {
   return useMutation({
     mutationFn: async (id: number) => {
       await api.delete(`/snippets/${id}`);
+      return id;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['snippets'] });
+    onSuccess: (id) => {
+      // Remove the snippet from cached pages directly instead of invalidating —
+      // invalidating an infinite query refetches every page from 1, causing a layout jump.
+      queryClient.setQueriesData<{ pages: Page<Snippet>[]; pageParams: unknown[] }>(
+        { queryKey: ['snippets'] },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) => ({
+              ...page,
+              items: page.items.filter((item) => item.id !== id),
+              total: Math.max(0, page.total - 1),
+            })),
+          };
+        },
+      );
     },
   });
 };

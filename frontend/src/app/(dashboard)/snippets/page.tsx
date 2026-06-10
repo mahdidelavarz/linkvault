@@ -28,12 +28,16 @@ import {
   LucideFileCode2,
   LucideFolder,
   LucideLayers,
+  LucideLayoutGrid,
+  LucideList,
   LucidePlus,
   LucideSearch,
   LucideSlidersHorizontal,
   LucideStar,
   LucideX,
 } from "@/Icons/Icons";
+
+const VIEW_STORAGE_KEY = "snippets-view";
 
 const ALL_LANGUAGES: Record<string, string> = {
   js: "JavaScript",
@@ -75,6 +79,18 @@ export default function SnippetsPage() {
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [sortBy, setSortBy] = useState("");
+  const [view, setView] = useState<"grid" | "list">("grid");
+
+  // Restore view preference
+  useEffect(() => {
+    const stored = localStorage.getItem(VIEW_STORAGE_KEY);
+    if (stored === "grid" || stored === "list") setView(stored);
+  }, []);
+
+  const changeView = (v: "grid" | "list") => {
+    setView(v);
+    localStorage.setItem(VIEW_STORAGE_KEY, v);
+  };
 
   // P1-6: Deep-link from search — ?open=<id> opens that snippet's form directly
   const openParam = searchParams.get("open");
@@ -214,6 +230,27 @@ export default function SnippetsPage() {
                 {total} {total === 1 ? "snippet" : "snippets"}
               </span>
             )}
+
+            <div className="sp-view-toggle">
+              <button
+                className={["sp-view-btn", view === "grid" ? "sp-view-btn--active" : ""].filter(Boolean).join(" ")}
+                onClick={() => changeView("grid")}
+                aria-label="Grid view"
+                title="Grid view"
+                type="button"
+              >
+                <LucideLayoutGrid width={14} />
+              </button>
+              <button
+                className={["sp-view-btn", view === "list" ? "sp-view-btn--active" : ""].filter(Boolean).join(" ")}
+                onClick={() => changeView("list")}
+                aria-label="List view"
+                title="List view"
+                type="button"
+              >
+                <LucideList width={14} />
+              </button>
+            </div>
           </div>
 
           {/* Expandable filters */}
@@ -372,19 +409,35 @@ export default function SnippetsPage() {
       </>}
       >
 
-        {/* ── Grid ── */}
+        {/* ── Grid / List ── */}
         {isLoading ? (
-          <CardGrid minCardWidth={320}>{[...Array(6)].map((_, i) => <SnippetSkeleton key={i} />)}</CardGrid>
+          view === "grid" ? (
+            <CardGrid minCardWidth={320}>{[...Array(6)].map((_, i) => <SnippetSkeleton key={i} />)}</CardGrid>
+          ) : (
+            <div className="sp-list">{[...Array(6)].map((_, i) => <SnippetRowSkeleton key={i} />)}</div>
+          )
         ) : snippets.length > 0 ? (
           <>
-            <CardGrid minCardWidth={320}>
-              {snippets.map((snippet) => (
-                <SnippetCard key={snippet.id} snippet={snippet} onEdit={openEdit} onDuplicate={openDuplicate} />
-              ))}
-            </CardGrid>
+            {view === "grid" ? (
+              <CardGrid minCardWidth={320}>
+                {snippets.map((snippet) => (
+                  <SnippetCard key={snippet.id} snippet={snippet} onEdit={openEdit} onDuplicate={openDuplicate} />
+                ))}
+              </CardGrid>
+            ) : (
+              <div className="sp-list">
+                {snippets.map((snippet) => (
+                  <SnippetCard key={snippet.id} snippet={snippet} view="list" onEdit={openEdit} onDuplicate={openDuplicate} />
+                ))}
+              </div>
+            )}
             <div ref={sentinelRef} style={{ height: 1 }} />
             {isFetchingNextPage && (
-              <CardGrid minCardWidth={320}>{[...Array(3)].map((_, i) => <SnippetSkeleton key={i} />)}</CardGrid>
+              view === "grid" ? (
+                <CardGrid minCardWidth={320}>{[...Array(3)].map((_, i) => <SnippetSkeleton key={i} />)}</CardGrid>
+              ) : (
+                <div className="sp-list">{[...Array(3)].map((_, i) => <SnippetRowSkeleton key={i} />)}</div>
+              )
             )}
           </>
         ) : (
@@ -462,6 +515,21 @@ function SnippetSkeleton() {
           style={{ height: 32, width: 80, borderRadius: 8 }}
         />
       </div>
+    </div>
+  );
+}
+
+function SnippetRowSkeleton() {
+  return (
+    <div className="sp-row-skeleton">
+      <div className="skeleton" style={{ height: 8, width: 8, borderRadius: "50%", flexShrink: 0 }} />
+      <div className="skeleton" style={{ height: 16, width: 16, borderRadius: 4, flexShrink: 0 }} />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
+        <div className="skeleton" style={{ height: 14, width: "35%" }} />
+        <div className="skeleton" style={{ height: 11, width: "55%" }} />
+      </div>
+      <div className="skeleton" style={{ height: 28, width: 60, borderRadius: 8, flexShrink: 0 }} />
+      <div className="skeleton" style={{ height: 28, width: 80, borderRadius: 8, flexShrink: 0 }} />
     </div>
   );
 }
@@ -654,9 +722,44 @@ const CSS = `
   padding:       0 4px;
 }
 
+/* View toggle */
+.sp-view-toggle {
+  display:       flex;
+  gap:           2px;
+  flex-shrink:   0;
+  padding:       2px;
+  background:    var(--bg-subtle);
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+.sp-view-btn {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           28px;
+  height:          28px;
+  background:      transparent;
+  border:          none;
+  border-radius:   var(--radius-sm);
+  color:           var(--text-tertiary);
+  cursor:          pointer;
+  transition:      background var(--transition-fast), color var(--transition-fast);
+}
+.sp-view-btn:hover     { color: var(--text-primary); }
+.sp-view-btn--active   { background: var(--accent-muted); color: var(--cyan-300); }
+
+/* List view */
+.sp-list { display: flex; flex-direction: column; gap: 8px; }
+
 /* Skeleton */
 .sp-skeleton {
   padding: 16px;
+  background: var(--bg-surface); border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+}
+.sp-row-skeleton {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 14px;
   background: var(--bg-surface); border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
 }

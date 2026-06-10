@@ -52,9 +52,10 @@ interface SnippetCardProps {
   snippet:      Snippet
   onEdit:       (s: Snippet) => void
   onDuplicate?: (s: Snippet) => void
+  view?:        'grid' | 'list'
 }
 
-export default function SnippetCard({ snippet, onEdit, onDuplicate }: SnippetCardProps) {
+export default function SnippetCard({ snippet, onEdit, onDuplicate, view = 'grid' }: SnippetCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [expanded,      setExpanded]      = useState(false)
 
@@ -71,6 +72,82 @@ export default function SnippetCard({ snippet, onEdit, onDuplicate }: SnippetCar
     const lines        = snippet.content.split('\n')
   const previewLines = lines.slice(0, 6)
   const hasMore      = lines.length > 6
+
+  const duplicateBtn = onDuplicate && (
+    <button
+      className="ab-btn"
+      type="button"
+      aria-label="Duplicate"
+      title="Duplicate snippet"
+      onClick={(e) => { e.stopPropagation(); onDuplicate(snippet); }}
+    >
+      <LucideCopy width={14} />
+    </button>
+  )
+
+  const deleteModals = (
+    <>
+      <ConfirmDeleteModal
+        isOpen={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        itemName={snippet.title}
+        isLoading={deleteSnip.isPending}
+        onConfirm={() => deleteSnip.mutate(snippet.id, { onSuccess: () => setConfirmDelete(false) })}
+      />
+      <MultiProjectEditWarning
+        isOpen={isWarnOpen}
+        projectNames={projectNames}
+        onConfirm={confirmEdit}
+        onCancel={cancelEdit}
+      />
+    </>
+  )
+
+  if (view === 'list') {
+    return (
+      <>
+        <style>{CSS}</style>
+        <div className="sc-row">
+          <div className="sc-type-dot" title={typeConfig?.label} />
+          <FavoriteButton
+            active={snippet.isFavorite}
+            pending={toggleFav.isPending}
+            onToggle={() => toggleFav.mutate(snippet.id)}
+          />
+
+          <div className="sc-row-main">
+            <div className="sc-row-title-line">
+              <h3 className="sc-row-title">{snippet.title}</h3>
+              <Badge variant={langColor} size="sm">{langName}</Badge>
+              <span className="sc-type-label">{typeConfig?.label}</span>
+              {snippet.category && (
+                <span className="sc-category">
+                  <LucideFolder width={11} />
+                  {snippet.category.name}
+                </span>
+              )}
+            </div>
+            {snippet.description && <p className="sc-row-desc">{snippet.description}</p>}
+          </div>
+
+          <CopyButton text={snippet.content} size="sm" />
+          <div className="sc-actions">
+            <ProjectBadge itemType="snippet" itemId={snippet.id} />
+            <ActionButtons
+              onEdit={() => handleEdit(snippet)}
+              onDelete={() => setConfirmDelete(true)}
+              extra={duplicateBtn}
+            />
+            <span className="sc-date">
+              {new Date(snippet.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </span>
+          </div>
+        </div>
+
+        {deleteModals}
+      </>
+    )
+  }
 
   return (
     <>
@@ -174,41 +251,21 @@ export default function SnippetCard({ snippet, onEdit, onDuplicate }: SnippetCar
         {/* ── Footer: copy + actions ── */}
         <div className="sc-footer">
           <CopyButton text={snippet.content} label="Copy" />
-          <ProjectBadge itemType="snippet" itemId={snippet.id} />
-          <ActionButtons
-            onEdit={() => handleEdit(snippet)}
-            onDelete={() => setConfirmDelete(true)}
-            extra={onDuplicate && (
-              <button
-                className="ab-btn"
-                type="button"
-                aria-label="Duplicate"
-                title="Duplicate snippet"
-                onClick={(e) => { e.stopPropagation(); onDuplicate(snippet); }}
-              >
-                <LucideCopy width={14} />
-              </button>
-            )}
-          />
-          <span className="sc-date">
-            {new Date(snippet.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-          </span>
+          <div className="sc-actions">
+            <ProjectBadge itemType="snippet" itemId={snippet.id} />
+            <ActionButtons
+              onEdit={() => handleEdit(snippet)}
+              onDelete={() => setConfirmDelete(true)}
+              extra={duplicateBtn}
+            />
+            <span className="sc-date">
+              {new Date(snippet.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            </span>
+          </div>
         </div>
       </div>
 
-      <ConfirmDeleteModal
-        isOpen={confirmDelete}
-        onClose={() => setConfirmDelete(false)}
-        itemName={snippet.title}
-        isLoading={deleteSnip.isPending}
-        onConfirm={() => deleteSnip.mutate(snippet.id, { onSuccess: () => setConfirmDelete(false) })}
-      />
-      <MultiProjectEditWarning
-        isOpen={isWarnOpen}
-        projectNames={projectNames}
-        onConfirm={confirmEdit}
-        onCancel={cancelEdit}
-      />
+      {deleteModals}
     </>
   )
 }
@@ -386,4 +443,48 @@ const CSS = `
 
 .sc-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
 .sc-date { font-size: var(--text-xs); color: var(--text-tertiary); white-space: nowrap; }
+
+/* ── List view row ───────────────────────────────────────────────── */
+.sc-row {
+  display:        flex;
+  align-items:    center;
+  gap:            12px;
+  width:          100%;
+  min-width:      0;
+  padding:        10px 14px;
+  background:     var(--bg-surface);
+  border:         1px solid var(--border-default);
+  border-radius:  var(--radius-lg);
+  box-sizing:     border-box;
+  transition:     border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.sc-row:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
+
+.sc-row-main {
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+  flex:           1;
+  min-width:      0;
+}
+.sc-row-title-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sc-row-title {
+  font-size:     var(--text-sm);
+  font-weight:   600;
+  color:         var(--text-primary);
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  min-width:     0;
+}
+.sc-row-desc {
+  font-size:     var(--text-xs);
+  color:         var(--text-tertiary);
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 639px) {
+  .sc-row-desc { display: none; }
+}
 `

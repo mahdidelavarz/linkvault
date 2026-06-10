@@ -14,7 +14,7 @@ import {
   type SnippetType,
 } from "@/types/snippet";
 import { getLanguageName, detectLanguage, detectSnippetType } from "@/lib/languageDetector";
-import { formatSQL, formatJSON, testRegex } from "@/lib/snippetUtils";
+import { formatSQL, formatJSON, testRegex, validateJSON, checkSQLSyntax, curlToFetch, curlToAxios, curlToPython } from "@/lib/snippetUtils";
 import { useCreateSnippet, useUpdateSnippet } from "@/hooks/useSnippet";
 import { useCategories } from "@/hooks/useCategories";
 import FormLayout from "@/components/layout/FormLayout";
@@ -22,6 +22,7 @@ import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
 import TagSelector from "@/components/tags/TagSelector";
+import CopyButton from "@/components/shared/CopyButton";
 import {
   LucideArrowRight,
   LucideArrowRightLeft,
@@ -173,6 +174,27 @@ export default function SnippetForm({
     watchedType === 'regex' && watchedContent.trim() && watchedTestString.trim()
       ? testRegex(watchedContent, watchedTestString, watchedFlags)
       : null
+
+  const jsonResult =
+    watchedType === 'json' && watchedContent.trim()
+      ? validateJSON(watchedContent)
+      : null
+
+  const sqlSyntaxResult =
+    watchedType === 'sql' && watchedContent.trim()
+      ? checkSQLSyntax(watchedContent)
+      : null
+
+  // cURL → equivalent code converter
+  const [curlTarget, setCurlTarget] = useState<'fetch' | 'axios' | 'python'>('fetch')
+  const curlConverted =
+    watchedType === 'curl' && watchedContent.trim()
+      ? curlTarget === 'fetch'
+        ? curlToFetch(watchedContent)
+        : curlTarget === 'axios'
+          ? curlToAxios(watchedContent)
+          : curlToPython(watchedContent)
+      : ''
 
   // When type changes, reset language to first of that type
   const handleTypeChange = (type: SnippetType) => {
@@ -533,6 +555,48 @@ export default function SnippetForm({
                         : `✓ ${regexResult.matches.length} match${regexResult.matches.length !== 1 ? 'es' : ''} found`}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* JSON validation — only when type is json */}
+            {jsonResult && (
+              <div className={['sform-regex-result', jsonResult.isValid ? 'sform-regex-result--match' : 'sform-regex-result--error'].join(' ')}>
+                {jsonResult.isValid ? '✓ Valid JSON' : `✕ Invalid JSON — ${jsonResult.error}`}
+              </div>
+            )}
+
+            {/* SQL syntax check — only when type is sql */}
+            {sqlSyntaxResult && (
+              <div className={['sform-regex-result', sqlSyntaxResult.isValid ? 'sform-regex-result--match' : 'sform-regex-result--error'].join(' ')}>
+                {sqlSyntaxResult.isValid ? '✓ Looks syntactically valid' : `✕ ${sqlSyntaxResult.error}`}
+              </div>
+            )}
+
+            {/* cURL → code converter — only when type is curl */}
+            {watchedType === 'curl' && watchedContent.trim() && (
+              <div className="sform-regex">
+                <div className="sform-convert-header">
+                  <p className="sform-meta-title">
+                    <LucideArrowRightLeft width={12} />
+                    Convert to
+                  </p>
+                  <div className="sform-convert-tabs">
+                    {(['fetch', 'axios', 'python'] as const).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        className={['sform-convert-tab', curlTarget === t ? 'sform-convert-tab--active' : ''].filter(Boolean).join(' ')}
+                        onClick={() => setCurlTarget(t)}
+                      >
+                        {t === 'python' ? 'Python' : t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="sform-convert-code-wrap">
+                  <pre className="sform-convert-code">{curlConverted}</pre>
+                  <CopyButton text={curlConverted} size="sm" className="sform-convert-copy" />
+                </div>
               </div>
             )}
 
@@ -1036,4 +1100,45 @@ const CSS = `
 .sform-regex-result--match    { background: rgba(134,239,172,.08); border: 1px solid rgba(134,239,172,.25); color: #86efac; }
 .sform-regex-result--no-match { background: rgba(251,191, 36,.08); border: 1px solid rgba(251,191, 36,.25); color: #fbbf24; }
 .sform-regex-result--error    { background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.25); color: #f87171; }
+
+/* ── cURL converter ──────────────────────────────────────────────── */
+.sform-convert-header {
+  display:        flex;
+  align-items:    center;
+  justify-content: space-between;
+  flex-wrap:      wrap;
+  gap:            8px;
+}
+.sform-convert-tabs { display: flex; gap: 4px; }
+.sform-convert-tab {
+  height:        26px;
+  padding:       0 10px;
+  background:    var(--bg-overlay);
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color:         var(--text-tertiary);
+  font-size:     11px;
+  font-family:   var(--font-mono);
+  font-weight:   600;
+  cursor:        pointer;
+  transition:    background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
+}
+.sform-convert-tab:hover     { color: var(--text-primary); border-color: var(--border-strong); }
+.sform-convert-tab--active   { background: var(--accent-subtle); border-color: var(--accent-border); color: var(--cyan-300); }
+
+.sform-convert-code-wrap { position: relative; }
+.sform-convert-code {
+  margin:        0;
+  padding:       12px 40px 12px 12px;
+  background:    var(--bg-surface);
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-family:   var(--font-mono);
+  font-size:     var(--text-xs);
+  line-height:   var(--leading-relaxed);
+  color:         var(--cyan-200);
+  white-space:   pre;
+  overflow-x:    auto;
+}
+.sform-convert-copy { position: absolute; top: 8px; right: 8px; }
 `;

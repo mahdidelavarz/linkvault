@@ -28,9 +28,8 @@ The snippets module is a code-snippet manager supporting 7 distinct snippet type
 ### 1. ~~`leftIcon="lucide:server"` string passed as component prop~~ ✅ Fixed (P1-10)
 Was already fixed before P1 implementation began.
 
-### 2. `sc-actions` CSS class defined but never applied to any DOM element
-**File:** `SnippetCard.tsx` CSS
-`.sc-actions { margin-left: auto; }` is defined but never used as a class in the JSX. The footer layout relies on `ActionButtons` having its own internal spacer logic. If it doesn't, the date collapses against the action buttons instead of being right-aligned.
+### 2. ~~`sc-actions` CSS class defined but never applied to any DOM element~~ ✅ Fixed
+`ProjectBadge`, `ActionButtons`, and the date are now wrapped in `<div className="sc-actions">`, so the existing `margin-left: auto` rule pushes them to the right of the footer while the Copy button stays on the left. Applied to both grid and list views.
 
 ### 3. ~~Auto-detect hint can suggest a language not in the current type's list~~ ✅ Fixed (P1-8)
 Gated with `typeLangs.includes(detectedLang)`. Hint only appears when the detected language is valid for the current type.
@@ -44,9 +43,9 @@ Tag filter UI added — `TagSelector variant="filter"` in the expandable filter 
 ### 6. ~~Validation errors on the hidden tab are invisible~~ ✅ Fixed (P1)
 Red 6px dot indicator added to the Content tab button when `errors.title || errors.content` are present. The dot disappears once the errors are resolved.
 
-### 7. Infinite scroll + delete causes layout jump
-**File:** `snippets/page.tsx`
-`useDeleteSnippet` invalidates the infinite query on success, causing all fetched pages to refetch from page 1. This produces a visible layout jump on large lists. A known React Query edge case.
+### 7. ~~Infinite scroll + delete causes layout jump~~ ✅ Fixed
+**File:** `useSnippet.ts`
+`useDeleteSnippet` no longer invalidates the `['snippets']` infinite query. Instead, `onSuccess` uses `setQueriesData` to remove the deleted item directly from every cached page (and decrements each page's `total`), avoiding a full refetch and the resulting layout jump.
 
 ---
 
@@ -84,6 +83,11 @@ Red 6px dot indicator added to the Content tab button when `errors.title || erro
 - **Duplicate snippet** — Copy button in card footer; form pre-filled with "Copy of X" title; all content/tags/metadata carried over (P3-5)
 - **ProjectBadge** — badge in card footer showing project membership count; click opens `AddToProjectModal` (P4-B)
 - **Multi-project edit warning** — `useProjectAwareEdit` hook warns before editing a snippet that belongs to multiple projects (P4-B)
+- **Sort controls** — Recently updated (default) / Recently created / Title A–Z / Title Z–A / By type
+- **List / grid view toggle** — persisted to `localStorage`; list view shows compact single-line rows
+- **JSON validation** — live "Valid/Invalid JSON" indicator in the form for `json` type
+- **SQL syntax check** — lightweight balanced-parens/quotes + statement-keyword check in the form for `sql` type
+- **cURL → code converter** — generates equivalent `fetch()`, `axios()`, or Python `requests` code with copy button
 
 ---
 
@@ -105,25 +109,27 @@ Red 6px dot indicator added to the Content tab button when `errors.title || erro
 
 - ~~**Tag filter in the filter bar**~~ ✅ **Done (P1)** — `TagSelector variant="filter"` added; backend service tagIds filtering implemented across all services.
 
-### A-Tier — Remaining
+6. ~~**Sort controls**~~ ✅ **Done** — Sort select in the filter bar (Recently updated / Recently created / Title A–Z / Title Z–A / By type), wired through `useSnippets` → controller → `Snippet.service.ts` `findAll` `ORDER BY` switch.
 
-6. **Sort controls** — Hardcoded `isFavorite DESC, updatedAt DESC`. Add: title A–Z, date created, type. Becomes essential once a user has 100+ snippets.
-7. **Result count badge** — "12 snippets" shown in the filter bar when filters are active. Simple, very useful.
-8. **Duplicate detection** — When the user types a title in the create form, debounce-query for snippets with the same title or identical content hash. Show a non-blocking inline warning: "A snippet with a similar name already exists — still create?" Prevents accidental duplicates without blocking the flow.
+7. ~~**Result count badge**~~ ✅ **Done** — `sp-result-count` shows "N snippets" next to the filter toggle, always visible (not just when filters are active).
 
-### B-Tier — Later
+8. ~~**Duplicate detection**~~ ✅ **Done** — Debounced title query (`snippets-dup-check`) in `SnippetForm`; shows a non-blocking inline warning when a snippet with the same title already exists. Create-mode only.
 
-9. **Execute / preview per type** — Snippet as a tool, not just storage:
-   - Regex → live match results (covered by #3 above)
-   - JSON → validate and pretty-print
-   - cURL → generate equivalent `fetch()`, `axios`, or `python requests` code
-   - SQL → format + syntax check
-10. **List / grid view toggle** — Useful once a user has many snippets. Grid for browsing, list for scanning.
-11. **Line numbers in the code editor** — Standard expectation for a code input area.
-12. **Bulk actions** — Multi-select + delete. Links has this; snippets don't.
+### B-Tier — Done
+
+9. ~~**Execute / preview per type**~~ ✅ **Done**
+   - Regex → live match results (P3-3)
+   - JSON → live "Valid JSON" / "Invalid JSON — <error>" indicator (`validateJSON`) below the editor, plus existing Format button
+   - cURL → "Convert to" box generates equivalent `fetch()`, `axios()`, or Python `requests` code (`curlToFetch`/`curlToAxios`/`curlToPython`) with a copy button
+   - SQL → format (existing) + lightweight syntax check (`checkSQLSyntax`: balanced parens/quotes + recognized statement keyword)
+
+10. ~~**List / grid view toggle**~~ ✅ **Done** — Toggle buttons next to the result count, persisted to `localStorage`. List view renders `SnippetCard` with `view="list"` as a compact single-line row (`.sc-row`).
+
+11. ~~**Line numbers in the code editor**~~ ✅ **Already done** — CodeMirror `basicSetup.lineNumbers` was already `true`; no change needed.
+
 
 ### C-Tier — Low Priority
-
+12. **Bulk actions** — Multi-select + delete. Links has this; snippets don't.
 13. **Import / export** — Export snippets to JSON for sharing or backup.
 14. **Keyboard shortcuts** — `E` to edit, `C` to copy, `Esc` to close.
 15. **Version history** — Once overwritten, previous content is gone permanently.
