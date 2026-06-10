@@ -11,7 +11,7 @@ const notFound = (e: any) => { throw e.message === 'Prompt not found' ? new Http
 export class PromptController {
     findAll = asyncHandler(async (req: AuthRequest, res: Response) => {
         const userId = req.userId!;
-        const { search, categoryId, promptType, targetAI, isFavorite, tagIds, page, limit } = req.query;
+        const { search, categoryId, promptType, targetAI, isFavorite, tagIds, sortBy, collectionId, page, limit } = req.query;
 
         const filters: any = {};
         if (search) filters.search = search as string;
@@ -20,6 +20,8 @@ export class PromptController {
         if (targetAI) filters.targetAI = targetAI as string;
         if (isFavorite) filters.isFavorite = isFavorite === 'true';
         if (tagIds) filters.tagIds = (tagIds as string).split(',').map(Number);
+        if (sortBy) filters.sortBy = sortBy as string;
+        if (collectionId) filters.collectionId = parseInt(collectionId as string);
 
         const pagination = {
             page: parseInt(page as string) || 1,

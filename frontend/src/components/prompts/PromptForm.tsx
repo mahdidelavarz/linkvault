@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/http";
 import {
   type Prompt,
   type CreatePromptDto,
@@ -23,6 +25,7 @@ import {
   LucideVariable,
   LucideClock,
   LucideRefreshCw,
+  LucideCircleAlert,
 } from "@/Icons/Icons";
 
 interface PromptFormProps {
@@ -38,6 +41,8 @@ export default function PromptForm({ prompt, onClose, initialValues }: PromptFor
   const [contentError, setContentError] = useState("");
   const [varDefaults, setVarDefaults]   = useState<Record<string, string>>({});
   const [restoredIdx, setRestoredIdx]   = useState<number | null>(null);
+  const [dupCheckTitle, setDupCheckTitle] = useState("");
+  const dupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [formData, setFormData] = useState<CreatePromptDto>({
     title: "",
@@ -55,6 +60,29 @@ export default function PromptForm({ prompt, onClose, initialValues }: PromptFor
   const updatePrompt = useUpdatePrompt();
   const { data: freshPrompt } = usePrompt(prompt?.id ?? 0);
   const { data: categories } = useCategories();
+
+  // Debounce title for duplicate check (create mode only)
+  useEffect(() => {
+    if (isEditing) return;
+    if (dupTimer.current) clearTimeout(dupTimer.current);
+    dupTimer.current = setTimeout(() => setDupCheckTitle(formData.title.trim()), 400);
+    return () => { if (dupTimer.current) clearTimeout(dupTimer.current); };
+  }, [formData.title, isEditing]);
+
+  const { data: dupResults } = useQuery({
+    queryKey: ["prompts-dup-check", dupCheckTitle],
+    queryFn: async () => {
+      const { data } = await api.get(`/prompts?search=${encodeURIComponent(dupCheckTitle)}&limit=10`);
+      return data as { items: Array<{ id: number; title: string }> };
+    },
+    enabled: !isEditing && dupCheckTitle.length >= 2,
+    staleTime: 15_000,
+  });
+
+  const hasDuplicate = useMemo(() =>
+    dupResults?.items.some(p => p.title.toLowerCase() === dupCheckTitle.toLowerCase()) ?? false,
+    [dupResults, dupCheckTitle]
+  );
 
   // Edit mode — load existing prompt
   useEffect(() => {
@@ -198,6 +226,12 @@ export default function PromptForm({ prompt, onClose, initialValues }: PromptFor
             autoFocus
           />
           {titleError && <span className="form-field-error">{titleError}</span>}
+          {hasDuplicate && (
+            <div className="pf-dup-warning">
+              <LucideCircleAlert width={13} />
+              A prompt named &ldquo;{dupCheckTitle}&rdquo; already exists — you can still create it.
+            </div>
+          )}
         </div>
 
         {/* Type & Target AI */}
@@ -564,6 +598,19 @@ const CSS = `
   margin-top: 2px;
 }
 .form-hint--success { color: var(--primary); }
+
+/* Duplicate warning */
+.pf-dup-warning {
+  display:       flex;
+  align-items:   center;
+  gap:           6px;
+  padding:       7px 12px;
+  background:    var(--warning-muted, rgba(245,158,11,0.08));
+  border:        1px solid rgba(245,158,11,0.25);
+  border-radius: var(--radius-md);
+  font-size:     var(--text-xs);
+  color:         #d97706;
+}
 
 .form-checkbox-label {
   display:     flex;

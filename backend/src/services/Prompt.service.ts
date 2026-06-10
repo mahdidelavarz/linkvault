@@ -9,7 +9,7 @@ export class PromptService {
 
     async findAll(
         userId: number,
-        filters?: { search?: string; categoryId?: number; promptType?: string; targetAI?: string; isFavorite?: boolean; tagIds?: number[] },
+        filters?: { search?: string; categoryId?: number; promptType?: string; targetAI?: string; isFavorite?: boolean; tagIds?: number[]; sortBy?: string; collectionId?: number },
         pagination = { page: 1, limit: 20 }
     ) {
         const { page, limit } = pagination;
@@ -18,6 +18,12 @@ export class PromptService {
         const queryBuilder = this.promptRepository.createQueryBuilder('prompt')
             .leftJoinAndSelect('prompt.category', 'category')
             .where('prompt.userId = :userId', { userId });
+
+        if (filters?.collectionId) {
+            queryBuilder
+                .innerJoin('prompt_collection_items', 'pci', 'pci.prompt_id = prompt.id AND pci.collection_id = :collectionId', { collectionId: filters.collectionId })
+                .addSelect('pci.sort_order', 'pci_sort_order');
+        }
 
         if (filters?.search) {
             queryBuilder.andWhere(
@@ -43,10 +49,26 @@ export class PromptService {
             queryBuilder.andWhere('prompt.id IN (:...promptIds)', { promptIds });
         }
 
+        switch (filters?.sortBy) {
+            case 'title_asc':
+                queryBuilder.orderBy('prompt.title', 'ASC'); break;
+            case 'title_desc':
+                queryBuilder.orderBy('prompt.title', 'DESC'); break;
+            case 'created':
+                queryBuilder.orderBy('prompt.createdAt', 'DESC'); break;
+            case 'type':
+                queryBuilder.orderBy('prompt.promptType', 'ASC').addOrderBy('prompt.title', 'ASC'); break;
+            default:
+                if (filters?.collectionId) {
+                    queryBuilder.orderBy('pci_sort_order', 'ASC');
+                } else {
+                    queryBuilder.orderBy('prompt.isFavorite', 'DESC')
+                        .addOrderBy('prompt.usageCount', 'DESC')
+                        .addOrderBy('prompt.updatedAt', 'DESC');
+                }
+        }
+
         const [raw, total] = await queryBuilder
-            .orderBy('prompt.isFavorite', 'DESC')
-            .addOrderBy('prompt.usageCount', 'DESC')
-            .addOrderBy('prompt.updatedAt', 'DESC')
             .skip(skip)
             .take(limit)
             .getManyAndCount();

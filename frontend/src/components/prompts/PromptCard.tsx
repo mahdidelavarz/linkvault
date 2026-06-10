@@ -20,6 +20,7 @@ import {
 } from "@/lib/promptUtils";
 import VariableForm from "./VariableForm";
 import ProjectBadge from "@/components/projects/ProjectBadge";
+import CollectionBadge from "./CollectionBadge";
 import MultiProjectEditWarning from "@/components/projects/MultiProjectEditWarning";
 import { useProjectAwareEdit } from "@/hooks/useProjectAwareEdit";
 import Button from "@/components/ui/Button";
@@ -323,6 +324,7 @@ export default function PromptCard({ prompt, onEdit, onDuplicate }: PromptCardPr
           )}
 
           <ProjectBadge itemType="prompt" itemId={prompt.id} />
+          <CollectionBadge promptId={prompt.id} />
           <div className="prompt-card-actions-right">
             {onDuplicate && (
               <button

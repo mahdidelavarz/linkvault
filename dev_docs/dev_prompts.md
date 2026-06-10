@@ -44,9 +44,9 @@ Filter bar refactored to button+expand pattern. `TagSelector variant="filter"` a
 **File:** `PromptCard.tsx`
 Each quick-send icon calls `window.open(AI_PLATFORMS[platform].url)`. If a platform key doesn't match the constant map, `window.open(undefined)` opens a blank tab silently.
 
-### 7. Default sort by `usageCount DESC` buries new prompts
+### 7. ~~Default sort by `usageCount DESC` buries new prompts~~ ✅ Fixed (P5-6)
 **File:** `Prompt.service.ts`
-Order: `isFavorite DESC → usageCount DESC → updatedAt DESC`. A brand-new prompt always ranks below heavily-used ones, even during a search. There are no sort controls to override this.
+Order: `isFavorite DESC → usageCount DESC → updatedAt DESC` is still the default, but a Sort select now lets users override it (date, title A–Z/Z–A, type).
 
 ### 8. `VariableForm` closes on any document click, including portals
 **File:** `VariableForm.tsx`
@@ -107,11 +107,11 @@ The outside-click handler is attached to `document` via mousedown. A click on an
 
 ### A-Tier — Remaining
 
-6. **Duplicate detection** — When the user types a title in the create form, debounce-query for prompts with the same title or very similar content. Show a non-blocking inline warning: "A prompt with this name already exists — still create?" Especially valuable for prompts since users tend to save variations of the same base prompt and lose track of them.
+6. ~~**Duplicate detection**~~ ✅ **Done (P5-6)** — `PromptForm` debounces the title (400ms) and queries `/prompts?search=` once it's 2+ chars (skipped while editing). An exact case-insensitive title match shows a non-blocking inline warning ("A prompt named "X" already exists — you can still create it.") without preventing submission.
 
-7. **Sort controls** — Hardcoded `usageCount DESC` buries new prompts. Add: by date, title, type.
+7. ~~**Sort controls**~~ ✅ **Done (P5-6)** — Filter bar gained a Sort select (mirrors Snippets): "Most used" (default `isFavorite DESC → usageCount DESC → updatedAt DESC`), "Recently created", "Title A–Z", "Title Z–A", "By type". `Prompt.service.ts findAll` takes `sortBy` and switches the `ORDER BY` accordingly; active sort shows as a removable chip.
 
-8. **Prompt collections** — Beyond categories and tags, allow grouping prompts into named packs (e.g., "System Design Pack", "Frontend Review Kit"). Distinct from category: a collection is a curated, ordered set of related prompts.
+8. ~~**Prompt collections**~~ ✅ **Done (P5-6)** — New `PromptCollection`/`PromptCollectionItem` entities + migration (mirrors the Projects feature, scaled to a single `prompt` item type). CRUD + membership endpoints under `/api/prompt-collections`. Frontend: `usePromptCollections` hooks, `CollectionBadge` on each prompt card (opens `AddToCollectionModal` to toggle membership, with inline "New collection" creation), a Collections filter select + "Collections" management button on the Prompts page (`ManageCollectionsModal` for rename/delete/create with color). Filtering by a collection orders prompts by the collection's `sortOrder`.
 
 ### B-Tier — Later
 

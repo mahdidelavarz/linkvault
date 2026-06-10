@@ -18,6 +18,7 @@ import apiRoutes from './routes/api.route';
 import infraRoutes from './routes/Infra.route';
 import vaultRoutes from './routes/vault.route';
 import projectRoutes from './routes/project.route';
+import promptCollectionRoutes from './routes/promptCollection.route';
 import swaggerRouter from './config/swagger';
 
 const app = express();
@@ -59,6 +60,7 @@ app.use('/api/api-client', apiRoutes);
 app.use('/api/infrastructure', infraRoutes);
 app.use('/api/vault', vaultRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/prompt-collections', promptCollectionRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

@@ -11,6 +11,8 @@ export const usePrompts = (filters?: {
   targetAI?: string;
   isFavorite?: boolean;
   tagIds?: number[];
+  sortBy?: string;
+  collectionId?: number;
 }) => {
   return useInfiniteQuery<Page<Prompt>>({
     queryKey: ['prompts', filters],
@@ -22,6 +24,8 @@ export const usePrompts = (filters?: {
       if (filters?.targetAI) params.append('targetAI', filters.targetAI);
       if (filters?.isFavorite) params.append('isFavorite', 'true');
       if (filters?.tagIds) params.append('tagIds', filters.tagIds.join(','));
+      if (filters?.sortBy) params.append('sortBy', filters.sortBy);
+      if (filters?.collectionId) params.append('collectionId', filters.collectionId.toString());
       params.append('page', String(pageParam));
       params.append('limit', '20');
       const { data } = await api.get(`/prompts?${params.toString()}`);

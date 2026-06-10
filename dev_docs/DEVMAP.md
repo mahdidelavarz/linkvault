@@ -348,9 +348,9 @@ Full feature lists live in the individual `dev_*.md` files. This section tracks 
 
 | Step | Task | Status |
 |------|------|--------|
-| PR-1 | Sort controls (date, title, type — override hardcoded `usageCount DESC`) | ⬜ |
-| PR-2 | Duplicate detection on create | ⬜ |
-| PR-3 | Prompt collections (named packs) | ⬜ |
+| PR-1 | Sort controls (date, title, type — override hardcoded `usageCount DESC`) | ✅ |
+| PR-2 | Duplicate detection on create | ✅ |
+| PR-3 | Prompt collections (named packs) | ✅ |
 | PR-4 | Audit remaining B/C-tier items, cut or keep | ⬜ |
 
 ---

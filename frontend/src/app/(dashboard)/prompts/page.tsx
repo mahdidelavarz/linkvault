@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { usePrompts, usePrompt } from "@/hooks/usePrompt";
+import { usePromptCollections } from "@/hooks/usePromptCollections";
 import PageLayout from "@/components/layout/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
@@ -12,14 +13,18 @@ import { useCategories } from "@/hooks/useCategories";
 import { type Prompt, PROMPT_TYPES } from "@/types/prompt";
 import PromptCard from "@/components/prompts/PromptCard";
 import PromptForm from "@/components/prompts/PromptForm";
+import ManageCollectionsModal from "@/components/prompts/ManageCollectionsModal";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import {
+  LucideArrowDownUp,
   LucideChevronDown,
   LucideFolder,
+  LucideLayers,
   LucideMessageSquare,
   LucidePlus,
   LucideSearch,
+  LucideSettings,
   LucideSlidersHorizontal,
   LucideStar,
   LucideX,
@@ -40,6 +45,9 @@ export default function PromptsPage() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [sortBy, setSortBy] = useState("");
+  const [collectionId, setCollectionId] = useState("");
+  const [manageCollectionsOpen, setManageCollectionsOpen] = useState(false);
 
   // P1-6: Deep-link from search — ?open=<id> opens that prompt's form directly
   const openParam = searchParams.get("open");
@@ -53,6 +61,7 @@ export default function PromptsPage() {
 
   const { data: categories } = useCategories();
   const { data: allTags }    = useTags();
+  const { data: collections } = usePromptCollections();
   const {
     data,
     isLoading,
@@ -65,6 +74,8 @@ export default function PromptsPage() {
     promptType: selectedType || undefined,
     isFavorite: showFavorites || undefined,
     tagIds: selectedTagIds.length ? selectedTagIds : undefined,
+    sortBy: sortBy || undefined,
+    collectionId: collectionId ? parseInt(collectionId) : undefined,
   });
   const prompts = data?.pages.flatMap((p) => p.items) ?? [];
   const total = data?.pages[0]?.total ?? 0;
@@ -72,8 +83,8 @@ export default function PromptsPage() {
   const onReach = useCallback(() => { if (hasNextPage) fetchNextPage(); }, [hasNextPage, fetchNextPage]);
   const sentinelRef = useInfiniteScroll(onReach, !!hasNextPage && !isLoading);
 
-  const hasFilters = !!(search || categoryId || selectedType || showFavorites || selectedTagIds.length);
-  const activeFilterCount = [categoryId, selectedType, showFavorites, selectedTagIds.length].filter(Boolean).length;
+  const hasFilters = !!(search || categoryId || selectedType || showFavorites || selectedTagIds.length || sortBy || collectionId);
+  const activeFilterCount = [categoryId, selectedType, showFavorites, selectedTagIds.length, sortBy, collectionId].filter(Boolean).length;
 
   const openCreate = () => {
     setEditingPrompt(null);
@@ -101,6 +112,8 @@ export default function PromptsPage() {
     setSelectedType("");
     setShowFavorites(false);
     setSelectedTagIds([]);
+    setSortBy("");
+    setCollectionId("");
   };
 
   return (
@@ -168,6 +181,29 @@ export default function PromptsPage() {
                 <LucideChevronDown className="filter-select-chevron" />
               </div>
 
+              {/* Sort */}
+              <div className="filter-select-wrap">
+                <LucideArrowDownUp className="filter-select-icon" />
+                <select className="filter-select" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                  <option value="">Most used</option>
+                  <option value="created">Recently created</option>
+                  <option value="title_asc">Title A–Z</option>
+                  <option value="title_desc">Title Z–A</option>
+                  <option value="type">By type</option>
+                </select>
+                <LucideChevronDown className="filter-select-chevron" />
+              </div>
+
+              {/* Collections */}
+              <div className="filter-select-wrap">
+                <LucideLayers className="filter-select-icon" />
+                <select className="filter-select" value={collectionId} onChange={(e) => setCollectionId(e.target.value)}>
+                  <option value="">All collections</option>
+                  {collections?.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+                </select>
+                <LucideChevronDown className="filter-select-chevron" />
+              </div>
+
               {/* Tags */}
               <TagSelector selectedTagIds={selectedTagIds} onChange={setSelectedTagIds} variant="filter" />
 
@@ -180,6 +216,12 @@ export default function PromptsPage() {
                 Favorites
               </button>
 
+              {/* Manage collections */}
+              <button className="filter-toggle" onClick={() => setManageCollectionsOpen(true)}>
+                <LucideSettings width={14} />
+                Collections
+              </button>
+
               {/* Clear */}
               {hasFilters && (
                 <button className="filter-clear" onClick={clearFilters}>
@@ -190,8 +232,8 @@ export default function PromptsPage() {
             </div>
           )}
 
-          {/* Active tag chips */}
-          {selectedTagIds.length > 0 && (
+          {/* Active tag/sort chips */}
+          {(selectedTagIds.length > 0 || sortBy || collectionId) && (
             <div className="filter-tag-chips">
               {selectedTagIds.map((tid) => {
                 const tag = allTags?.find((t) => t.id === tid);
@@ -202,6 +244,19 @@ export default function PromptsPage() {
                   </button>
                 );
               })}
+              {sortBy && (
+                <button className="filter-chip" onClick={() => setSortBy("")}>
+                  {sortBy === "created" ? "Recently created" : sortBy === "title_asc" ? "Title A–Z" : sortBy === "title_desc" ? "Title Z–A" : "By type"}
+                  <LucideX width={10} />
+                </button>
+              )}
+              {collectionId && (
+                <button className="filter-chip" onClick={() => setCollectionId("")}>
+                  <LucideLayers width={10} />
+                  {collections?.find((c) => c.id === parseInt(collectionId))?.title ?? "Collection"}
+                  <LucideX width={10} />
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -245,6 +300,11 @@ export default function PromptsPage() {
           initialValues={duplicateFrom ?? undefined}
         />
       </Modal>
+
+      <ManageCollectionsModal
+        isOpen={manageCollectionsOpen}
+        onClose={() => setManageCollectionsOpen(false)}
+      />
     </>
   );
 }

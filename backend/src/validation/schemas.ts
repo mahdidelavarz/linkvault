@@ -140,3 +140,17 @@ export const addProjectItemSchema = z.object({
     itemType: z.enum(['link', 'note', 'snippet', 'prompt', 'infrastructure']),
     itemId: z.number().int().positive(),
 });
+
+// ─── Prompt Collection ─────────────────────────────────────────────────────────
+
+export const createPromptCollectionSchema = z.object({
+    title: z.string().min(1).max(255),
+    description: z.string().max(2000).optional(),
+    color: z.string().max(20).optional(),
+});
+
+export const updatePromptCollectionSchema = createPromptCollectionSchema.partial();
+
+export const addPromptCollectionItemSchema = z.object({
+    promptId: z.number().int().positive(),
+});
