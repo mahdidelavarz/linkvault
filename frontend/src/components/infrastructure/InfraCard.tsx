@@ -1,40 +1,28 @@
 "use client";
 
-import { ComponentType, SVGProps, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { type Infrastructure, INFRA_TYPES } from "@/types/infrastructure";
-import {
-  useToggleInfraFavorite,
-  useDeleteInfrastructure,
-} from "@/hooks/useInfrastructure";
+import { useToggleInfraFavorite } from "@/hooks/useInfrastructure";
+import { maskEnvLine } from "@/lib/infraUtils";
 import Badge from "@/components/ui/Badge";
 import FavoriteButton from "@/components/shared/FavoriteButton";
 import CopyButton from "@/components/shared/CopyButton";
-import ActionButtons from "@/components/shared/ActionButtons";
 import TagSection from "@/components/shared/TagSection";
-import ConfirmDeleteModal from "@/components/shared/ConfirmDeleteModal";
 import { VaultGuard } from "@/components/vault/VaultGuard";
 import { useVault } from "@/hooks/useVault";
 import ProjectBadge from "@/components/projects/ProjectBadge";
-import MultiProjectEditWarning from "@/components/projects/MultiProjectEditWarning";
-import { useProjectAwareEdit } from "@/hooks/useProjectAwareEdit";
 import {
-  LucideChevronDown,
-  LucideChevronUp,
   LucideContainer,
-  LucideCopy,
   LucideDatabase,
   LucideEye,
   LucideEyeOff,
-  LucideFolder,
   LucideGlobe,
   LucideKeyRound,
   LucideNetwork,
-  LucidePencil,
   LucideRocket,
   LucideServer,
   LucideSettings,
-  LucideStar,
-  LucideTrash2,
 } from "@/Icons/Icons";
 
 // ─── Type → Iconify icon map ──────────────────────────────────────────────────
@@ -59,33 +47,17 @@ const INFRA_BADGE_VARIANT: Record<string, any> = {
   network: "orange",
 };
 
-// ENV vars: mask values by default
-function maskEnvLine(line: string) {
-  const eq = line.indexOf("=");
-  if (eq === -1) return line;
-  const key = line.slice(0, eq + 1);
-  const val = line.slice(eq + 1);
-  if (!val) return line;
-  return key + "•".repeat(Math.min(val.length, 12));
-}
-
 interface InfraCardProps {
   item: Infrastructure;
-  onEdit: (item: Infrastructure) => void;
 }
 
-export default function InfraCard({ item, onEdit }: InfraCardProps) {
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+export default function InfraCard({ item }: InfraCardProps) {
+  const router = useRouter();
   const [revealed, setRevealed] = useState(false);
   const [vaultContent, setVaultContent] = useState<string | null>(null);
 
   const { isEnabled, isUnlocked, decrypt } = useVault();
   const toggleFav = useToggleInfraFavorite();
-  const deleteInfra = useDeleteInfrastructure();
-
-  const { handleEdit, confirmEdit, cancelEdit, isWarnOpen, projectNames } =
-    useProjectAwareEdit({ itemType: 'infrastructure', itemId: item.id, onEdit });
 
   const typeConfig = INFRA_TYPES[item.infraType];
   const Icon = INFRA_ICONS[item.infraType as InfraIconKey] ?? (
@@ -106,18 +78,23 @@ export default function InfraCard({ item, onEdit }: InfraCardProps) {
   const rawContent = isVaultProtected ? (vaultContent ?? '') : item.content;
   const displayContent = rawContent === 'vault:encrypted' ? '' : rawContent;
 
-  // Preview: first 5 lines
   const allLines = displayContent.split("\n");
-  const previewLines = allLines.slice(0, 5);
-  const hasMore = allLines.length > 5;
+  const displayLines = isEnv && !revealed ? allLines.map(maskEnvLine) : allLines;
 
-  const displayLines =
-    isEnv && !revealed ? previewLines.map(maskEnvLine) : previewLines;
+  const goToDetail = () => router.push(`/infrastructure/${item.id}`);
 
   return (
     <>
       <style>{CSS}</style>
-      <div className="ic">
+      <div
+        className="ic"
+        role="button"
+        tabIndex={0}
+        onClick={goToDetail}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToDetail() }
+        }}
+      >
         {/* ── Header ── */}
         <div className="ic-header">
           <div className="ic-icon-wrap">
@@ -172,7 +149,7 @@ export default function InfraCard({ item, onEdit }: InfraCardProps) {
             {isEnv && (
               <button
                 className="ic-reveal-btn"
-                onClick={() => setRevealed((p) => !p)}
+                onClick={(e) => { e.stopPropagation(); setRevealed((p) => !p) }}
                 aria-label={revealed ? "Mask values" : "Reveal values"}
               >
                 {revealed ? (
@@ -184,35 +161,9 @@ export default function InfraCard({ item, onEdit }: InfraCardProps) {
               </button>
             )}
 
-            <pre
-              className={["ic-code", expanded ? "ic-code--expanded" : ""]
-                .filter(Boolean)
-                .join(" ")}
-            >
-              <code>
-                {expanded
-                  ? (isEnv && !revealed
-                      ? allLines.map(maskEnvLine)
-                      : allLines
-                    ).join("\n")
-                  : displayLines.join("\n")}
-              </code>
+            <pre className="ic-code">
+              <code>{displayLines.join("\n")}</code>
             </pre>
-
-            {hasMore && (
-              <button
-                className="ic-expand-btn"
-                onClick={() => setExpanded((p) => !p)}
-              >
-                {expanded ? (
-                  <LucideChevronUp width={12} />
-                ) : (
-                  <LucideChevronDown width={12} />
-                )}
-
-                {expanded ? "Show less" : `${allLines.length - 5} more lines`}
-              </button>
-            )}
           </div>
         </VaultGuard>
 
@@ -224,27 +175,11 @@ export default function InfraCard({ item, onEdit }: InfraCardProps) {
           {!(isEnv && isEnabled && !isUnlocked) && (
             <CopyButton text={displayContent} label="Copy" />
           )}
-          <ProjectBadge itemType="infrastructure" itemId={item.id} />
-          <ActionButtons onEdit={() => handleEdit(item)} onDelete={() => setConfirmDelete(true)} />
-          <span className="ic-date">
-            {new Date(item.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-          </span>
+          <div className="ic-actions">
+            <ProjectBadge itemType="infrastructure" itemId={item.id} />
+          </div>
         </div>
       </div>
-
-      <ConfirmDeleteModal
-        isOpen={confirmDelete}
-        onClose={() => setConfirmDelete(false)}
-        itemName={item.title}
-        isLoading={deleteInfra.isPending}
-        onConfirm={() => deleteInfra.mutate(item.id, { onSuccess: () => setConfirmDelete(false) })}
-      />
-      <MultiProjectEditWarning
-        isOpen={isWarnOpen}
-        projectNames={projectNames}
-        onConfirm={confirmEdit}
-        onCancel={cancelEdit}
-      />
     </>
   );
 }
@@ -258,6 +193,7 @@ const CSS = `
   background:     var(--bg-surface);
   border:         1px solid var(--border-default);
   border-radius:  var(--radius-lg);
+  cursor:         pointer;
   transition:     border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .ic:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
@@ -279,17 +215,6 @@ const CSS = `
 .ic-title      { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 5px; }
 .ic-meta       { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
 .ic-host       { display: flex; align-items: center; gap: 3px; font-size: var(--text-xs); color: var(--text-tertiary); font-family: var(--font-mono); }
-
-.ic-fav {
-  display: flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; flex-shrink: 0;
-  background: transparent; border: none; border-radius: var(--radius-sm);
-  color: var(--text-tertiary); cursor: pointer;
-  transition: color var(--transition-fast), transform var(--transition-fast);
-}
-.ic-fav:hover   { color: #fbbf24; transform: scale(1.15); }
-.ic-fav--active { color: #fbbf24; }
-.ic-fav:disabled{ opacity: 0.5; pointer-events: none; }
 
 /* Description */
 .ic-desc {
@@ -334,29 +259,11 @@ const CSS = `
   color:       var(--cyan-200);
   white-space: pre;
   overflow-x:  auto;
-  max-height:  120px;
-  overflow-y:  hidden;
-  transition:  max-height var(--transition-slow);
+  max-height:  200px;
+  overflow-y:  auto;
 }
-.ic-code--expanded { max-height: 360px; overflow-y: auto; }
 .ic-code::-webkit-scrollbar { width: 4px; height: 4px; }
 .ic-code::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
-
-.ic-expand-btn {
-  display:     flex; align-items: center; gap: 4px;
-  width:       100%; padding: 5px 12px;
-  background:  var(--bg-overlay);
-  border:      none; border-top: 1px solid var(--border-subtle);
-  color:       var(--text-tertiary);
-  font-size:   var(--text-xs); font-family: var(--font-sans);
-  cursor:      pointer;
-  transition:  color var(--transition-fast), background var(--transition-fast);
-}
-.ic-expand-btn:hover { color: var(--text-primary); background: var(--bg-subtle); }
-
-/* Tags */
-.ic-tags      { display: flex; flex-wrap: wrap; gap: 5px; }
-.ic-tags-more { font-size: var(--text-xs); color: var(--text-tertiary); align-self: center; }
 
 /* Footer */
 .ic-footer {
@@ -364,33 +271,6 @@ const CSS = `
   padding-top: 12px;
   border-top:  1px solid var(--border-subtle);
 }
-.ic-copy-btn {
-  display:       flex; align-items: center; gap: 6px;
-  height:        34px; padding: 0 14px;
-  background:    var(--bg-overlay); border: 1px solid var(--border-default);
-  border-radius: var(--radius-md); color: var(--text-secondary);
-  font-size:     var(--text-sm); font-family: var(--font-sans); font-weight: 500;
-  cursor:        pointer; min-height: 44px;
-  transition:    background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
-}
-.ic-copy-btn:hover      { background: var(--accent-muted); border-color: var(--border-focus); color: var(--cyan-300); }
-.ic-copy-btn--copied    { background: var(--success-muted); border-color: rgba(16,185,129,0.3); color: #34d399; }
 
 .ic-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
-.ic-action-btn {
-  display:         flex; align-items: center; justify-content: center;
-  min-width:       44px; min-height: 44px;
-  background:      transparent; border: 1px solid transparent;
-  border-radius:   var(--radius-md); color: var(--text-tertiary); cursor: pointer;
-  transition:      background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
-}
-.ic-action-btn:hover         { background: var(--bg-overlay); border-color: var(--border-default); color: var(--text-primary); }
-.ic-action-btn--danger:hover { background: var(--danger-muted); border-color: rgba(239,68,68,0.2); color: var(--danger); }
-
-.ic-date { font-size: var(--text-xs); color: var(--text-tertiary); white-space: nowrap; }
-
-.ic-confirm         { display: flex; flex-direction: column; gap: 20px; }
-.ic-confirm-text    { font-size: var(--text-sm); color: var(--text-secondary); line-height: var(--leading-relaxed); }
-.ic-confirm-text strong { color: var(--text-primary); }
-.ic-confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
 `;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useInfrastructures, useInfrastructure } from "@/hooks/useInfrastructure";
 import TagSelector from "@/components/tags/TagSelector";
 import { useTags } from "@/hooks/useTag";
@@ -12,7 +12,6 @@ import CardGrid from "@/components/shared/CardGrid";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useCategories } from "@/hooks/useCategories";
 import {
-  type Infrastructure,
   INFRA_TYPES,
   type InfraType,
 } from "@/types/infrastructure";
@@ -34,8 +33,8 @@ import { LucideServer } from "../../../Icons/Icons";
 
 export default function InfrastructurePage() {
   const searchParams   = useSearchParams();
+  const router = useRouter();
   const [formOpen, setFormOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<Infrastructure | null>(null);
   const [search, setSearch] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -43,15 +42,12 @@ export default function InfrastructurePage() {
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
-  // P1-6: Deep-link from search — ?open=<id> opens that item's form directly
+  // P1-6: Deep-link from search — ?open=<id> redirects to the detail page
   const openParam = searchParams.get("open");
   const { data: openItem } = useInfrastructure(openParam ? parseInt(openParam) : 0);
   useEffect(() => {
-    if (openItem) {
-      setEditingItem(openItem);
-      setFormOpen(true);
-    }
-  }, [openItem]);
+    if (openItem) router.replace(`/infrastructure/${openItem.id}`);
+  }, [openItem, router]);
 
   const { data: categories } = useCategories();
   const { data: allTags }    = useTags();
@@ -85,20 +81,8 @@ export default function InfrastructurePage() {
     setSelectedTagIds([]);
   };
 
-  const openCreate = () => {
-    setEditingItem(null);
-    setFormOpen(true);
-  };
-  const openEdit = (item: Infrastructure) => {
-    setEditingItem(item);
-    setFormOpen(true);
-  };
-  const closeForm = () => {
-    setFormOpen(false);
-    setEditingItem(null);
-  };
-
-
+  const openCreate = () => setFormOpen(true);
+  const closeForm = () => setFormOpen(false);
 
   return (
     <>
@@ -132,22 +116,6 @@ export default function InfrastructurePage() {
               )}
             </div>
 
-            {/* Type select */}
-            <div className="ip-select-wrap">
-              <LucideDatabase className="ip-select-icon" />
-              <select
-                className="ip-select"
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value)}
-              >
-                <option value="">All types</option>
-                {Object.entries(INFRA_TYPES).map(([key, { label }]) => (
-                  <option key={key} value={key}>{label}</option>
-                ))}
-              </select>
-              <LucideChevronDown className="ip-select-chevron" />
-            </div>
-
             <button
               className={[
                 "ip-filter-toggle",
@@ -168,6 +136,22 @@ export default function InfrastructurePage() {
           {/* Expanded filters */}
           {filtersExpanded && (
             <div className="ip-filters animate-fade-in-down">
+              {/* Type select */}
+              <div className="ip-select-wrap">
+                <LucideDatabase className="ip-select-icon" />
+                <select
+                  className="ip-select"
+                  value={selectedType}
+                  onChange={(e) => setSelectedType(e.target.value)}
+                >
+                  <option value="">All types</option>
+                  {Object.entries(INFRA_TYPES).map(([key, { label }]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+                <LucideChevronDown className="ip-select-chevron" />
+              </div>
+
               <div className="ip-select-wrap">
                 <LucideFolder className="ip-select-icon" />
                 <select
@@ -251,7 +235,7 @@ export default function InfrastructurePage() {
           <>
             <CardGrid>
               {items.map((item) => (
-                <InfraCard key={item.id} item={item} onEdit={openEdit} />
+                <InfraCard key={item.id} item={item} />
               ))}
             </CardGrid>
             <div ref={sentinelRef} style={{ height: 1 }} />
@@ -275,10 +259,10 @@ export default function InfrastructurePage() {
       <Modal
         isOpen={formOpen}
         onClose={closeForm}
-        title={editingItem ? "Edit config" : "New config"}
+        title="New config"
         size="lg"
       >
-        <InfraForm item={editingItem} onClose={closeForm} />
+        <InfraForm item={null} onClose={closeForm} />
       </Modal>
     </>
   );

@@ -56,10 +56,11 @@ type FormData = z.infer<typeof schema>;
 
 interface LinkFormProps {
   link?: Link | null;
+  initialUrl?: string;
   onClose: () => void;
 }
 
-export default function LinkForm({ link, onClose }: LinkFormProps) {
+export default function LinkForm({ link, initialUrl, onClose }: LinkFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [metaLoading, setMetaLoading] = useState(false);
   const [autoFilled, setAutoFilled] = useState(false);
@@ -81,7 +82,7 @@ export default function LinkForm({ link, onClose }: LinkFormProps) {
   const { register, handleSubmit, control, reset, setValue, getValues, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
-      url: "https://", title: "", description: "", username: "", password: "",
+      url: initialUrl ?? "https://", title: "", description: "", username: "", password: "",
       email: "", phone: "", isFavorite: false, categoryId: undefined, tagIds: [],
     },
   });

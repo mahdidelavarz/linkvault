@@ -19,7 +19,7 @@ Shared :
 2/2. category must be like collection in prompts
 2/3. all page headers must have only search and filters button - other filters will come next to opened filter row
 3. infra - snippet
-3/1. by openning the form it must open the related type without the selection of other types 
+3/1. by clicking on new , there should be a modal to user chose his type , then the relevant form will be open and inside the form , user wont chose type any more
 
 
 

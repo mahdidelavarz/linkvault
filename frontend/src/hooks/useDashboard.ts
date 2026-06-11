@@ -30,14 +30,18 @@ interface DashboardStats {
   };
 }
 
-interface RecentItem {
+export interface RecentItem {
   id: number;
   title: string;
-  type: 'link' | 'note' | 'snippet' | 'prompt';
+  type: 'link' | 'note' | 'snippet' | 'prompt' | 'infrastructure';
   updatedAt: string;
   category?: string;
   url?: string;
+  content?: string;
   language?: string;
+  snippetType?: string;
+  promptType?: string;
+  infraType?: string;
   isFavorite?: boolean;
   isPinned?: boolean;
 }

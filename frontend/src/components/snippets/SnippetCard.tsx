@@ -1,43 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { type Snippet, SNIPPET_TYPES } from '@/types/snippet'
 import { getLanguageName }             from '@/lib/languageDetector'
-import { testRegex }                   from '@/lib/snippetUtils'
-import { useToggleSnippetFavorite, useDeleteSnippet } from '@/hooks/useSnippet'
+import { testRegex, getMatchParts }    from '@/lib/snippetUtils'
+import { useToggleSnippetFavorite }    from '@/hooks/useSnippet'
 import Badge  from '@/components/ui/Badge'
 import CodeBlock from '@/components/ui/CodeBlock'
 import FavoriteButton from '@/components/shared/FavoriteButton'
 import CopyButton from '@/components/shared/CopyButton'
-import ActionButtons from '@/components/shared/ActionButtons'
 import TagSection from '@/components/shared/TagSection'
-import ConfirmDeleteModal from '@/components/shared/ConfirmDeleteModal'
-import { LucideChevronDown, LucideChevronUp, LucideCopy, LucideFolder } from '@/Icons/Icons'
+import { LucideCopy, LucideFolder } from '@/Icons/Icons'
 import ProjectBadge from '@/components/projects/ProjectBadge'
-import MultiProjectEditWarning from '@/components/projects/MultiProjectEditWarning'
-import { useProjectAwareEdit } from '@/hooks/useProjectAwareEdit'
 
 const FLAG_TITLES: Record<string, string> = {
   g: 'Global', i: 'Case insensitive', m: 'Multiline', s: 'Dot matches newline',
-}
-
-function getMatchParts(text: string, pattern: string, flags: string) {
-  try {
-    const gFlags = flags.includes('g') ? flags : flags + 'g'
-    const re = new RegExp(pattern, gFlags)
-    const parts: { text: string; match: boolean }[] = []
-    let last = 0, m: RegExpExecArray | null
-    while ((m = re.exec(text)) !== null) {
-      if (m.index > last) parts.push({ text: text.slice(last, m.index), match: false })
-      if (m[0].length === 0) { re.lastIndex++; continue }
-      parts.push({ text: m[0], match: true })
-      last = m.index + m[0].length
-    }
-    if (last < text.length) parts.push({ text: text.slice(last), match: false })
-    return parts
-  } catch {
-    return [{ text, match: false }]
-  }
 }
 
 const LANG_COLORS: Record<string, string> = {
@@ -50,32 +27,22 @@ const LANG_COLORS: Record<string, string> = {
 
 interface SnippetCardProps {
   snippet:      Snippet
-  onEdit:       (s: Snippet) => void
   onDuplicate?: (s: Snippet) => void
-  view?:        'grid' | 'list'
 }
 
-export default function SnippetCard({ snippet, onEdit, onDuplicate, view = 'grid' }: SnippetCardProps) {
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  const [expanded,      setExpanded]      = useState(false)
-
+export default function SnippetCard({ snippet, onDuplicate }: SnippetCardProps) {
+  const router = useRouter()
   const toggleFav  = useToggleSnippetFavorite()
-  const deleteSnip = useDeleteSnippet()
-
-  const { handleEdit, confirmEdit, cancelEdit, isWarnOpen, projectNames } =
-    useProjectAwareEdit({ itemType: 'snippet', itemId: snippet.id, onEdit })
 
   const typeConfig = SNIPPET_TYPES[snippet.snippetType]
   const langName   = getLanguageName(snippet.language)
   const langColor  = (LANG_COLORS[snippet.language] ?? 'default') as any
 
-    const lines        = snippet.content.split('\n')
-  const previewLines = lines.slice(0, 6)
-  const hasMore      = lines.length > 6
+  const goToDetail = () => router.push(`/snippets/${snippet.id}`)
 
   const duplicateBtn = onDuplicate && (
     <button
-      className="ab-btn"
+      className="sc-icon-btn"
       type="button"
       aria-label="Duplicate"
       title="Duplicate snippet"
@@ -85,74 +52,18 @@ export default function SnippetCard({ snippet, onEdit, onDuplicate, view = 'grid
     </button>
   )
 
-  const deleteModals = (
-    <>
-      <ConfirmDeleteModal
-        isOpen={confirmDelete}
-        onClose={() => setConfirmDelete(false)}
-        itemName={snippet.title}
-        isLoading={deleteSnip.isPending}
-        onConfirm={() => deleteSnip.mutate(snippet.id, { onSuccess: () => setConfirmDelete(false) })}
-      />
-      <MultiProjectEditWarning
-        isOpen={isWarnOpen}
-        projectNames={projectNames}
-        onConfirm={confirmEdit}
-        onCancel={cancelEdit}
-      />
-    </>
-  )
-
-  if (view === 'list') {
-    return (
-      <>
-        <style>{CSS}</style>
-        <div className="sc-row">
-          <div className="sc-type-dot" title={typeConfig?.label} />
-          <FavoriteButton
-            active={snippet.isFavorite}
-            pending={toggleFav.isPending}
-            onToggle={() => toggleFav.mutate(snippet.id)}
-          />
-
-          <div className="sc-row-main">
-            <div className="sc-row-title-line">
-              <h3 className="sc-row-title">{snippet.title}</h3>
-              <Badge variant={langColor} size="sm">{langName}</Badge>
-              <span className="sc-type-label">{typeConfig?.label}</span>
-              {snippet.category && (
-                <span className="sc-category">
-                  <LucideFolder width={11} />
-                  {snippet.category.name}
-                </span>
-              )}
-            </div>
-            {snippet.description && <p className="sc-row-desc">{snippet.description}</p>}
-          </div>
-
-          <CopyButton text={snippet.content} size="sm" />
-          <div className="sc-actions">
-            <ProjectBadge itemType="snippet" itemId={snippet.id} />
-            <ActionButtons
-              onEdit={() => handleEdit(snippet)}
-              onDelete={() => setConfirmDelete(true)}
-              extra={duplicateBtn}
-            />
-            <span className="sc-date">
-              {new Date(snippet.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </span>
-          </div>
-        </div>
-
-        {deleteModals}
-      </>
-    )
-  }
-
   return (
     <>
       <style>{CSS}</style>
-      <div className="sc">
+      <div
+        className="sc"
+        role="button"
+        tabIndex={0}
+        onClick={goToDetail}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToDetail() }
+        }}
+      >
 
         {/* ── Header ── */}
         <div className="sc-header">
@@ -189,17 +100,10 @@ export default function SnippetCard({ snippet, onEdit, onDuplicate, view = 'grid
           <span className="sc-code-lang">{snippet.language}</span>
 
           <CodeBlock
-            code={expanded ? snippet.content : previewLines.join('\n')}
+            code={snippet.content}
             language={snippet.language}
-            className={['sc-code', expanded ? 'sc-code--expanded' : ''].filter(Boolean).join(' ')}
+            className="sc-code"
           />
-
-          {hasMore && (
-            <button className="sc-expand-btn" onClick={() => setExpanded((p) => !p)}>
-              {expanded ? <LucideChevronUp  width={12} /> : <LucideChevronDown  width={12} />}
-              {expanded ? 'Show less' : `${lines.length - 6} more lines`}
-            </button>
-          )}
         </div>
 
         {/* ── Regex metadata: flags + test string with highlighted matches ── */}
@@ -253,19 +157,10 @@ export default function SnippetCard({ snippet, onEdit, onDuplicate, view = 'grid
           <CopyButton text={snippet.content} label="Copy" />
           <div className="sc-actions">
             <ProjectBadge itemType="snippet" itemId={snippet.id} />
-            <ActionButtons
-              onEdit={() => handleEdit(snippet)}
-              onDelete={() => setConfirmDelete(true)}
-              extra={duplicateBtn}
-            />
-            <span className="sc-date">
-              {new Date(snippet.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </span>
+            {duplicateBtn}
           </div>
         </div>
       </div>
-
-      {deleteModals}
     </>
   )
 }
@@ -279,6 +174,7 @@ const CSS = `
   background:     var(--bg-surface);
   border:         1px solid var(--border-default);
   border-radius:  var(--radius-lg);
+  cursor:         pointer;
   transition:     border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .sc:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
@@ -366,31 +262,12 @@ const CSS = `
   line-height: var(--leading-relaxed);
   overflow-x:  auto;
   white-space: pre;
-  max-height:  140px;
-  overflow-y:  hidden;
-  transition:  max-height var(--transition-slow);
+  max-height:  200px;
+  overflow-y:  auto;
   background:  transparent !important;
 }
-.sc-code--expanded { max-height: 400px; overflow-y: auto; }
 .sc-code::-webkit-scrollbar { height: 4px; width: 4px; }
 .sc-code::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
-
-.sc-expand-btn {
-  display:     flex;
-  align-items: center;
-  gap:         4px;
-  width:       100%;
-  padding:     6px 14px;
-  background:  var(--bg-overlay);
-  border:      none;
-  border-top:  1px solid var(--border-subtle);
-  color:       var(--text-tertiary);
-  font-size:   var(--text-xs);
-  font-family: var(--font-sans);
-  cursor:      pointer;
-  transition:  color var(--transition-fast), background var(--transition-fast);
-}
-.sc-expand-btn:hover { color: var(--text-primary); background: var(--bg-subtle); }
 
 /* Regex display */
 .sc-regex {
@@ -442,49 +319,20 @@ const CSS = `
 }
 
 .sc-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
-.sc-date { font-size: var(--text-xs); color: var(--text-tertiary); white-space: nowrap; }
 
-/* ── List view row ───────────────────────────────────────────────── */
-.sc-row {
-  display:        flex;
-  align-items:    center;
-  gap:            12px;
-  width:          100%;
-  min-width:      0;
-  padding:        10px 14px;
-  background:     var(--bg-surface);
-  border:         1px solid var(--border-default);
-  border-radius:  var(--radius-lg);
-  box-sizing:     border-box;
-  transition:     border-color var(--transition-fast), box-shadow var(--transition-fast);
+.sc-icon-btn {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           36px;
+  height:          36px;
+  background:      transparent;
+  border:          1px solid transparent;
+  border-radius:   var(--radius-sm);
+  color:           var(--text-tertiary);
+  cursor:          pointer;
+  transition:      background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
-.sc-row:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
-
-.sc-row-main {
-  display:        flex;
-  flex-direction: column;
-  gap:            2px;
-  flex:           1;
-  min-width:      0;
-}
-.sc-row-title-line { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.sc-row-title {
-  font-size:     var(--text-sm);
-  font-weight:   600;
-  color:         var(--text-primary);
-  white-space:   nowrap;
-  overflow:      hidden;
-  text-overflow: ellipsis;
-  min-width:     0;
-}
-.sc-row-desc {
-  font-size:     var(--text-xs);
-  color:         var(--text-tertiary);
-  white-space:   nowrap;
-  overflow:      hidden;
-  text-overflow: ellipsis;
-}
-@media (max-width: 639px) {
-  .sc-row-desc { display: none; }
-}
+@media (hover: none) { .sc-icon-btn { width: 40px; height: 40px; } }
+.sc-icon-btn:hover { background: var(--bg-overlay); border-color: var(--border-default); color: var(--text-primary); }
 `

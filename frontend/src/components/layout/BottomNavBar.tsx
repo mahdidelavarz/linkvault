@@ -1,61 +1,29 @@
 // components/mobile/BottomNavBar.tsx
 'use client';
 
-import { useState } from 'react';
-
-import Modal from '@/components/ui/Modal';
-import LinkForm from '@/components/links/LinkForm';
-import NoteForm from '@/components/notes/NoteForm';
-import SnippetForm from '@/components/snippets/SnippetForm';
-import PromptForm from '@/components/prompts/PromptForm';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   SolarAddCircleBold,
   LucideLink2,
   LucideMessageSquare,
   LucideCodeXml,
-  LucideNotebookPen,
+  LucideServer,
+  LucideFileText,
 } from '@/Icons/Icons';
 import { useSidebar } from './SidebarContext';
 
-type ActiveFormType = 'link' | 'note' | 'snippet' | 'prompt' | null;
+const NAV_ITEMS = [
+  { href: '/links',          label: 'Links',     icon: LucideLink2 },
+  { href: '/snippets',       label: 'Snippets',  icon: LucideCodeXml },
+  { href: '/prompts',        label: 'Prompts',   icon: LucideMessageSquare },
+  { href: '/infrastructure', label: 'Infra',     icon: LucideServer },
+  { href: '/notes',          label: 'Notes',     icon: LucideFileText },
+];
 
 export default function BottomNavBar() {
   const { setMobileOpen } = useSidebar();
-  const [activeForm, setActiveForm] = useState<ActiveFormType>(null);
-
-  const handleCloseForm = () => {
-    setActiveForm(null);
-  };
-
-  const getFormTitle = () => {
-    switch (activeForm) {
-      case 'link':
-        return 'Add Link';
-      case 'note':
-        return 'Add Note';
-      case 'snippet':
-        return 'Add Snippet';
-      case 'prompt':
-        return 'Add Prompt';
-      default:
-        return '';
-    }
-  };
-
-  const renderForm = () => {
-    switch (activeForm) {
-      case 'link':
-        return <LinkForm onClose={handleCloseForm} />;
-      case 'note':
-        return <NoteForm onClose={handleCloseForm} />;
-      case 'snippet':
-        return <SnippetForm onClose={handleCloseForm} />;
-      case 'prompt':
-        return <PromptForm onClose={handleCloseForm} />;
-      default:
-        return null;
-    }
-  };
+  const pathname = usePathname();
 
   return (
     <>
@@ -67,60 +35,26 @@ export default function BottomNavBar() {
           onClick={() => setMobileOpen(true)}
           aria-label="Menu"
         >
-          <SolarAddCircleBold width={22} />
+          <SolarAddCircleBold width={20} />
           <span className="bottom-nav-label">Menu</span>
         </button>
 
-        {/* Add Link */}
-        <button
-          className="bottom-nav-btn"
-          onClick={() => setActiveForm('link')}
-          aria-label="Add Link"
-        >
-          <LucideLink2 width={22} />
-          <span className="bottom-nav-label">Link</span>
-        </button>
-
-        {/* Add Prompt */}
-        <button
-          className="bottom-nav-btn"
-          onClick={() => setActiveForm('prompt')}
-          aria-label="Add Prompt"
-        >
-          <LucideMessageSquare width={22} />
-          <span className="bottom-nav-label">Prompt</span>
-        </button>
-
-        {/* Add Snippet */}
-        <button
-          className="bottom-nav-btn"
-          onClick={() => setActiveForm('snippet')}
-          aria-label="Add Snippet"
-        >
-          <LucideCodeXml width={22} />
-          <span className="bottom-nav-label">Snippet</span>
-        </button>
-
-        {/* Add Note */}
-        <button
-          className="bottom-nav-btn"
-          onClick={() => setActiveForm('note')}
-          aria-label="Add Note"
-        >
-          <LucideNotebookPen width={22} />
-          <span className="bottom-nav-label">Note</span>
-        </button>
+        {NAV_ITEMS.map((item) => {
+          const Icon = item.icon;
+          const active = pathname?.startsWith(item.href) ?? false;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={['bottom-nav-btn', active ? 'bottom-nav-btn--active' : ''].filter(Boolean).join(' ')}
+              aria-label={item.label}
+            >
+              <Icon width={20} />
+              <span className="bottom-nav-label">{item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
-
-      {/* Form Modal */}
-      <Modal
-        isOpen={!!activeForm}
-        onClose={handleCloseForm}
-        title={getFormTitle()}
-        size="lg"
-      >
-        {renderForm()}
-      </Modal>
     </>
   );
 }
@@ -135,7 +69,7 @@ const CSS = `
   height: 70px;
   background: var(--bg-surface);
   border-top: 1px solid var(--border-default);
-  padding: 8px 12px;
+  padding: 8px 8px;
   justify-content: space-around;
   align-items: center;
   z-index: var(--z-sticky);
@@ -153,12 +87,14 @@ const CSS = `
   background: transparent;
   border: none;
   color: var(--text-tertiary);
+  text-decoration: none;
   cursor: pointer;
-  padding: 6px 4px;
+  padding: 6px 2px;
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
   font-size: 10px;
   font-weight: 500;
+  min-width: 0;
 }
 
 .bottom-nav-btn:active {
@@ -167,16 +103,24 @@ const CSS = `
   color: var(--text-primary);
 }
 
+.bottom-nav-btn--active {
+  color: var(--text-accent);
+}
+
 .bottom-nav-label {
   font-size: 10px;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 @media (max-width: 767px) {
   .bottom-nav {
     display: flex;
   }
-  
+
   /* Add padding to main content to account for bottom nav */
   .dashboard-page,
   main {
@@ -186,11 +130,22 @@ const CSS = `
 
 @media (max-width: 479px) {
   .bottom-nav {
-    padding: 8px 6px;
+    padding: 8px 4px;
   }
-  
+
+  .bottom-nav-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
   .bottom-nav-label {
     font-size: 9px;
+  }
+}
+
+@media (max-width: 359px) {
+  .bottom-nav-label {
+    font-size: 8px;
   }
 }
 `;

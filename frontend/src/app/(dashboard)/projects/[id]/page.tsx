@@ -114,9 +114,9 @@ export default function ProjectDashboardPage() {
         switch (pi.itemType) {
             case 'link':        return <LinkCard link={pi.item} onEdit={openEdit} />;
             case 'note':        return <NoteCard note={pi.item} isActive={false} onSelect={() => {}} onEditDetails={() => openEdit(pi.item)} />;
-            case 'snippet':     return <SnippetCard snippet={pi.item} onEdit={openEdit} onDuplicate={() => {}} />;
+            case 'snippet':     return <SnippetCard snippet={pi.item} onDuplicate={() => {}} />;
             case 'prompt':      return <PromptCard prompt={pi.item} onEdit={openEdit} onDuplicate={() => {}} />;
-            case 'infrastructure': return <InfraCard item={pi.item} onEdit={openEdit} />;
+            case 'infrastructure': return <InfraCard item={pi.item} />;
             default:            return null;
         }
     };

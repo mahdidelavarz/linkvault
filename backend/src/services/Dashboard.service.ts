@@ -3,6 +3,7 @@ import { Link } from '../entities/Link';
 import { Note } from '../entities/Note';
 import { Snippet } from '../entities/Snippet';
 import { Prompt } from '../entities/Prompt';
+import { Infrastructure } from '../entities/Infrastructure';
 import { Category } from '../entities/Category';
 import { Tag } from '../entities/Tag';
 
@@ -11,6 +12,7 @@ export class DashboardService {
     private noteRepository = AppDataSource.getRepository(Note);
     private snippetRepository = AppDataSource.getRepository(Snippet);
     private promptRepository = AppDataSource.getRepository(Prompt);
+    private infrastructureRepository = AppDataSource.getRepository(Infrastructure);
     private categoryRepository = AppDataSource.getRepository(Category);
     private tagRepository = AppDataSource.getRepository(Tag);
 
@@ -98,7 +100,7 @@ export class DashboardService {
     }
 
     async getRecentItems(userId: number, limit = 20) {
-        const [recentLinks, recentNotes, recentSnippets, recentPrompts] = await Promise.all([
+        const [recentLinks, recentNotes, recentSnippets, recentPrompts, recentInfra] = await Promise.all([
             this.linkRepository.find({
                 where: { userId },
                 order: { updatedAt: 'DESC' },
@@ -123,6 +125,12 @@ export class DashboardService {
                 take: limit,
                 relations: ['category']
             }),
+            this.infrastructureRepository.find({
+                where: { userId },
+                order: { updatedAt: 'DESC' },
+                take: limit,
+                relations: ['category']
+            }),
         ]);
 
         // Combine and sort by date
@@ -142,6 +150,7 @@ export class DashboardService {
                 type: 'note' as const,
                 updatedAt: n.updatedAt,
                 category: n.category?.name,
+                content: n.content,
                 isPinned: n.isPinned,
             })),
             ...recentSnippets.map(s => ({
@@ -150,7 +159,9 @@ export class DashboardService {
                 type: 'snippet' as const,
                 updatedAt: s.updatedAt,
                 category: s.category?.name,
+                content: s.content,
                 language: s.language,
+                snippetType: s.snippetType,
                 isFavorite: s.isFavorite,
             })),
             ...recentPrompts.map(p => ({
@@ -159,7 +170,19 @@ export class DashboardService {
                 type: 'prompt' as const,
                 updatedAt: p.updatedAt,
                 category: p.category?.name,
+                content: p.content,
+                promptType: p.promptType,
                 isFavorite: p.isFavorite,
+            })),
+            ...recentInfra.map(i => ({
+                id: i.id,
+                title: i.title,
+                type: 'infrastructure' as const,
+                updatedAt: i.updatedAt,
+                category: i.category?.name,
+                content: i.content,
+                infraType: i.infraType,
+                isFavorite: i.isFavorite,
             })),
         ];
 

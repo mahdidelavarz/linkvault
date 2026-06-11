@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useDashboard } from "@/hooks/useDashboard";
 import { useAuthStore } from "@/store/authStore";
+import QuickActions from "@/components/dashboard/QuickActions";
+import QuickCapture from "@/components/dashboard/QuickCapture";
+import RecentActivityGrid from "@/components/dashboard/RecentActivityGrid";
 import {
   LucideArrowRight,
   LucideBarChart3,
@@ -13,27 +16,12 @@ import {
   LucideGlobe,
   LucideLink2,
   LucideMessageSquare,
-  LucidePlus,
   LucideServer,
   LucideStar,
   LucideTag,
   LucideVault,
   LucideZap,
 } from "@/Icons/Icons";
-
-// ─── Utilities ────────────────────────────────────────────────────────────────
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `${d}d ago`;
-  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
 
 // ─── Module config ────────────────────────────────────────────────────────────
 
@@ -45,13 +33,6 @@ const MODULES = [
   { key: "infrastructure", label: "Infrastructure", href: "/infrastructure", icon: LucideServer,       color: "#3b82f6",          bg: "rgba(59,130,246,0.08)",        border: "rgba(59,130,246,0.2)" },
   { key: "api",            label: "API Client",     href: "/api-client",     icon: LucideGlobe,        color: "#ec4899",          bg: "rgba(236,72,153,0.08)",        border: "rgba(236,72,153,0.2)" },
 ];
-
-const TYPE_META: Record<string, { icon: typeof LucideLink2; color: string; href: string }> = {
-  link:    { icon: LucideLink2,         color: "var(--cyan-400)", href: "/links"    },
-  note:    { icon: LucideFileText,      color: "#10b981",         href: "/notes"    },
-  snippet: { icon: LucideFileCode2,     color: "#8b5cf6",         href: "/snippets" },
-  prompt:  { icon: LucideMessageSquare, color: "#f59e0b",         href: "/prompts"  },
-};
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -126,6 +107,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* ── Quick actions ── */}
+        <QuickActions />
+
         {/* ── Module cards ── */}
         <section className="dp-modules-section">
           <div className="dp-modules">
@@ -187,93 +171,11 @@ export default function DashboardPage() {
         {/* ── Two-column: recent + quick-add ── */}
         <div className="dp-content">
 
-          {/* Quick add — comes first on mobile */}
-          <div className="dp-quick-section dp-card">
-            <div className="dp-card-header">
-              <LucidePlus width={14} className="dp-card-header-icon" />
-              <h2 className="dp-card-title">Quick add</h2>
-            </div>
-            <div className="dp-quick-grid">
-              {MODULES.slice(0, 4).map((mod) => {
-                const Icon = mod.icon;
-                return (
-                  <Link key={mod.key} href={mod.href} className="dp-quick-btn"
-                    style={{ "--q-color": mod.color, "--q-bg": mod.bg, "--q-border": mod.border } as any}>
-                    <span className="dp-quick-icon"><Icon width={15} /></span>
-                    <span className="dp-quick-label">{mod.label}</span>
-                    <LucidePlus className="dp-quick-plus" width={12} />
-                  </Link>
-                );
-              })}
-            </div>
-
-            <div className="dp-nav-links">
-              {[
-                { label: "Categories", href: "/categories", icon: LucideFolder },
-                { label: "Tags",       href: "/tags",       icon: LucideTag   },
-              ].map((n) => (
-                <Link key={n.href} href={n.href} className="dp-nav-link">
-                  <n.icon width={13} />
-                  {n.label}
-                  <LucideArrowRight width={11} className="dp-nav-arrow" />
-                </Link>
-              ))}
-            </div>
-          </div>
+          {/* Quick capture — comes first on mobile */}
+          <QuickCapture />
 
           {/* Recent activity */}
-          <div className="dp-activity-section dp-card">
-            <div className="dp-card-header">
-              <LucideZap width={14} className="dp-card-header-icon" />
-              <h2 className="dp-card-title">Recent activity</h2>
-            </div>
-
-            {isLoading ? (
-              <div className="dp-activity-list">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="dp-activity-skel">
-                    <div className="skeleton" style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0 }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="skeleton" style={{ height: 12, width: "60%", marginBottom: 6 }} />
-                      <div className="skeleton" style={{ height: 10, width: "35%" }} />
-                    </div>
-                    <div className="skeleton" style={{ width: 36, height: 10, flexShrink: 0 }} />
-                  </div>
-                ))}
-              </div>
-            ) : recentItems.length === 0 ? (
-              <div className="dp-activity-empty">
-                <LucideVault width={28} />
-                <p>Your vault is empty.</p>
-                <span>Start by adding a link or note.</span>
-              </div>
-            ) : (
-              <div className="dp-activity-list">
-                {recentItems.slice(0, 8).map((item, idx) => {
-                  const meta = TYPE_META[item.type] ?? TYPE_META.link;
-                  const Icon = meta.icon;
-                  return (
-                    <Link key={`${item.type}-${item.id}-${idx}`}
-                      href={meta.href}
-                      className="dp-activity-row">
-                      <div className="dp-activity-icon"
-                        style={{ color: meta.color, background: `${meta.color}14`, border: `1px solid ${meta.color}28` }}>
-                        <Icon width={13} />
-                      </div>
-                      <div className="dp-activity-info">
-                        <p className="dp-activity-title">{item.title}</p>
-                        <p className="dp-activity-meta">
-                          <span className="dp-activity-type">{item.type}</span>
-                          {item.category && <> · {item.category}</>}
-                        </p>
-                      </div>
-                      <span className="dp-activity-time">{timeAgo(item.updatedAt)}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <RecentActivityGrid items={recentItems} isLoading={isLoading} />
         </div>
 
       </div>
@@ -498,38 +400,6 @@ const CSS = `
   margin:      0;
 }
 
-/* ── Quick add ── */
-.dp-quick-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 12px;
-}
-.dp-quick-btn {
-  display:         flex;
-  align-items:     center;
-  gap:             8px;
-  padding:         10px 12px;
-  background:      var(--bg-subtle);
-  border:          1px solid var(--border-default);
-  border-radius:   var(--radius-md);
-  text-decoration: none;
-  color:           var(--text-secondary);
-  font-size:       var(--text-sm);
-  font-weight:     500;
-  transition:      background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
-  min-width:       0;
-}
-.dp-quick-btn:hover {
-  background:   var(--q-bg, var(--accent-muted));
-  border-color: var(--q-border, var(--accent-border));
-  color:        var(--q-color, var(--cyan-400));
-}
-.dp-quick-icon { display: flex; align-items: center; flex-shrink: 0; }
-.dp-quick-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dp-quick-plus { flex-shrink: 0; color: var(--text-tertiary); transition: color var(--transition-fast); }
-.dp-quick-btn:hover .dp-quick-plus { color: inherit; }
-
 .dp-nav-links {
   display:        flex;
   flex-direction: column;
@@ -554,52 +424,4 @@ const CSS = `
 .dp-nav-arrow { margin-left: auto; opacity: 0; transition: opacity var(--transition-fast), transform var(--transition-fast); }
 .dp-nav-link:hover .dp-nav-arrow { opacity: 1; transform: translateX(2px); }
 
-/* ── Activity ── */
-.dp-activity-list {
-  display:        flex;
-  flex-direction: column;
-}
-.dp-activity-skel {
-  display:     flex;
-  align-items: center;
-  gap:         10px;
-  padding:     12px 16px;
-}
-.dp-activity-row {
-  display:         flex;
-  align-items:     center;
-  gap:             10px;
-  padding:         10px 16px;
-  text-decoration: none;
-  transition:      background var(--transition-fast);
-  min-width:       0;
-}
-.dp-activity-row:not(:last-child) { border-bottom: 1px solid var(--border-subtle); }
-.dp-activity-row:hover             { background: var(--bg-subtle); }
-
-.dp-activity-icon {
-  display:         flex;
-  align-items:     center;
-  justify-content: center;
-  width:           30px; height: 30px;
-  border-radius:   var(--radius-md);
-  flex-shrink:     0;
-}
-.dp-activity-info  { flex: 1; min-width: 0; }
-.dp-activity-title { font-size: var(--text-sm); font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dp-activity-meta  { display: flex; align-items: center; gap: 4px; font-size: var(--text-xs); color: var(--text-tertiary); margin-top: 2px; }
-.dp-activity-type  { text-transform: capitalize; }
-.dp-activity-time  { font-size: var(--text-xs); color: var(--text-tertiary); flex-shrink: 0; white-space: nowrap; }
-
-.dp-activity-empty {
-  display:        flex;
-  flex-direction: column;
-  align-items:    center;
-  gap:            8px;
-  padding:        48px 24px;
-  color:          var(--text-tertiary);
-  text-align:     center;
-}
-.dp-activity-empty p    { font-size: var(--text-sm); font-weight: 500; color: var(--text-secondary); margin: 0; }
-.dp-activity-empty span { font-size: var(--text-xs); }
 `;

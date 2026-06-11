@@ -70,7 +70,7 @@ export default function SnippetForm({
   onClose,
 }: {
   snippet?: Snippet | null;
-  initialValues?: Snippet;
+  initialValues?: Partial<Snippet>;
   onClose: () => void;
 }) {
   const isEditing = !!snippet;
@@ -223,7 +223,7 @@ export default function SnippetForm({
   useEffect(() => {
     if (!snippet && initialValues) {
       reset({
-        title:       `Copy of ${initialValues.title}`,
+        title:       initialValues.title ? `Copy of ${initialValues.title}` : "",
         snippetType: initialValues.snippetType ?? "code",
         language:    initialValues.language    ?? "txt",
         content:     initialValues.content     ?? "",

@@ -14,16 +14,22 @@ import ProjectTemplatePreviewModal from "@/components/projects/ProjectTemplatePr
 import { type ProjectTemplate, PROJECT_TEMPLATES } from "@/lib/projectTemplates";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
-import { LucideFolderOpen, LucidePlus, LucideSparkles } from "@/Icons/Icons";
+import { LucideFolderOpen, LucidePlus, LucideSearch, LucideSparkles, LucideX } from "@/Icons/Icons";
 
 export default function ProjectsPage() {
     const [formOpen, setFormOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [templateOpen, setTemplateOpen] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
+    const [search, setSearch] = useState("");
 
     const { data, isLoading } = useProjects();
     const projects = data ?? [];
+    const filteredProjects = projects.filter(p =>
+        !search ||
+        p.title.toLowerCase().includes(search.toLowerCase()) ||
+        (p.description ?? "").toLowerCase().includes(search.toLowerCase())
+    );
 
     const openCreate = () => { setEditingProject(null); setFormOpen(true); };
     const openEdit = (p: Project) => { setEditingProject(p); setFormOpen(true); };
@@ -54,6 +60,25 @@ export default function ProjectsPage() {
                     />
                 }
             >
+                {/* Search */}
+                <div className="pp-filters-bar">
+                    <div className="pp-search-wrap">
+                        <LucideSearch className="pp-search-icon" />
+                        <input
+                            className="pp-search"
+                            type="text"
+                            placeholder="Search projects…"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                        {search && (
+                            <button className="pp-search-clear" onClick={() => setSearch("")} aria-label="Clear">
+                                <LucideX width={12} />
+                            </button>
+                        )}
+                    </div>
+                </div>
+
                 {/* Template strip */}
                 <div className="pp-templates">
                     <div className="pp-templates-label">
@@ -74,9 +99,9 @@ export default function ProjectsPage() {
                             <div key={i} className="pp-skeleton" />
                         ))}
                     </CardGrid>
-                ) : projects.length > 0 ? (
+                ) : filteredProjects.length > 0 ? (
                     <CardGrid>
-                        {projects.map(p => (
+                        {filteredProjects.map(p => (
                             <ProjectCard key={p.id} project={p} onEdit={openEdit} />
                         ))}
                     </CardGrid>
@@ -97,6 +122,9 @@ export default function ProjectsPage() {
                                 </Button>
                             </div>
                         }
+                        hasFilters={!!search}
+                        filteredTitle="No projects found"
+                        onClearFilters={() => setSearch("")}
                     />
                 )}
             </PageLayout>
@@ -117,6 +145,58 @@ export default function ProjectsPage() {
 }
 
 const CSS = `
+.pp-filters-bar {
+    display:        flex;
+    flex-direction: column;
+    gap:            8px;
+    padding:        14px 16px;
+    background:     var(--bg-surface);
+    border:         1px solid var(--border-default);
+    border-radius:  var(--radius-lg);
+    margin-bottom:  10px;
+}
+.pp-search-wrap {
+    position:    relative;
+    display:     flex;
+    align-items: center;
+}
+.pp-search-icon {
+    position: absolute;
+    left:     10px;
+    width:    14px;
+    height:   14px;
+    color:    var(--text-tertiary);
+    pointer-events: none;
+}
+.pp-search {
+    width:         100%;
+    height:        34px;
+    padding:       0 30px 0 32px;
+    background:    var(--bg-subtle);
+    border:        1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    color:         var(--text-primary);
+    font-family:   var(--font-sans);
+    font-size:     var(--text-sm);
+    outline:       none;
+    transition:    border-color var(--transition-fast), background var(--transition-fast);
+}
+.pp-search::placeholder { color: var(--text-tertiary); }
+.pp-search:focus { border-color: var(--border-focus); background: var(--bg-elevated); }
+.pp-search-clear {
+    position:    absolute;
+    right:       8px;
+    display:     flex;
+    align-items: center;
+    justify-content: center;
+    width:       18px;
+    height:      18px;
+    background:  var(--bg-overlay);
+    border:      none;
+    border-radius: 50%;
+    color:       var(--text-tertiary);
+    cursor:      pointer;
+}
 .pp-templates {
     margin-bottom: 8px;
 }

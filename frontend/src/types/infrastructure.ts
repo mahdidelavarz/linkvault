@@ -41,6 +41,10 @@ export interface InfraMetadata {
   // ENV
   environment?: string; // development, staging, production
   variables?: { key: string; value: string; masked: boolean }[];
+
+  // Config (database)
+  engine?: string;
+  database?: string;
 }
 
 export interface CreateInfraDto {

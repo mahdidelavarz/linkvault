@@ -63,14 +63,6 @@ export default function LinksPage() {
   const onReach = useCallback(() => { if (hasNextPage) fetchNextPage(); }, [hasNextPage, fetchNextPage]);
   const sentinelRef = useInfiniteScroll(onReach, !!hasNextPage && !isLoading);
 
-  const hasFilters = !!(search || categoryId || showFavorites || selectedTagIds.length);
-  const activeFilterCount = [categoryId, showFavorites, selectedTagIds.length].filter(Boolean).length;
-
-  const openCreate = () => { bulk.exit(); setEditingLink(null); setModalOpen(true); };
-  const openEdit   = (link: Link) => { setEditingLink(link); setModalOpen(true); };
-  const closeModal = () => { setModalOpen(false); setEditingLink(null); };
-  const clearFilters = () => { setSearch(""); setCategoryId(""); setShowFavorites(false); setSelectedTagIds([]); setSortBy('updatedAt'); setSortDir('DESC'); };
-
   const SORT_OPTIONS = [
     { value: 'updatedAt|DESC', label: 'Recently updated' },
     { value: 'updatedAt|ASC',  label: 'Oldest updated' },
@@ -85,6 +77,16 @@ export default function LinksPage() {
     setSortBy(by); setSortDir(dir);
   };
   const isDefaultSort = sortBy === 'updatedAt' && sortDir === 'DESC';
+
+  const hasFilters = !!(search || categoryId || showFavorites || selectedTagIds.length || !isDefaultSort);
+  const activeFilterCount = [categoryId, showFavorites, selectedTagIds.length, !isDefaultSort].filter(Boolean).length;
+
+  const openCreate = () => { bulk.exit(); setEditingLink(null); setModalOpen(true); };
+  const openEdit   = (link: Link) => { setEditingLink(link); setModalOpen(true); };
+  const closeModal = () => { setModalOpen(false); setEditingLink(null); };
+  const clearFilters = () => { setSearch(""); setCategoryId(""); setShowFavorites(false); setSelectedTagIds([]); setSortBy('updatedAt'); setSortDir('DESC'); };
+
+  const sortLabel = SORT_OPTIONS.find((o) => o.value === sortValue)?.label ?? "";
 
   const handleBulkDelete = async () => {
     setIsBulkProcessing(true);
@@ -140,18 +142,6 @@ export default function LinksPage() {
                     Filters
                     {activeFilterCount > 0 && <span className="filter-count">{activeFilterCount}</span>}
                   </button>
-                  <div className={["sort-select-wrap", !isDefaultSort ? "sort-select-wrap--active" : ""].filter(Boolean).join(" ")}>
-                    <LucideArrowDownUp className="sort-select-icon" />
-                    <select
-                      className="sort-select"
-                      value={sortValue}
-                      onChange={(e) => handleSortChange(e.target.value)}
-                      aria-label="Sort links"
-                    >
-                      {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                    <LucideChevronDown className="sort-select-chevron" />
-                  </div>
                   {links.length > 0 && (
                     <button className="filter-select-mode" onClick={bulk.enter}>
                       <span className="scheck scheck--sm" /> Select
@@ -170,6 +160,18 @@ export default function LinksPage() {
                       </select>
                       <LucideChevronDown className="filter-select-chevron" />
                     </div>
+                    <div className="filter-select-wrap">
+                      <LucideArrowDownUp className="filter-select-icon" />
+                      <select
+                        className="filter-select"
+                        value={sortValue}
+                        onChange={(e) => handleSortChange(e.target.value)}
+                        aria-label="Sort links"
+                      >
+                        {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                      <LucideChevronDown className="filter-select-chevron" />
+                    </div>
                     <TagSelector selectedTagIds={selectedTagIds} onChange={setSelectedTagIds} variant="filter" />
                     <button
                       className={["filter-toggle", showFavorites ? "filter-toggle--active" : ""].filter(Boolean).join(" ")}
@@ -185,8 +187,8 @@ export default function LinksPage() {
                   </div>
                 )}
 
-                {/* Active tag chips */}
-                {selectedTagIds.length > 0 && (
+                {/* Active tag/sort chips */}
+                {(selectedTagIds.length > 0 || !isDefaultSort) && (
                   <div className="filter-tag-chips">
                     {selectedTagIds.map((tid) => {
                       const tag = allTags?.find((t) => t.id === tid);
@@ -197,6 +199,12 @@ export default function LinksPage() {
                         </button>
                       );
                     })}
+                    {!isDefaultSort && (
+                      <button className="filter-chip" onClick={() => handleSortChange('updatedAt|DESC')}>
+                        {sortLabel}
+                        <LucideX width={10} />
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -346,30 +354,11 @@ const CSS = `
   transition: color var(--transition-fast), background var(--transition-fast);
 }
 .filter-clear:hover { color: var(--danger); background: var(--danger-muted); }
-.sort-select-wrap {
-  position: relative; display: flex; align-items: center; flex-shrink: 0;
-  transition: opacity var(--transition-fast);
-}
-.sort-select-icon    { position: absolute; left: 9px; width: 13px; height: 13px; color: var(--text-tertiary); pointer-events: none; }
-.sort-select-chevron { position: absolute; right: 8px; width: 12px; height: 12px; color: var(--text-tertiary); pointer-events: none; }
-.sort-select {
-  height: 34px; padding: 0 28px 0 30px;
-  background: var(--bg-subtle); border: 1px solid var(--border-default); border-radius: var(--radius-md);
-  color: var(--text-primary); font-family: var(--font-sans); font-size: var(--text-sm);
-  outline: none; cursor: pointer; appearance: none; -webkit-appearance: none;
-  transition: border-color var(--transition-fast), background var(--transition-fast);
-}
-.sort-select:focus { border-color: var(--border-focus); }
-.sort-select option { background: var(--bg-elevated); }
-.sort-select-wrap--active .sort-select { border-color: var(--accent-border); color: var(--accent); }
-.sort-select-wrap--active .sort-select-icon,
-.sort-select-wrap--active .sort-select-chevron { color: var(--accent); }
-
 .filter-select-mode {
   display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px;
   background: transparent; border: 1px solid var(--border-default); border-radius: var(--radius-md);
   color: var(--text-tertiary); font-size: var(--text-sm); font-family: var(--font-sans);
-  cursor: pointer; white-space: nowrap; margin-left: auto;
+  cursor: pointer; white-space: nowrap;
   transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
 }
 .filter-select-mode:hover { background: var(--bg-overlay); color: var(--text-primary); border-color: var(--border-strong); }

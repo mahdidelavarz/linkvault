@@ -43,6 +43,26 @@ export function testRegex(pattern: string, testString: string, flags: string = '
   }
 }
 
+/** Splits `text` into match/non-match parts for a given regex `pattern`+`flags`, for highlighting. */
+export function getMatchParts(text: string, pattern: string, flags: string): { text: string; match: boolean }[] {
+  try {
+    const gFlags = flags.includes('g') ? flags : flags + 'g'
+    const re = new RegExp(pattern, gFlags)
+    const parts: { text: string; match: boolean }[] = []
+    let last = 0, m: RegExpExecArray | null
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) parts.push({ text: text.slice(last, m.index), match: false })
+      if (m[0].length === 0) { re.lastIndex++; continue }
+      parts.push({ text: m[0], match: true })
+      last = m.index + m[0].length
+    }
+    if (last < text.length) parts.push({ text: text.slice(last), match: false })
+    return parts
+  } catch {
+    return [{ text, match: false }]
+  }
+}
+
 export function parseCurlCommand(curlCommand: string): {
   method: string;
   url: string;

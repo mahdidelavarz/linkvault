@@ -5,18 +5,18 @@ import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import LinkForm from "@/components/links/LinkForm";
-import NoteForm from "@/components/notes/NoteForm";
 import SnippetForm from "@/components/snippets/SnippetForm";
 import PromptForm from "@/components/prompts/PromptForm";
+import InfraForm from "@/components/infrastructure/InfraForm";
 import {
   LucideLink2,
-  LucideNotebookPen,
+  LucideServer,
   LucideCodeXml,
   LucideMessageSquare,
   LucideSearch,
 } from "@/Icons/Icons";
 
-type QuickActionType = "link" | "note" | "snippet" | "prompt" | null;
+type QuickActionType = "link" | "snippet" | "prompt" | "infra" | null;
 
 const actions = [
   {
@@ -24,12 +24,6 @@ const actions = [
     icon: LucideLink2,
     label: "New Link",
     variant: "blue" as const,
-  },
-  {
-    type: "note" as const,
-    icon: LucideNotebookPen,
-    label: "New Note",
-    variant: "green" as const,
   },
   {
     type: "snippet" as const,
@@ -42,6 +36,12 @@ const actions = [
     icon: LucideMessageSquare,
     label: "New Prompt",
     variant: "teal" as const,
+  },
+  {
+    type: "infra" as const,
+    icon: LucideServer,
+    label: "New Infra",
+    variant: "green" as const,
   },
 ];
 
@@ -84,12 +84,12 @@ export default function QuickActions() {
     switch (activeForm) {
       case "link":
         return <LinkForm onClose={handleClose} />;
-      case "note":
-        return <NoteForm onClose={handleClose} />;
       case "snippet":
         return <SnippetForm onClose={handleClose} />;
       case "prompt":
         return <PromptForm onClose={handleClose} />;
+      case "infra":
+        return <InfraForm onClose={handleClose} />;
       default:
         return null;
     }
@@ -99,12 +99,12 @@ export default function QuickActions() {
     switch (activeForm) {
       case "link":
         return "Add Link";
-      case "note":
-        return "Add Note";
       case "snippet":
         return "Add Snippet";
       case "prompt":
         return "Add Prompt";
+      case "infra":
+        return "Add Infrastructure";
       default:
         return "";
     }
@@ -138,7 +138,7 @@ export default function QuickActions() {
                 }}
               >
                 <Icon width={20} height={20} />
-                <span className="h-4">{action.label}</span>
+                <span className="quick-action-label">{action.label}</span>
               </button>
             );
           })}
@@ -173,41 +173,48 @@ const CSS = `
   background:    var(--bg-surface);
   border:        1px solid var(--border-default);
   border-radius: var(--radius-lg);
-  padding:       20px;
+  padding:       14px 16px;
 }
 .quick-actions-title {
-  font-size:     var(--text-lg);
+  font-size:     var(--text-sm);
   font-weight:   600;
   color:         var(--text-primary);
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 .quick-actions-grid {
   display:               grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap:                   8px;
 }
 .quick-action-btn {
   display:          flex;
+  flex-direction:   column;
   align-items:      center;
   justify-content:  center;
-  gap:              8px;
-  height:           48px;
-  padding:          0 12px;
+  gap:              4px;
+  height:           60px;
+  padding:          6px 4px;
   border:           none;
   border-radius:    var(--radius-md);
   font-family:      var(--font-sans);
-  font-size:        var(--text-sm);
+  font-size:        var(--text-xs);
   font-weight:      500;
   cursor:           pointer;
   transition:       all var(--transition-fast);
 }
+.quick-action-label {
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  max-width:     100%;
+}
 .quick-actions-footer {
-  margin-top:  16px;
-  padding-top: 16px;
+  margin-top:  12px;
+  padding-top: 12px;
   border-top:  1px solid var(--border-default);
 }
 
-@media (max-width: 479px) {
-  .quick-actions-grid { grid-template-columns: 1fr; }
+@media (max-width: 359px) {
+  .quick-action-label { font-size: 10px; }
 }
 `;

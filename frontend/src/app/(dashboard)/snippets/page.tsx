@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import { useSnippets, useSnippet } from "@/hooks/useSnippet";
+import { useSearchParams, useRouter } from "next/navigation";
+import { useSnippets } from "@/hooks/useSnippet";
 import PageLayout from "@/components/layout/PageLayout";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
@@ -28,16 +28,12 @@ import {
   LucideFileCode2,
   LucideFolder,
   LucideLayers,
-  LucideLayoutGrid,
-  LucideList,
   LucidePlus,
   LucideSearch,
   LucideSlidersHorizontal,
   LucideStar,
   LucideX,
 } from "@/Icons/Icons";
-
-const VIEW_STORAGE_KEY = "snippets-view";
 
 const ALL_LANGUAGES: Record<string, string> = {
   js: "JavaScript",
@@ -68,8 +64,8 @@ const ALL_LANGUAGES: Record<string, string> = {
 
 export default function SnippetsPage() {
   const searchParams   = useSearchParams();
+  const router         = useRouter();
   const [formOpen, setFormOpen]           = useState(false);
-  const [editingSnippet, setEditingSnippet] = useState<Snippet | null>(null);
   const [duplicateFrom, setDuplicateFrom]   = useState<Snippet | null>(null);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -79,28 +75,12 @@ export default function SnippetsPage() {
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [sortBy, setSortBy] = useState("");
-  const [view, setView] = useState<"grid" | "list">("grid");
 
-  // Restore view preference
-  useEffect(() => {
-    const stored = localStorage.getItem(VIEW_STORAGE_KEY);
-    if (stored === "grid" || stored === "list") setView(stored);
-  }, []);
-
-  const changeView = (v: "grid" | "list") => {
-    setView(v);
-    localStorage.setItem(VIEW_STORAGE_KEY, v);
-  };
-
-  // P1-6: Deep-link from search — ?open=<id> opens that snippet's form directly
+  // P1-6: Deep-link from search — ?open=<id> redirects to the snippet's detail page
   const openParam = searchParams.get("open");
-  const { data: openSnippet } = useSnippet(openParam ? parseInt(openParam) : 0);
   useEffect(() => {
-    if (openSnippet) {
-      setEditingSnippet(openSnippet);
-      setFormOpen(true);
-    }
-  }, [openSnippet]);
+    if (openParam) router.replace(`/snippets/${openParam}`);
+  }, [openParam, router]);
 
   const { data: categories } = useCategories();
   const { data: allTags }    = useTags();
@@ -153,23 +133,15 @@ export default function SnippetsPage() {
   };
 
   const openCreate = () => {
-    setEditingSnippet(null);
-    setDuplicateFrom(null);
-    setFormOpen(true);
-  };
-  const openEdit = (s: Snippet) => {
-    setEditingSnippet(s);
     setDuplicateFrom(null);
     setFormOpen(true);
   };
   const openDuplicate = (s: Snippet) => {
-    setEditingSnippet(null);
     setDuplicateFrom(s);
     setFormOpen(true);
   };
   const closeForm = () => {
     setFormOpen(false);
-    setEditingSnippet(null);
     setDuplicateFrom(null);
   };
 
@@ -180,7 +152,7 @@ export default function SnippetsPage() {
       <PageLayout top={<>
         <PageHeader
           title="Snippets"
-          subtitle={isLoading ? "…" : `${total} snippets`}
+          subtitle={isLoading ? "…" : `${total} ${total === 1 ? "snippet" : "snippets"}`}
           action={<Button leftIcon={LucidePlus} onClick={openCreate}>New Snippet</Button>}
         />
 
@@ -224,33 +196,6 @@ export default function SnippetsPage() {
                 <span className="sp-filter-count">{activeFilterCount}</span>
               )}
             </button>
-
-            {!isLoading && (
-              <span className="sp-result-count">
-                {total} {total === 1 ? "snippet" : "snippets"}
-              </span>
-            )}
-
-            <div className="sp-view-toggle">
-              <button
-                className={["sp-view-btn", view === "grid" ? "sp-view-btn--active" : ""].filter(Boolean).join(" ")}
-                onClick={() => changeView("grid")}
-                aria-label="Grid view"
-                title="Grid view"
-                type="button"
-              >
-                <LucideLayoutGrid width={14} />
-              </button>
-              <button
-                className={["sp-view-btn", view === "list" ? "sp-view-btn--active" : ""].filter(Boolean).join(" ")}
-                onClick={() => changeView("list")}
-                aria-label="List view"
-                title="List view"
-                type="button"
-              >
-                <LucideList width={14} />
-              </button>
-            </div>
           </div>
 
           {/* Expandable filters */}
@@ -409,35 +354,19 @@ export default function SnippetsPage() {
       </>}
       >
 
-        {/* ── Grid / List ── */}
+        {/* ── Grid ── */}
         {isLoading ? (
-          view === "grid" ? (
-            <CardGrid minCardWidth={320}>{[...Array(6)].map((_, i) => <SnippetSkeleton key={i} />)}</CardGrid>
-          ) : (
-            <div className="sp-list">{[...Array(6)].map((_, i) => <SnippetRowSkeleton key={i} />)}</div>
-          )
+          <CardGrid minCardWidth={320}>{[...Array(6)].map((_, i) => <SnippetSkeleton key={i} />)}</CardGrid>
         ) : snippets.length > 0 ? (
           <>
-            {view === "grid" ? (
-              <CardGrid minCardWidth={320}>
-                {snippets.map((snippet) => (
-                  <SnippetCard key={snippet.id} snippet={snippet} onEdit={openEdit} onDuplicate={openDuplicate} />
-                ))}
-              </CardGrid>
-            ) : (
-              <div className="sp-list">
-                {snippets.map((snippet) => (
-                  <SnippetCard key={snippet.id} snippet={snippet} view="list" onEdit={openEdit} onDuplicate={openDuplicate} />
-                ))}
-              </div>
-            )}
+            <CardGrid minCardWidth={320}>
+              {snippets.map((snippet) => (
+                <SnippetCard key={snippet.id} snippet={snippet} onDuplicate={openDuplicate} />
+              ))}
+            </CardGrid>
             <div ref={sentinelRef} style={{ height: 1 }} />
             {isFetchingNextPage && (
-              view === "grid" ? (
-                <CardGrid minCardWidth={320}>{[...Array(3)].map((_, i) => <SnippetSkeleton key={i} />)}</CardGrid>
-              ) : (
-                <div className="sp-list">{[...Array(3)].map((_, i) => <SnippetRowSkeleton key={i} />)}</div>
-              )
+              <CardGrid minCardWidth={320}>{[...Array(3)].map((_, i) => <SnippetSkeleton key={i} />)}</CardGrid>
             )}
           </>
         ) : (
@@ -456,11 +385,11 @@ export default function SnippetsPage() {
       <Modal
         isOpen={formOpen}
         onClose={closeForm}
-        title={editingSnippet ? "Edit Snippet" : duplicateFrom ? "Duplicate Snippet" : "New Snippet"}
+        title={duplicateFrom ? "Duplicate Snippet" : "New Snippet"}
         size="xl"
       >
         <SnippetForm
-          snippet={editingSnippet}
+          snippet={null}
           initialValues={duplicateFrom ?? undefined}
           onClose={closeForm}
         />
@@ -518,22 +447,6 @@ function SnippetSkeleton() {
     </div>
   );
 }
-
-function SnippetRowSkeleton() {
-  return (
-    <div className="sp-row-skeleton">
-      <div className="skeleton" style={{ height: 8, width: 8, borderRadius: "50%", flexShrink: 0 }} />
-      <div className="skeleton" style={{ height: 16, width: 16, borderRadius: 4, flexShrink: 0 }} />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, minWidth: 0 }}>
-        <div className="skeleton" style={{ height: 14, width: "35%" }} />
-        <div className="skeleton" style={{ height: 11, width: "55%" }} />
-      </div>
-      <div className="skeleton" style={{ height: 28, width: 60, borderRadius: 8, flexShrink: 0 }} />
-      <div className="skeleton" style={{ height: 28, width: 80, borderRadius: 8, flexShrink: 0 }} />
-    </div>
-  );
-}
-
 
 const CSS = `
 .sp-page   { display: flex; flex-direction: column; gap:10px; }
@@ -712,54 +625,9 @@ const CSS = `
 .sp-chip:hover      { background: var(--danger-muted); border-color: rgba(239,68,68,0.2); color: var(--danger); }
 .sp-chip--star      { background: var(--warning-muted); border-color: rgba(245,158,11,0.2); color: #fbbf24; }
 
-/* Result count */
-.sp-result-count {
-  flex-shrink:   0;
-  font-size:     var(--text-xs);
-  font-weight:   500;
-  color:         var(--text-tertiary);
-  white-space:   nowrap;
-  padding:       0 4px;
-}
-
-/* View toggle */
-.sp-view-toggle {
-  display:       flex;
-  gap:           2px;
-  flex-shrink:   0;
-  padding:       2px;
-  background:    var(--bg-subtle);
-  border:        1px solid var(--border-default);
-  border-radius: var(--radius-md);
-}
-.sp-view-btn {
-  display:         flex;
-  align-items:     center;
-  justify-content: center;
-  width:           28px;
-  height:          28px;
-  background:      transparent;
-  border:          none;
-  border-radius:   var(--radius-sm);
-  color:           var(--text-tertiary);
-  cursor:          pointer;
-  transition:      background var(--transition-fast), color var(--transition-fast);
-}
-.sp-view-btn:hover     { color: var(--text-primary); }
-.sp-view-btn--active   { background: var(--accent-muted); color: var(--cyan-300); }
-
-/* List view */
-.sp-list { display: flex; flex-direction: column; gap: 8px; }
-
 /* Skeleton */
 .sp-skeleton {
   padding: 16px;
-  background: var(--bg-surface); border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-}
-.sp-row-skeleton {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 14px;
   background: var(--bg-surface); border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
 }
