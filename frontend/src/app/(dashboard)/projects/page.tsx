@@ -1,19 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { useProjects } from "@/hooks/useProjects";
-import { type Project } from "@/types/project";
-import PageLayout from "@/components/layout/PageLayout";
-import PageHeader from "@/components/ui/PageHeader";
-import EmptyState from "@/components/ui/EmptyState";
-import CardGrid from "@/components/shared/CardGrid";
-import ProjectCard from "@/components/projects/ProjectCard";
-import ProjectForm from "@/components/projects/ProjectForm";
-import ProjectTemplateCard from "@/components/projects/ProjectTemplateCard";
-import ProjectTemplatePreviewModal from "@/components/projects/ProjectTemplatePreviewModal";
-import { type ProjectTemplate, PROJECT_TEMPLATES } from "@/lib/projectTemplates";
-import Modal from "@/components/ui/Modal";
-import Button from "@/components/ui/Button";
+import { useProjects } from "@/features/projects/hooks/useProjects";
+import { type Project } from "@/features/projects/types/project";
+import PageLayout from "@/features/shared/layout/PageLayout";
+import PageHeader from "@/features/shared/ui/PageHeader";
+import EmptyState from "@/features/shared/ui/EmptyState";
+import CardGrid from "@/features/shared/components/CardGrid";
+import ProjectCard from "@/features/projects/components/ProjectCard";
+import ProjectForm from "@/features/projects/components/ProjectForm";
+import ProjectTemplateCard from "@/features/projects/components/ProjectTemplateCard";
+import ProjectTemplatePreviewModal from "@/features/projects/components/ProjectTemplatePreviewModal";
+import { type ProjectTemplate, PROJECT_TEMPLATES } from "@/features/projects/template/projectTemplates";
+import Modal from "@/features/shared/ui/Modal";
+import Button from "@/features/shared/ui/Button";
 import { LucideFolderOpen, LucidePlus, LucideSearch, LucideSparkles, LucideX } from "@/Icons/Icons";
 
 export default function ProjectsPage() {

@@ -1,274 +1,367 @@
-'use client'
+"use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { useForm, Controller } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Icon } from '@iconify/react'
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Icon } from "@iconify/react";
 import {
-  useCollections, useEndpoints,
-  useCreateEndpoint, useUpdateEndpoint, useDeleteEndpoint,
-  useTestEndpoint, useEnvironments,
-} from '@/hooks/useApiClient'
-import { useCategories } from '@/hooks/useCategories'
-import { useQuery } from '@tanstack/react-query'
-import api from '@/lib/http'
-import { type ApiEndpoint, type HttpMethod, type KeyValue, type Environment, type AuthType, type AuthData, HTTP_METHODS } from '@/types/api'
-import { useVault } from '@/hooks/useVault'
-import { type Infrastructure } from '@/types/infrastructure'
-import { type RequestSnapshot } from '@/lib/apiCodegen'
-import CollectionSidebar  from '@/components/api-client/CollectionSidebar'
-import RequestBuilder     from '@/components/api-client/RequestBuilder'
-import ResponseViewer     from '@/components/api-client/ResponseViewer'
-import EnvironmentModal   from '@/components/api-client/EnvironmentModal'
-import ImportCurlModal, { type ParsedCurl } from '@/components/api-client/ImportCurlModal'
-import Button            from '@/components/ui/Button'
-import Modal             from '@/components/ui/Modal'
-import FormLayout        from '@/components/layout/FormLayout'
-import Input             from '@/components/ui/Input'
-import Textarea          from '@/components/ui/TextArea'
-import Alert             from '@/components/ui/Alert'
-import TagSelector       from '@/components/tags/TagSelector'
-import FormSelect        from '@/components/snippets/FormSelect'
-import { LucideFolder, LucideType } from '@/Icons/Icons'
+  useCollections,
+  useEndpoints,
+  useCreateEndpoint,
+  useUpdateEndpoint,
+  useDeleteEndpoint,
+  useTestEndpoint,
+  useEnvironments,
+} from "@/features/postman/hooks/useApiClient";
+import { useCategories } from "@/features/categories/hooks/useCategories";
+import { useQuery } from "@tanstack/react-query";
+import api from "@/lib/http";
+import {
+  type ApiEndpoint,
+  type HttpMethod,
+  type KeyValue,
+  type Environment,
+  type AuthType,
+  type AuthData,
+  HTTP_METHODS,
+} from "@/features/postman/types/apiClient";
+import { useVault } from "@/features/settings/security/hooks/useVault";
+import { type Infrastructure } from "@/features/infrastructure/types/infrastructure";
+import { type RequestSnapshot } from "@/features/postman/utils/apiCodegen";
+import CollectionSidebar from "@/features/postman/components/CollectionSidebar";
+import RequestBuilder from "@/features/postman/components/RequestBuilder";
+import ResponseViewer from "@/features/postman/components/ResponseViewer";
+import EnvironmentModal from "@/features/postman/components/EnvironmentModal";
+import ImportCurlModal, {
+  type ParsedCurl,
+} from "@/features/postman/components/ImportCurlModal";
+import Button from "@/features/shared/ui/Button";
+import Modal from "@/features/shared/ui/Modal";
+import Input from "@/features/shared/ui/Input";
+import Textarea from "@/features/shared/ui/TextArea";
+import Alert from "@/features/shared/ui/Alert";
+import TagSelector from "@/features/tags/components/TagSelector";
+import { LucideFolder, LucideType } from "@/Icons/Icons";
+import FormLayout from "@/features/shared/layout/FormLayout";
+import FormSelect from "@/features/snippets/components/FormSelect";
 
 // ─── Save form schema ─────────────────────────────────────────────────────────
 const saveSchema = z.object({
-  title:        z.string().min(1, 'Title is required'),
-  description:  z.string().optional(),
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
   collectionId: z.number().optional(),
-  categoryId:   z.number().optional(),
-  tagIds:       z.array(z.number()),
-  isFavorite:   z.boolean(),
-})
-type SaveFormData = z.infer<typeof saveSchema>
+  categoryId: z.number().optional(),
+  tagIds: z.array(z.number()),
+  isFavorite: z.boolean(),
+});
+type SaveFormData = z.infer<typeof saveSchema>;
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function ApiClientPage() {
   // Sidebar state
-  const [selectedCollection, setSelectedCollection] = useState<number | null>(null)
-  const [mobileSidebarOpen,  setMobileSidebarOpen]  = useState(false)
+  const [selectedCollection, setSelectedCollection] = useState<number | null>(
+    null,
+  );
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Request state
-  const [selectedEndpoint, setSelectedEndpoint] = useState<ApiEndpoint | null>(null)
-  const [method,     setMethod]     = useState<HttpMethod>('GET')
-  const [url,        setUrl]        = useState('')
-  const [headers,    setHeaders]    = useState('')
-  const [body,       setBody]       = useState('')
-  const [bodyType,   setBodyType]   = useState<'json' | 'raw' | 'form-data'>('json')
+  const [selectedEndpoint, setSelectedEndpoint] = useState<ApiEndpoint | null>(
+    null,
+  );
+  const [method, setMethod] = useState<HttpMethod>("GET");
+  const [url, setUrl] = useState("");
+  const [headers, setHeaders] = useState("");
+  const [body, setBody] = useState("");
+  const [bodyType, setBodyType] = useState<"json" | "raw" | "form-data">(
+    "json",
+  );
 
   // Response
-  const [response,   setResponse]   = useState<any>(null)
+  const [response, setResponse] = useState<any>(null);
 
   // Save modal
-  const [saveOpen,   setSaveOpen]   = useState(false)
+  const [saveOpen, setSaveOpen] = useState(false);
 
   // Confirm delete
-  const [confirmDel, setConfirmDel] = useState(false)
+  const [confirmDel, setConfirmDel] = useState(false);
 
   // Import from cURL (P5-8 A-3)
-  const [importCurlOpen, setImportCurlOpen] = useState(false)
+  const [importCurlOpen, setImportCurlOpen] = useState(false);
 
   // Saved example response (P5-8 A-2)
-  const [isExampleResponse, setIsExampleResponse] = useState(false)
+  const [isExampleResponse, setIsExampleResponse] = useState(false);
 
   // Query params (P3-15)
-  const [queryParams,   setQueryParams]   = useState<KeyValue[]>([])
+  const [queryParams, setQueryParams] = useState<KeyValue[]>([]);
 
   // Environment
-  const [activeEnvId,   setActiveEnvId]   = useState<number | null>(null)
-  const [envModalOpen,  setEnvModalOpen]  = useState(false)
+  const [activeEnvId, setActiveEnvId] = useState<number | null>(null);
+  const [envModalOpen, setEnvModalOpen] = useState(false);
 
   // Auth
-  const [authType, setAuthType] = useState<AuthType>('none')
-  const [authData, setAuthData] = useState<Partial<AuthData>>({})
+  const [authType, setAuthType] = useState<AuthType>("none");
+  const [authData, setAuthData] = useState<Partial<AuthData>>({});
 
-  const { isEnabled: vaultEnabled, isUnlocked: vaultUnlocked, encrypt, decrypt } = useVault()
+  const {
+    isEnabled: vaultEnabled,
+    isUnlocked: vaultUnlocked,
+    encrypt,
+    decrypt,
+  } = useVault();
 
   // Draft restore notice (P3-14)
-  const [draftRestored, setDraftRestored] = useState(false)
+  const [draftRestored, setDraftRestored] = useState(false);
 
   // Mobile tab switcher (Option B)
-  const [mobileTab, setMobileTab] = useState<'request' | 'response'>('request')
+  const [mobileTab, setMobileTab] = useState<"request" | "response">("request");
 
   // P3-17: resizable splitter
-  const [splitPx,  setSplitPx]  = useState(400)
-  const rightRef   = useRef<HTMLDivElement>(null)
+  const [splitPx, setSplitPx] = useState(400);
+  const rightRef = useRef<HTMLDivElement>(null);
 
-  const handleSplitterDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    const startY = e.clientY
-    const startH = splitPx
-    const onMove = (ev: MouseEvent) => {
-      const rightH = rightRef.current?.clientHeight ?? 0
-      const delta  = ev.clientY - startY
-      setSplitPx(Math.max(200, Math.min(rightH - 160, startH + delta)))
-    }
-    const onUp = () => {
-      document.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseup',   onUp)
-    }
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup',   onUp)
-  }, [splitPx])
-
-  const { data: environments }          = useEnvironments()
-  const { data: infraEnvItems }         = useQuery<Infrastructure[]>({
-    queryKey: ['infra-env-items'],
-    queryFn: async () => {
-      const { data } = await api.get('/infrastructure', { params: { infraType: 'env', limit: 100 } })
-      return data.items as Infrastructure[]
+  const handleSplitterDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      const startY = e.clientY;
+      const startH = splitPx;
+      const onMove = (ev: MouseEvent) => {
+        const rightH = rightRef.current?.clientHeight ?? 0;
+        const delta = ev.clientY - startY;
+        setSplitPx(Math.max(200, Math.min(rightH - 160, startH + delta)));
+      };
+      const onUp = () => {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+      };
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
     },
-  })
-  const { data: collections }           = useCollections()
-  const { data: categories }           = useCategories()
-  const { data: endpoints, refetch }   = useEndpoints({ collectionId: selectedCollection || undefined })
-  const createEndpoint                 = useCreateEndpoint()
-  const updateEndpoint                 = useUpdateEndpoint()
-  const deleteEndpoint                 = useDeleteEndpoint()
-  const testEndpoint                   = useTestEndpoint()
+    [splitPx],
+  );
+
+  const { data: environments } = useEnvironments();
+  const { data: infraEnvItems } = useQuery<Infrastructure[]>({
+    queryKey: ["infra-env-items"],
+    queryFn: async () => {
+      const { data } = await api.get("/infrastructure", {
+        params: { infraType: "env", limit: 100 },
+      });
+      return data.items as Infrastructure[];
+    },
+  });
+  const { data: collections } = useCollections();
+  const { data: categories } = useCategories();
+  const { data: endpoints, refetch } = useEndpoints({
+    collectionId: selectedCollection || undefined,
+  });
+  const createEndpoint = useCreateEndpoint();
+  const updateEndpoint = useUpdateEndpoint();
+  const deleteEndpoint = useDeleteEndpoint();
+  const testEndpoint = useTestEndpoint();
 
   // ─── P3-14: localStorage draft ──────────────────────────────────────────────
-  const DRAFT_KEY = 'linkvault:api-draft'
+  const DRAFT_KEY = "linkvault:api-draft";
 
   // Restore draft on mount
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(DRAFT_KEY)
-      if (!raw) return
-      const d = JSON.parse(raw)
-      if (!d.url) return
-      setMethod(d.method ?? 'GET')
-      setUrl(d.url)
-      setHeaders(d.headers ?? '')
-      setBody(d.body ?? '')
-      setBodyType(d.bodyType ?? 'json')
-      setQueryParams((d.queryParams ?? []).map((p: any) => ({ ...p, id: p.id ?? crypto.randomUUID() })))
-      setDraftRestored(true)
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (!d.url) return;
+      setMethod(d.method ?? "GET");
+      setUrl(d.url);
+      setHeaders(d.headers ?? "");
+      setBody(d.body ?? "");
+      setBodyType(d.bodyType ?? "json");
+      setQueryParams(
+        (d.queryParams ?? []).map((p: any) => ({
+          ...p,
+          id: p.id ?? crypto.randomUUID(),
+        })),
+      );
+      setDraftRestored(true);
     } catch {}
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-dismiss draft notice after 4 s
   useEffect(() => {
-    if (!draftRestored) return
-    const t = setTimeout(() => setDraftRestored(false), 4000)
-    return () => clearTimeout(t)
-  }, [draftRestored])
+    if (!draftRestored) return;
+    const t = setTimeout(() => setDraftRestored(false), 4000);
+    return () => clearTimeout(t);
+  }, [draftRestored]);
 
   // Persist draft on every change
   useEffect(() => {
-    localStorage.setItem(DRAFT_KEY, JSON.stringify({ method, url, headers, body, bodyType, queryParams }))
-  }, [method, url, headers, body, bodyType, queryParams])
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({ method, url, headers, body, bodyType, queryParams }),
+    );
+  }, [method, url, headers, body, bodyType, queryParams]);
 
   // Auto-switch to response tab on mobile when response arrives
   useEffect(() => {
-    if (response && typeof window !== 'undefined' && window.innerWidth < 768) {
-      setMobileTab('response')
+    if (response && typeof window !== "undefined" && window.innerWidth < 768) {
+      setMobileTab("response");
     }
-  }, [response])
+  }, [response]);
 
   // ─── P3-15: URL ↔ params bidirectional sync ──────────────────────────────────
 
   // Parse query string from a raw URL string into KeyValue rows
-  const parseUrlParams = (rawUrl: string, existing: KeyValue[] = []): KeyValue[] => {
-    const idx = rawUrl.indexOf('?')
-    if (idx === -1) return []
-    return rawUrl.slice(idx + 1).split('&').filter(Boolean).map((pair) => {
-      const eqIdx = pair.indexOf('=')
-      const key   = decodeURIComponent(eqIdx === -1 ? pair : pair.slice(0, eqIdx))
-      const value = eqIdx === -1 ? '' : decodeURIComponent(pair.slice(eqIdx + 1))
-      const found = existing.find((p) => p.key === key)
-      return { id: found?.id ?? crypto.randomUUID(), key, value, enabled: found?.enabled ?? true }
-    })
-  }
+  const parseUrlParams = (
+    rawUrl: string,
+    existing: KeyValue[] = [],
+  ): KeyValue[] => {
+    const idx = rawUrl.indexOf("?");
+    if (idx === -1) return [];
+    return rawUrl
+      .slice(idx + 1)
+      .split("&")
+      .filter(Boolean)
+      .map((pair) => {
+        const eqIdx = pair.indexOf("=");
+        const key = decodeURIComponent(
+          eqIdx === -1 ? pair : pair.slice(0, eqIdx),
+        );
+        const value =
+          eqIdx === -1 ? "" : decodeURIComponent(pair.slice(eqIdx + 1));
+        const found = existing.find((p) => p.key === key);
+        return {
+          id: found?.id ?? crypto.randomUUID(),
+          key,
+          value,
+          enabled: found?.enabled ?? true,
+        };
+      });
+  };
 
   // Rebuild the URL from a base URL + enabled params
   const buildUrl = (base: string, params: KeyValue[]): string => {
-    const enabled = params.filter((p) => p.key.trim() && p.enabled)
-    if (!enabled.length) return base
-    const qs = enabled.map((p) => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`).join('&')
-    return `${base}?${qs}`
-  }
+    const enabled = params.filter((p) => p.key.trim() && p.enabled);
+    if (!enabled.length) return base;
+    const qs = enabled
+      .map((p) => `${encodeURIComponent(p.key)}=${encodeURIComponent(p.value)}`)
+      .join("&");
+    return `${base}?${qs}`;
+  };
 
   // URL bar changed by user → re-parse params from it
   const handleUrlChange = (newUrl: string) => {
-    setUrl(newUrl)
-    setQueryParams(parseUrlParams(newUrl, queryParams))
-  }
+    setUrl(newUrl);
+    setQueryParams(parseUrlParams(newUrl, queryParams));
+  };
 
   // Params table changed → rebuild URL
   const handleParamsChange = (newParams: KeyValue[]) => {
-    setQueryParams(newParams)
-    const base = url.includes('?') ? url.slice(0, url.indexOf('?')) : url
-    setUrl(buildUrl(base, newParams))
-  }
+    setQueryParams(newParams);
+    const base = url.includes("?") ? url.slice(0, url.indexOf("?")) : url;
+    setUrl(buildUrl(base, newParams));
+  };
 
   // ─── Save form ──────────────────────────────────────────────────────────────
-  const { register, handleSubmit, control, reset, formState: { errors } } =
-    useForm<SaveFormData>({
-      resolver: zodResolver(saveSchema),
-      defaultValues: { title: '', description: '', tagIds: [], isFavorite: false },
-    })
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<SaveFormData>({
+    resolver: zodResolver(saveSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      tagIds: [],
+      isFavorite: false,
+    },
+  });
 
   const openSave = () => {
     if (selectedEndpoint) {
       reset({
-        title:        selectedEndpoint.title,
-        description:  selectedEndpoint.description ?? '',
+        title: selectedEndpoint.title,
+        description: selectedEndpoint.description ?? "",
         collectionId: selectedEndpoint.collectionId,
-        categoryId:   selectedEndpoint.categoryId,
-        tagIds:       selectedEndpoint.tags?.map((t: any) => t.id) ?? [],
-        isFavorite:   selectedEndpoint.isFavorite,
-      })
+        categoryId: selectedEndpoint.categoryId,
+        tagIds: selectedEndpoint.tags?.map((t: any) => t.id) ?? [],
+        isFavorite: selectedEndpoint.isFavorite,
+      });
     } else {
-      reset({ title: '', description: '', collectionId: selectedCollection ?? undefined, tagIds: [], isFavorite: false })
+      reset({
+        title: "",
+        description: "",
+        collectionId: selectedCollection ?? undefined,
+        tagIds: [],
+        isFavorite: false,
+      });
     }
-    setSaveOpen(true)
-  }
+    setSaveOpen(true);
+  };
 
   const onSave = async (data: SaveFormData) => {
     // Parse headers string → array
     const parsedHeaders = headers
-      .split('\n').filter((l) => l.trim())
+      .split("\n")
+      .filter((l) => l.trim())
       .map((l) => {
-        const [key, ...rest] = l.split(':')
-        return { key: key?.trim() ?? '', value: rest.join(':').trim(), enabled: true }
+        const [key, ...rest] = l.split(":");
+        return {
+          key: key?.trim() ?? "",
+          value: rest.join(":").trim(),
+          enabled: true,
+        };
       })
-      .filter((h) => h.key)
+      .filter((h) => h.key);
 
     const payload = {
       ...data,
-      url, method,
-      headers:     parsedHeaders,
+      url,
+      method,
+      headers: parsedHeaders,
       queryParams: queryParams.filter((p) => p.key.trim()),
-      body:        body || undefined,
-      bodyType:    bodyType as any,
+      body: body || undefined,
+      bodyType: bodyType as any,
       authType,
       // P5-8 A-2: snapshot the last response as the saved example, if any
       exampleResponse: response ?? selectedEndpoint?.exampleResponse,
-    }
+    };
 
     try {
-      let savedId: number
+      let savedId: number;
       if (selectedEndpoint) {
-        await updateEndpoint.mutateAsync({ id: selectedEndpoint.id, ...payload })
-        savedId = selectedEndpoint.id
+        await updateEndpoint.mutateAsync({
+          id: selectedEndpoint.id,
+          ...payload,
+        });
+        savedId = selectedEndpoint.id;
       } else {
-        const created = await createEndpoint.mutateAsync(payload)
-        savedId = (created as any).id
+        const created = await createEndpoint.mutateAsync(payload);
+        savedId = (created as any).id;
       }
       // Encrypt authData to vault if credentials present
-      if (vaultEnabled && vaultUnlocked && authType !== 'none' && savedId) {
-        const hasCredentials = authData.token || authData.username || authData.password || authData.apiKey
+      if (vaultEnabled && vaultUnlocked && authType !== "none" && savedId) {
+        const hasCredentials =
+          authData.token ||
+          authData.username ||
+          authData.password ||
+          authData.apiKey;
         if (hasCredentials) {
-          await encrypt('api_endpoint', String(savedId), 'authData', JSON.stringify(authData))
+          await encrypt(
+            "api_endpoint",
+            String(savedId),
+            "authData",
+            JSON.stringify(authData),
+          );
         }
       }
-      setSaveOpen(false)
-      refetch()
-    } catch { /* shown via Alert */ }
-  }
+      setSaveOpen(false);
+      refetch();
+    } catch {
+      /* shown via Alert */
+    }
+  };
 
   // ─── Infra → env injection ───────────────────────────────────────────────────
   const infraAsEnvs: Environment[] = (infraEnvItems ?? []).map((infra) => ({
@@ -278,147 +371,210 @@ export default function ApiClientPage() {
     createdAt: infra.createdAt,
     updatedAt: infra.updatedAt,
     variables: infra.content
-      .split('\n')
-      .filter((line) => line.includes('=') && !line.trimStart().startsWith('#'))
+      .split("\n")
+      .filter((line) => line.includes("=") && !line.trimStart().startsWith("#"))
       .map((line) => {
-        const eq = line.indexOf('=')
-        return { key: line.slice(0, eq).trim(), value: line.slice(eq + 1).trim(), enabled: true }
+        const eq = line.indexOf("=");
+        return {
+          key: line.slice(0, eq).trim(),
+          value: line.slice(eq + 1).trim(),
+          enabled: true,
+        };
       }),
-  }))
-  const allEnvironments = [...(environments ?? []), ...infraAsEnvs]
+  }));
+  const allEnvironments = [...(environments ?? []), ...infraAsEnvs];
 
   // ─── Variable interpolation ──────────────────────────────────────────────────
-  const activeEnv = allEnvironments.find((e) => e.id === activeEnvId) ?? null
+  const activeEnv = allEnvironments.find((e) => e.id === activeEnvId) ?? null;
   const interpolateVars = (text: string): string => {
-    if (!activeEnv?.variables?.length || !text) return text
+    if (!activeEnv?.variables?.length || !text) return text;
     return text.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
-      const v = activeEnv.variables!.find((v) => v.key === key.trim() && v.enabled)
-      return v ? v.value : match
-    })
-  }
+      const v = activeEnv.variables!.find(
+        (v: any) => v.key === key.trim() && v.enabled,
+      );
+      return v ? v.value : match;
+    });
+  };
 
   // ─── Header resolution (shared by Send and Generate Code) ───────────────────
-  const buildRequestHeaders = (resolvedHeaders: string): Record<string, string> => {
-    let parsedHeaders: Record<string, string> = {}
+  const buildRequestHeaders = (
+    resolvedHeaders: string,
+  ): Record<string, string> => {
+    let parsedHeaders: Record<string, string> = {};
     if (resolvedHeaders.trim()) {
-      try { parsedHeaders = JSON.parse(resolvedHeaders) }
-      catch {
-        resolvedHeaders.split('\n').forEach((line) => {
-          const [key, ...vals] = line.split(':')
-          if (key && vals.length) parsedHeaders[key.trim()] = vals.join(':').trim()
-        })
+      try {
+        parsedHeaders = JSON.parse(resolvedHeaders);
+      } catch {
+        resolvedHeaders.split("\n").forEach((line) => {
+          const [key, ...vals] = line.split(":");
+          if (key && vals.length)
+            parsedHeaders[key.trim()] = vals.join(":").trim();
+        });
       }
     }
     // Apply auth headers client-side so credentials never touch the backend
-    if (authType === 'bearer' && authData.token) {
-      parsedHeaders['Authorization'] = `Bearer ${authData.token}`
-    } else if (authType === 'basic' && authData.username) {
-      parsedHeaders['Authorization'] = `Basic ${btoa(`${authData.username}:${authData.password ?? ''}`)}`
-    } else if (authType === 'api-key' && authData.apiKey) {
-      parsedHeaders[authData.apiKeyHeader ?? 'X-API-Key'] = authData.apiKey
+    if (authType === "bearer" && authData.token) {
+      parsedHeaders["Authorization"] = `Bearer ${authData.token}`;
+    } else if (authType === "basic" && authData.username) {
+      parsedHeaders["Authorization"] =
+        `Basic ${btoa(`${authData.username}:${authData.password ?? ""}`)}`;
+    } else if (authType === "api-key" && authData.apiKey) {
+      parsedHeaders[authData.apiKeyHeader ?? "X-API-Key"] = authData.apiKey;
     }
-    return parsedHeaders
-  }
+    return parsedHeaders;
+  };
 
   // ─── Send request ────────────────────────────────────────────────────────────
   const handleSend = async () => {
-    if (!url.trim()) return
-    setIsExampleResponse(false)
+    if (!url.trim()) return;
+    setIsExampleResponse(false);
     try {
-      const resolvedUrl     = interpolateVars(url)
-      const resolvedHeaders = interpolateVars(headers)
-      const resolvedBody    = interpolateVars(body)
-      const parsedHeaders   = buildRequestHeaders(resolvedHeaders)
+      const resolvedUrl = interpolateVars(url);
+      const resolvedHeaders = interpolateVars(headers);
+      const resolvedBody = interpolateVars(body);
+      const parsedHeaders = buildRequestHeaders(resolvedHeaders);
 
-      const result = await testEndpoint.mutateAsync({ method, url: resolvedUrl, headers: parsedHeaders, body: resolvedBody || undefined, bodyType })
-      setResponse({ ...result, timestamp: new Date().toISOString() })
+      const result = await testEndpoint.mutateAsync({
+        method,
+        url: resolvedUrl,
+        headers: parsedHeaders,
+        body: resolvedBody || undefined,
+        bodyType,
+      });
+      setResponse({ ...result, timestamp: new Date().toISOString() });
     } catch (err: any) {
-      setResponse({ status: 0, statusText: 'Error', body: JSON.stringify({ error: err.message }, null, 2), headers: {}, size: 0, time: 0, timestamp: new Date().toISOString() })
+      setResponse({
+        status: 0,
+        statusText: "Error",
+        body: JSON.stringify({ error: err.message }, null, 2),
+        headers: {},
+        size: 0,
+        time: 0,
+        timestamp: new Date().toISOString(),
+      });
     }
-  }
+  };
 
   // ─── Generate Code snapshot — current request, resolved like Send ───────────
-  const requestSnapshot: RequestSnapshot | undefined = response ? {
-    method,
-    url: interpolateVars(url),
-    headers: buildRequestHeaders(interpolateVars(headers)),
-    body: interpolateVars(body) || undefined,
-  } : undefined
+  const requestSnapshot: RequestSnapshot | undefined = response
+    ? {
+        method,
+        url: interpolateVars(url),
+        headers: buildRequestHeaders(interpolateVars(headers)),
+        body: interpolateVars(body) || undefined,
+      }
+    : undefined;
 
   // ─── Import from cURL (P5-8 A-3) ─────────────────────────────────────────────
   const handleImportCurl = (parsed: ParsedCurl) => {
-    const importedMethod = (HTTP_METHODS as string[]).includes(parsed.method) ? (parsed.method as HttpMethod) : 'GET'
-    setMethod(importedMethod)
-    setUrl(parsed.url)
-    setQueryParams(parseUrlParams(parsed.url))
-    setHeaders(Object.entries(parsed.headers).map(([k, v]) => `${k}: ${v}`).join('\n'))
-    setBody(parsed.body)
+    const importedMethod = (HTTP_METHODS as string[]).includes(parsed.method)
+      ? (parsed.method as HttpMethod)
+      : "GET";
+    setMethod(importedMethod);
+    setUrl(parsed.url);
+    setQueryParams(parseUrlParams(parsed.url));
+    setHeaders(
+      Object.entries(parsed.headers)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join("\n"),
+    );
+    setBody(parsed.body);
     if (parsed.body) {
-      try { JSON.parse(parsed.body); setBodyType('json') } catch { setBodyType('raw') }
+      try {
+        JSON.parse(parsed.body);
+        setBodyType("json");
+      } catch {
+        setBodyType("raw");
+      }
     }
-    setResponse(null)
-    setIsExampleResponse(false)
-  }
+    setResponse(null);
+    setIsExampleResponse(false);
+  };
 
   // ─── Select endpoint ─────────────────────────────────────────────────────────
   const handleSelectEndpoint = async (ep: ApiEndpoint) => {
-    setSelectedEndpoint(ep)
-    setMethod(ep.method as HttpMethod)
-    setUrl(ep.url)
-    setHeaders(ep.headers?.filter((h) => h.enabled !== false).map((h) => `${h.key}: ${h.value}`).join('\n') ?? '')
-    setBody(ep.body ?? '')
-    setBodyType((ep.bodyType as any) ?? 'json')
-    setQueryParams((ep.queryParams ?? []).map((p) => ({ ...p, id: (p as any).id ?? crypto.randomUUID() })))
-    setDraftRestored(false)
-    setMobileTab('request')
+    setSelectedEndpoint(ep);
+    setMethod(ep.method as HttpMethod);
+    setUrl(ep.url);
+    setHeaders(
+      ep.headers
+        ?.filter((h) => h.enabled !== false)
+        .map((h) => `${h.key}: ${h.value}`)
+        .join("\n") ?? "",
+    );
+    setBody(ep.body ?? "");
+    setBodyType((ep.bodyType as any) ?? "json");
+    setQueryParams(
+      (ep.queryParams ?? []).map((p) => ({
+        ...p,
+        id: (p as any).id ?? crypto.randomUUID(),
+      })),
+    );
+    setDraftRestored(false);
+    setMobileTab("request");
     // P5-8 A-2: show the saved example response until the user sends a live request
-    setResponse(ep.exampleResponse ?? null)
-    setIsExampleResponse(!!ep.exampleResponse)
+    setResponse(ep.exampleResponse ?? null);
+    setIsExampleResponse(!!ep.exampleResponse);
     // Load auth
-    setAuthType((ep.authType as AuthType) ?? 'none')
+    setAuthType((ep.authType as AuthType) ?? "none");
     if (vaultEnabled && vaultUnlocked) {
       try {
-        const raw = await decrypt('api_endpoint', String(ep.id), 'authData')
-        setAuthData(raw ? JSON.parse(raw) : (ep.authData ?? {}))
-      } catch { setAuthData(ep.authData ?? {}) }
+        const raw = await decrypt("api_endpoint", String(ep.id), "authData");
+        setAuthData(raw ? JSON.parse(raw) : (ep.authData ?? {}));
+      } catch {
+        setAuthData(ep.authData ?? {});
+      }
     } else {
-      setAuthData(ep.authData ?? {})
+      setAuthData(ep.authData ?? {});
     }
-  }
+  };
 
   const handleNewRequest = () => {
-    setSelectedEndpoint(null)
-    setMethod('GET'); setUrl(''); setHeaders(''); setBody(''); setBodyType('json')
-    setQueryParams([]); setAuthType('none'); setAuthData({})
-    setDraftRestored(false); setMobileTab('request'); setResponse(null)
-    setIsExampleResponse(false)
-  }
+    setSelectedEndpoint(null);
+    setMethod("GET");
+    setUrl("");
+    setHeaders("");
+    setBody("");
+    setBodyType("json");
+    setQueryParams([]);
+    setAuthType("none");
+    setAuthData({});
+    setDraftRestored(false);
+    setMobileTab("request");
+    setResponse(null);
+    setIsExampleResponse(false);
+  };
 
   const handleDelete = async () => {
-    if (!selectedEndpoint) return
-    await deleteEndpoint.mutateAsync(selectedEndpoint.id)
-    handleNewRequest()
-    refetch()
-    setConfirmDel(false)
-  }
+    if (!selectedEndpoint) return;
+    await deleteEndpoint.mutateAsync(selectedEndpoint.id);
+    handleNewRequest();
+    refetch();
+    setConfirmDel(false);
+  };
 
-  const requestTitle = selectedEndpoint ? selectedEndpoint.title : 'New Request'
+  const requestTitle = selectedEndpoint
+    ? selectedEndpoint.title
+    : "New Request";
 
   const pillColor = (status: number) => {
-    if (status === 0 || status >= 500) return 'var(--danger)'
-    if (status < 300) return 'var(--success)'
-    if (status < 400) return 'var(--warning)'
-    return 'var(--danger)'
-  }
+    if (status === 0 || status >= 500) return "var(--danger)";
+    if (status < 300) return "var(--success)";
+    if (status < 400) return "var(--warning)";
+    return "var(--danger)";
+  };
 
   return (
     <>
       <style>{CSS}</style>
       <div className="acp">
-
         {/* ── Mobile top bar ── */}
         <div className="acp-mobile-bar">
-          <button className="acp-menu-btn" onClick={() => setMobileSidebarOpen(true)} aria-label="Open collections">
+          <button
+            className="acp-menu-btn"
+            onClick={() => setMobileSidebarOpen(true)}
+            aria-label="Open collections"
+          >
             <Icon icon="lucide:panel-left" width={18} />
           </button>
           <span className="acp-mobile-title">API Client</span>
@@ -429,7 +585,6 @@ export default function ApiClientPage() {
 
         {/* ── Main layout ── */}
         <div className="acp-layout">
-
           {/* Sidebar */}
           <CollectionSidebar
             collections={collections}
@@ -449,7 +604,10 @@ export default function ApiClientPage() {
               <div className="acp-draft-notice">
                 <Icon icon="lucide:clock-3" width={13} />
                 Draft restored from your last session
-                <button className="acp-draft-dismiss" onClick={() => setDraftRestored(false)}>
+                <button
+                  className="acp-draft-dismiss"
+                  onClick={() => setDraftRestored(false)}
+                >
                   <Icon icon="lucide:x" width={12} />
                 </button>
               </div>
@@ -458,20 +616,33 @@ export default function ApiClientPage() {
             {/* ── Mobile tab bar (hidden on desktop) ── */}
             <div className="acp-mobile-tabs">
               <button
-                className={['acp-mobile-tab', mobileTab === 'request' ? 'acp-mobile-tab--active' : ''].filter(Boolean).join(' ')}
-                onClick={() => setMobileTab('request')}
+                className={[
+                  "acp-mobile-tab",
+                  mobileTab === "request" ? "acp-mobile-tab--active" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => setMobileTab("request")}
               >
                 <Icon icon="lucide:send" width={14} />
                 Request
               </button>
               <button
-                className={['acp-mobile-tab', mobileTab === 'response' ? 'acp-mobile-tab--active' : ''].filter(Boolean).join(' ')}
-                onClick={() => setMobileTab('response')}
+                className={[
+                  "acp-mobile-tab",
+                  mobileTab === "response" ? "acp-mobile-tab--active" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={() => setMobileTab("response")}
               >
                 <Icon icon="lucide:inbox" width={14} />
                 Response
                 {response && (
-                  <span className="acp-mobile-tab-badge" style={{ color: pillColor(response.status) }}>
+                  <span
+                    className="acp-mobile-tab-badge"
+                    style={{ color: pillColor(response.status) }}
+                  >
                     {response.status}
                   </span>
                 )}
@@ -481,9 +652,12 @@ export default function ApiClientPage() {
             {/* Request section — fixed height, draggable */}
             <div className="acp-request-wrap" style={{ height: splitPx }}>
               <RequestBuilder
-                method={method}       url={url}
-                headers={headers}     body={body}
-                bodyType={bodyType}   isSaved={!!selectedEndpoint}
+                method={method}
+                url={url}
+                headers={headers}
+                body={body}
+                bodyType={bodyType}
+                isSaved={!!selectedEndpoint}
                 isSending={testEndpoint.isPending}
                 title={requestTitle}
                 environments={allEnvironments}
@@ -492,8 +666,10 @@ export default function ApiClientPage() {
                 authType={authType}
                 authData={authData}
                 endpointId={selectedEndpoint?.id ?? null}
-                onMethodChange={setMethod}       onUrlChange={handleUrlChange}
-                onHeadersChange={setHeaders}     onBodyChange={setBody}
+                onMethodChange={setMethod}
+                onUrlChange={handleUrlChange}
+                onHeadersChange={setHeaders}
+                onBodyChange={setBody}
                 onBodyTypeChange={setBodyType}
                 onQueryParamsChange={handleParamsChange}
                 onAuthTypeChange={setAuthType}
@@ -529,7 +705,7 @@ export default function ApiClientPage() {
       <Modal
         isOpen={saveOpen}
         onClose={() => setSaveOpen(false)}
-        title={selectedEndpoint ? 'Update Endpoint' : 'Save Endpoint'}
+        title={selectedEndpoint ? "Update Endpoint" : "Save Endpoint"}
         size="md"
       >
         <FormLayout
@@ -538,15 +714,27 @@ export default function ApiClientPage() {
           noValidate
           footer={
             <>
-              <Button type="button" variant="ghost" onClick={() => setSaveOpen(false)}>Cancel</Button>
-              <Button type="submit" isLoading={createEndpoint.isPending || updateEndpoint.isPending}>
-                {selectedEndpoint ? 'Update' : 'Save Endpoint'}
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setSaveOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                isLoading={createEndpoint.isPending || updateEndpoint.isPending}
+              >
+                {selectedEndpoint ? "Update" : "Save Endpoint"}
               </Button>
             </>
           }
         >
           {(createEndpoint.isError || updateEndpoint.isError) && (
-            <Alert type="error" message="Failed to save endpoint. Please try again." />
+            <Alert
+              type="error"
+              message="Failed to save endpoint. Please try again."
+            />
           )}
 
           <Input
@@ -555,14 +743,15 @@ export default function ApiClientPage() {
             placeholder="e.g., Get User Profile"
             error={errors.title?.message}
             autoFocus
-            {...register('title')}
+            {...register("title")}
           />
 
           <Textarea
             label="Description"
             placeholder="What does this endpoint do?"
-            optional rows={2}
-            {...register('description')}
+            optional
+            rows={2}
+            {...register("description")}
           />
 
           <div className="save-form-grid">
@@ -570,30 +759,47 @@ export default function ApiClientPage() {
               label="Collection"
               optional
               leftIcon={LucideFolder}
-              {...register('collectionId', { setValueAs: (v) => v ? parseInt(v) : undefined })}
+              {...register("collectionId", {
+                setValueAs: (v) => (v ? parseInt(v) : undefined),
+              })}
             >
               <option value="">No collection</option>
-              {collections?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {collections?.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
             </FormSelect>
 
             <FormSelect
               label="Category"
               optional
               leftIcon={LucideFolder}
-              {...register('categoryId', { setValueAs: (v) => v ? parseInt(v) : undefined })}
+              {...register("categoryId", {
+                setValueAs: (v) => (v ? parseInt(v) : undefined),
+              })}
             >
               <option value="">No category</option>
-              {categories?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {categories?.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
             </FormSelect>
           </div>
 
           <div className="save-form-field">
-            <label className="save-form-label">Tags <span className="save-form-optional">optional</span></label>
+            <label className="save-form-label">
+              Tags <span className="save-form-optional">optional</span>
+            </label>
             <Controller
               name="tagIds"
               control={control}
               render={({ field }) => (
-                <TagSelector selectedTagIds={field.value} onChange={field.onChange} />
+                <TagSelector
+                  selectedTagIds={field.value}
+                  onChange={field.onChange}
+                />
               )}
             />
           </div>
@@ -603,13 +809,32 @@ export default function ApiClientPage() {
             control={control}
             render={({ field }) => (
               <label className="save-form-check">
-                <div className={['sf-check-box', field.value ? 'sf-check-box--on' : ''].filter(Boolean).join(' ')}>
+                <div
+                  className={[
+                    "sf-check-box",
+                    field.value ? "sf-check-box--on" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                >
                   {field.value && <Icon icon="lucide:check" width={11} />}
                 </div>
-                <input type="checkbox" checked={field.value} onChange={(e) => field.onChange(e.target.checked)}
-                  style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }} />
+                <input
+                  type="checkbox"
+                  checked={field.value}
+                  onChange={(e) => field.onChange(e.target.checked)}
+                  style={{
+                    position: "absolute",
+                    opacity: 0,
+                    pointerEvents: "none",
+                  }}
+                />
                 <span className="save-form-check-label">
-                  <Icon icon="lucide:star" width={13} style={{ color: '#fbbf24' }} />
+                  <Icon
+                    icon="lucide:star"
+                    width={13}
+                    style={{ color: "#fbbf24" }}
+                  />
                   Mark as favorite
                 </span>
               </label>
@@ -627,15 +852,29 @@ export default function ApiClientPage() {
       )}
 
       {/* ── Delete confirm ── */}
-      <Modal isOpen={confirmDel} onClose={() => setConfirmDel(false)} title="Delete endpoint" size="sm">
+      <Modal
+        isOpen={confirmDel}
+        onClose={() => setConfirmDel(false)}
+        title="Delete endpoint"
+        size="sm"
+      >
         <div className="del-confirm">
           <p className="del-confirm-text">
-            Delete <strong>{selectedEndpoint?.title}</strong>? This cannot be undone.
+            Delete <strong>{selectedEndpoint?.title}</strong>? This cannot be
+            undone.
           </p>
           <div className="del-confirm-actions">
-            <Button variant="secondary" onClick={() => setConfirmDel(false)}>Cancel</Button>
-            <Button variant="danger" isLoading={deleteEndpoint.isPending} onClick={handleDelete}>Delete</Button>
-            </div>
+            <Button variant="secondary" onClick={() => setConfirmDel(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              isLoading={deleteEndpoint.isPending}
+              onClick={handleDelete}
+            >
+              Delete
+            </Button>
+          </div>
         </div>
       </Modal>
 
@@ -646,7 +885,7 @@ export default function ApiClientPage() {
         onImport={handleImportCurl}
       />
     </>
-  )
+  );
 }
 
 const CSS = `
@@ -831,4 +1070,4 @@ const CSS = `
   transition:      background var(--transition-fast);
 }
 .acp-draft-dismiss:hover { background: var(--accent-border); }
-`
+`;

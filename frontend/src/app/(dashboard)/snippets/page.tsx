@@ -2,25 +2,24 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useSnippets } from "@/hooks/useSnippet";
-import PageLayout from "@/components/layout/PageLayout";
-import PageHeader from "@/components/ui/PageHeader";
-import EmptyState from "@/components/ui/EmptyState";
-import CardGrid from "@/components/shared/CardGrid";
-import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
-import { useCategories } from "@/hooks/useCategories";
-import { useTags } from "@/hooks/useTag";
-import TagSelector from "@/components/tags/TagSelector";
+import { useSnippets } from "@/features/snippets/hooks/useSnippet";
+import PageLayout from "@/features/shared/layout/PageLayout";
+import PageHeader from "@/features/shared/ui/PageHeader";
+import EmptyState from "@/features/shared/ui/EmptyState";
+import CardGrid from "@/features/shared/components/CardGrid";
+import { useInfiniteScroll } from "@/features/shared/hooks/useInfiniteScroll";
+import { useCategories } from "@/features/categories/hooks/useCategories";
+import { useTags } from "@/features/tags/hooks/useTag";
+import TagSelector from "@/features/tags/components/TagSelector";
 import {
   type Snippet,
   SNIPPET_TYPES,
   TYPE_LANGUAGES,
   type SnippetType,
-} from "@/types/snippet";
-import SnippetCard from "@/components/snippets/SnippetCard";
-import SnippetForm from "@/components/snippets/SnippetForm";
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
+} from "@/features/snippets/types/snippet";
+
+import Button from "@/features/shared/ui/Button";
+import Modal from "@/features/shared/ui/Modal";
 import {
   LucideArrowDownUp,
   LucideChevronDown,
@@ -34,6 +33,8 @@ import {
   LucideStar,
   LucideX,
 } from "@/Icons/Icons";
+import SnippetCard from "@/features/snippets/components/SnippetCard";
+import SnippetForm from "@/features/snippets/components/SnippetForm";
 
 const ALL_LANGUAGES: Record<string, string> = {
   js: "JavaScript",

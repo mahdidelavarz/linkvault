@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useGlobalSearch } from "@/hooks/useSearch";
+import { useGlobalSearch } from "@/features/search/hooks/useSearch";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useRecentSearches } from "@/hooks/useRecentSearches";
-import SearchResultCard from "@/components/search/SearchResultCard";
-import SearchFilters from "@/components/search/SearchFilters";
-import SearchEmptyState from "@/components/search/SearchEmptyState";
-import type { SearchResult } from "@/types/search";
+import { useRecentSearches } from "@/features/search/hooks/useRecentSearches";
+import SearchResultCard from "@/features/search/components/SearchResultCard";
+import SearchFilters from "@/features/search/components/SearchFilters";
+import SearchEmptyState from "@/features/search/components/SearchEmptyState";
+import type { SearchResult } from "@/features/search/types/search";
 import {
   LucideSearch,
   LucideX,

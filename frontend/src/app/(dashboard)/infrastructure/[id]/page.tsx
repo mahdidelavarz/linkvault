@@ -7,24 +7,22 @@ import {
   useInfrastructure,
   useToggleInfraFavorite,
   useDeleteInfrastructure,
-} from "@/hooks/useInfrastructure";
-import { useItemMembership } from "@/hooks/useProjects";
-import { useProjectAwareEdit } from "@/hooks/useProjectAwareEdit";
-import { useVault } from "@/hooks/useVault";
-import { type Infrastructure, type InfraType, INFRA_TYPES } from "@/types/infrastructure";
-import { maskEnvLine } from "@/lib/infraUtils";
-import PageLayout from "@/components/layout/PageLayout";
-import EmptyState from "@/components/ui/EmptyState";
-import Badge from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
-import CodeBlock from "@/components/ui/CodeBlock";
-import CopyButton from "@/components/shared/CopyButton";
-import TagSection from "@/components/shared/TagSection";
-import ConfirmDeleteModal from "@/components/shared/ConfirmDeleteModal";
-import MultiProjectEditWarning from "@/components/projects/MultiProjectEditWarning";
-import Modal from "@/components/ui/Modal";
-import { VaultGuard } from "@/components/vault/VaultGuard";
-import InfraForm from "@/components/infrastructure/InfraForm";
+} from "@/features/infrastructure/hooks/useInfrastructure";
+import { useItemMembership } from "@/features/projects/hooks/useProjects";
+import { useProjectAwareEdit } from "@/features/shared/hooks/useProjectAwareEdit";
+import { useVault } from "@/features/settings/security/hooks/useVault";
+import { type Infrastructure, type InfraType, INFRA_TYPES } from "@/features/infrastructure/types/infrastructure";
+import { maskEnvLine } from "@/features/infrastructure/utils/infraUtils";
+import EmptyState from "@/features/shared/ui/EmptyState";
+import Badge from "@/features/shared/ui/Badge";
+import Button from "@/features/shared/ui/Button";
+import CodeBlock from "@/features/shared/ui/CodeBlock";
+import CopyButton from "@/features/shared/components/CopyButton";
+import TagSection from "@/features/shared/components/TagSection";
+import ConfirmDeleteModal from "@/features/shared/components/ConfirmDeleteModal";
+import MultiProjectEditWarning from "@/features/projects/components/MultiProjectEditWarning";
+import Modal from "@/features/shared/ui/Modal";
+import { VaultGuard } from "@/features/settings/security/components/VaultGuard";
 import {
   LucideChevronRight,
   LucideEye,
@@ -34,6 +32,8 @@ import {
   LucideTrash2,
   LucideServer,
 } from "@/Icons/Icons";
+import PageLayout from "@/features/shared/layout/PageLayout";
+import InfraForm from "@/features/infrastructure/components/InfraForm";
 
 const INFRA_BADGE_VARIANT: Record<string, any> = {
   env: "cyan",

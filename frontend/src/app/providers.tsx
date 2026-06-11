@@ -3,9 +3,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { persistQueryClient } from "@tanstack/query-persist-client-core";
 import { useState, useEffect, createContext, useContext } from "react";
-import { useAuthStore } from "@/store/authStore";
-import { SidebarProvider } from "@/components/layout/SidebarContext";
+import { useAuthStore } from "@/features/auth/store/authStore";
 import { createIdbPersister } from "@/lib/idb-persister";
+import { SidebarProvider } from "@/features/shared/layout/SidebarContext";
 
 // ─── Theme ───────────────────────────────────────────────────────────────────
 

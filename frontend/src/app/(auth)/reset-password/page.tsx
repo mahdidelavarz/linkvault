@@ -6,10 +6,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useSearchParams } from "next/navigation";
-import { useResetPassword } from "@/hooks/useAuth";
-import Input from "@/components/ui/Input";
-import Button from "@/components/ui/Button";
-import Alert from "@/components/ui/Alert";
+import { useResetPassword } from "@/features/auth/hooks/useAuth";
+import Input from "@/features/shared/ui/Input";
+import Button from "@/features/shared/ui/Button";
+import Alert from "@/features/shared/ui/Alert";
 import {
   LucideEye,
   LucideEyeOff,

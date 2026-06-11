@@ -1,12 +1,14 @@
 "use client";
 
-import Header from "@/components/layout/Header";
-import Sidebar from "@/components/layout/Sidebar";
-import BottomTabBar from "@/components/layout/BottomNavBar";
-import InstallBanner from "@/components/pwa/InstallBanner";
-import OfflineBanner from "@/components/pwa/OfflineBanner";
-import { VaultMigrationModal } from "@/components/vault/VaultMigrationModal";
-import { useVaultMigration } from "@/hooks/useVaultMigration";
+
+import InstallBanner from "@/features/pwa/components/InstallBanner";
+import OfflineBanner from "@/features/pwa/components/OfflineBanner";
+import { VaultMigrationModal } from "@/features/settings/security/components/VaultMigrationModal";
+import { useVaultMigration } from "@/features/settings/security/hooks/useVaultMigration";
+import Header from "@/features/shared/layout/Header";
+import Sidebar from "@/features/shared/layout/Sidebar";
+import BottomTabBar from '@/features/shared/layout/BottomNavBar';
+
 
 export default function DashboardLayout({
   children,

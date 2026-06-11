@@ -2,26 +2,24 @@
 
 import { useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useProject, useRemoveFromProject, useReorderProjectItems, useUpdateProject, useDeleteProject } from "@/hooks/useProjects";
-import { type ProjectItem, type ProjectItemType, PROJECT_COLOR_CSS, ITEM_TYPE_LABELS } from "@/types/project";
-import PageLayout from "@/components/layout/PageLayout";
-import CardGrid from "@/components/shared/CardGrid";
-import EmptyState from "@/components/ui/EmptyState";
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
-import ConfirmDeleteModal from "@/components/shared/ConfirmDeleteModal";
-import ProjectItemWrapper from "@/components/projects/ProjectItemWrapper";
-import ProjectForm from "@/components/projects/ProjectForm";
-import AddToProjectModal from "@/components/projects/AddToProjectModal";
-import LinkCard from "@/components/links/LinkCard";
-import NoteCard from "@/components/notes/NoteCard";
-import SnippetCard from "@/components/snippets/SnippetCard";
-import PromptCard from "@/components/prompts/PromptCard";
-import InfraCard from "@/components/infrastructure/InfraCard";
-import LinkForm from "@/components/links/LinkForm";
-import NoteForm from "@/components/notes/NoteForm";
-import SnippetForm from "@/components/snippets/SnippetForm";
-import InfraForm from "@/components/infrastructure/InfraForm";
+import { useProject, useRemoveFromProject, useReorderProjectItems, useUpdateProject, useDeleteProject } from "@/features/projects/hooks/useProjects";
+import { type ProjectItem, type ProjectItemType, PROJECT_COLOR_CSS, ITEM_TYPE_LABELS } from "@/features/projects/types/project";
+import PageLayout from "@/features/shared/layout/PageLayout";
+import CardGrid from "@/features/shared/components/CardGrid";
+import EmptyState from "@/features/shared/ui/EmptyState";
+import Button from "@/features/shared/ui/Button";
+import Modal from "@/features/shared/ui/Modal";
+import ConfirmDeleteModal from "@/features/shared/components/ConfirmDeleteModal";
+import ProjectItemWrapper from "@/features/projects/components/ProjectItemWrapper";
+import ProjectForm from "@/features/projects/components/ProjectForm";
+import AddToProjectModal from "@/features/projects/components/AddToProjectModal";
+import LinkCard from "@/features/links/components/LinkCard";
+import NoteCard from "@/features/notes/components/NoteCard";
+import PromptCard from "@/features/prompts/components/PromptCard";
+import InfraCard from "@/features/infrastructure/components/InfraCard";
+import LinkForm from "@/features/links/components/LinkForm";
+import NoteForm from "@/features/notes/components/NoteForm";
+
 import {
     LucideBox,
     LucideChevronLeft,
@@ -29,6 +27,9 @@ import {
     LucidePlus,
     LucideTrash2,
 } from "@/Icons/Icons";
+import SnippetCard from "@/features/snippets/components/SnippetCard";
+import InfraForm from "@/features/infrastructure/components/InfraForm";
+import SnippetForm from "@/features/snippets/components/SnippetForm";
 
 type FilterType = ProjectItemType | 'all';
 

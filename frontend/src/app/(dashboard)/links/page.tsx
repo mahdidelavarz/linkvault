@@ -1,21 +1,21 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useLinks, useDeleteLink, useUpdateLink } from "@/hooks/useLinks";
-import PageLayout from "@/components/layout/PageLayout";
-import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
-import { useCategories } from "@/hooks/useCategories";
-import { useBulkSelection } from "@/hooks/useBulkSelection";
-import { type Link } from "@/types/link";
-import LinkCard from "@/components/links/LinkCard";
-import LinkForm from "@/components/links/LinkForm";
-import PageHeader from "@/components/ui/PageHeader";
-import EmptyState from "@/components/ui/EmptyState";
-import CardGrid from "@/components/shared/CardGrid";
-import BulkActionBar from "@/components/shared/BulkActionBar";
-import SelectBar from "@/components/shared/SelectBar";
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
+import { useLinks, useDeleteLink, useUpdateLink } from "@/features/links/hooks/useLinks";
+import PageLayout from "@/features/shared/layout/PageLayout";
+import { useInfiniteScroll } from "@/features/shared/hooks/useInfiniteScroll";
+import { useCategories } from "@/features/categories/hooks/useCategories";
+import { useBulkSelection } from "@/features/links/hooks/useBulkSelection";
+import { type Link } from "@/features/links/types/link";
+import LinkCard from "@/features/links/components/LinkCard";
+import LinkForm from "@/features/links/components/LinkForm";
+import PageHeader from "@/features/shared/ui/PageHeader";
+import EmptyState from "@/features/shared/ui/EmptyState";
+import CardGrid from "@/features/shared/components/CardGrid";
+import BulkActionBar from "@/features/shared/components/BulkActionBar";
+import SelectBar from "@/features/shared/components/SelectBar";
+import Button from "@/features/shared/ui/Button";
+import Modal from "@/features/shared/ui/Modal";
 import {
   LucideArrowDownUp,
   LucideChevronDown,
@@ -27,8 +27,8 @@ import {
   LucideStar,
   LucideX,
 } from "@/Icons/Icons";
-import TagSelector from "@/components/tags/TagSelector";
-import { useTags } from "@/hooks/useTag";
+import TagSelector from "@/features/tags/components/TagSelector";
+import { useTags } from "@/features/tags/hooks/useTag";
 
 export default function LinksPage() {
   const [modalOpen, setModalOpen] = useState(false);

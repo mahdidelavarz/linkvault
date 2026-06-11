@@ -9,10 +9,10 @@ import {
   useTogglePromptFavorite,
   useIncrementPromptUsage,
   useUpdatePrompt,
-} from "@/hooks/usePrompt";
-import { usePromptCollectionMembership } from "@/hooks/usePromptCollections";
-import { useItemMembership } from "@/hooks/useProjects";
-import { useProjectAwareEdit } from "@/hooks/useProjectAwareEdit";
+} from "@/features/prompts/hooks/usePrompt";
+import { usePromptCollectionMembership } from "@/features/prompts/hooks/usePromptCollections";
+import { useItemMembership } from "@/features/projects/hooks/useProjects";
+import { useProjectAwareEdit } from "@/features/shared/hooks/useProjectAwareEdit";
 import {
   type Prompt,
   type PromptType,
@@ -20,26 +20,26 @@ import {
   type PromptVersion,
   PROMPT_TYPES,
   AI_PLATFORMS,
-} from "@/types/prompt";
-import { PROJECT_COLOR_CSS } from "@/types/project";
+} from "@/features/prompts/types/prompt";
+import { PROJECT_COLOR_CSS } from "@/features/projects/types/project";
 import {
   extractVariables,
   replaceVariables,
   copyToClipboard,
   sendToAI,
-} from "@/lib/promptUtils";
-import PageLayout from "@/components/layout/PageLayout";
-import EmptyState from "@/components/ui/EmptyState";
-import Badge from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
-import Alert from "@/components/ui/Alert";
-import TagSection from "@/components/shared/TagSection";
-import ConfirmDeleteModal from "@/components/shared/ConfirmDeleteModal";
-import MultiProjectEditWarning from "@/components/projects/MultiProjectEditWarning";
-import Modal from "@/components/ui/Modal";
-import PromptForm from "@/components/prompts/PromptForm";
-import VariableForm from "@/components/prompts/VariableForm";
-import AddToCollectionModal from "@/components/prompts/AddToCollectionModal";
+} from "@/features/prompts/utils/promptUtils";
+import PageLayout from "@/features/shared/layout/PageLayout";
+import EmptyState from "@/features/shared/ui/EmptyState";
+import Badge from "@/features/shared/ui/Badge";
+import Button from "@/features/shared/ui/Button";
+import Alert from "@/features/shared/ui/Alert";
+import TagSection from "@/features/shared/components/TagSection";
+import ConfirmDeleteModal from "@/features/shared/components/ConfirmDeleteModal";
+import MultiProjectEditWarning from "@/features/projects/components/MultiProjectEditWarning";
+import Modal from "@/features/shared/ui/Modal";
+import PromptForm from "@/features/prompts/components/PromptForm";
+import VariableForm from "@/features/prompts/components/VariableForm";
+import AddToCollectionModal from "@/features/prompts/components/AddToCollectionModal";
 import {
   LucideChevronRight,
   LucideMessageSquare,

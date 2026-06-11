@@ -2,19 +2,19 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { useNotes, useNote } from "@/hooks/useNote";
-import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
-import { useCategories } from "@/hooks/useCategories";
-import { useTags } from "@/hooks/useTag";
-import TagSelector from "@/components/tags/TagSelector";
-import { type Note } from "@/types/note";
-import NoteCard from "@/components/notes/NoteCard";
-import NoteEditor from "@/components/notes/NoteEditor";
-import NoteForm from "@/components/notes/NoteForm";
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
-import PageHeader from "@/components/ui/PageHeader";
-import PageLayout from "@/components/layout/PageLayout";
+import { useNotes, useNote } from "@/features/notes/hooks/useNote";
+import { useInfiniteScroll } from "@/features/shared/hooks/useInfiniteScroll";
+import { useCategories } from "@/features/categories/hooks/useCategories";
+import { useTags } from "@/features/tags/hooks/useTag";
+import TagSelector from "@/features/tags/components/TagSelector";
+import { type Note } from "@/features/notes/types/note";
+import NoteCard from "@/features/notes/components/NoteCard";
+import NoteEditor from "@/features/notes/components/NoteEditor";
+import NoteForm from "@/features/notes/components/NoteForm";
+import Button from "@/features/shared/ui/Button";
+import Modal from "@/features/shared/ui/Modal";
+import PageHeader from "@/features/shared/ui/PageHeader";
+import PageLayout from "@/features/shared/layout/PageLayout";
 import {
   LucideArrowLeft,
   LucideChevronDown,

@@ -2,8 +2,8 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { useVault } from '@/hooks/useVault';
-import { PinSetupInput } from '@/components/vault/PinModal';
+import { useVault } from '@/features/settings/security/hooks/useVault';
+import { PinSetupInput } from '@/features/settings/security/components/PinModal';
 
 type SetupStep = 'pin' | 'mnemonic' | 'verify';
 

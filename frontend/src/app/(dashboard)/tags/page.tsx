@@ -6,10 +6,10 @@ import {
   useCreateTag,
   useUpdateTag,
   useDeleteTag,
-} from "@/hooks/useTag";
-import { type Tag } from "@/types/tag";
-import Button from "@/components/ui/Button";
-import Alert from "@/components/ui/Alert";
+} from "@/features/tags/hooks/useTag";
+import { type Tag } from "@/features/tags/types/tag";
+import Button from "@/features/shared/ui/Button";
+import Alert from "@/features/shared/ui/Alert";
 import {
   LucidePlus,
   LucideTag,

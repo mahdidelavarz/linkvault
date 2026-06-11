@@ -2,23 +2,23 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useInfrastructures, useInfrastructure } from "@/hooks/useInfrastructure";
-import TagSelector from "@/components/tags/TagSelector";
-import { useTags } from "@/hooks/useTag";
-import PageLayout from "@/components/layout/PageLayout";
-import PageHeader from "@/components/ui/PageHeader";
-import EmptyState from "@/components/ui/EmptyState";
-import CardGrid from "@/components/shared/CardGrid";
-import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
-import { useCategories } from "@/hooks/useCategories";
+import { useInfrastructures, useInfrastructure } from "@/features/infrastructure/hooks/useInfrastructure";
+import TagSelector from "@/features/tags/components/TagSelector";
+import { useTags } from "@/features/tags/hooks/useTag";
+import PageLayout from "@/features/shared/layout/PageLayout";
+import PageHeader from "@/features/shared/ui/PageHeader";
+import EmptyState from "@/features/shared/ui/EmptyState";
+import CardGrid from "@/features/shared/components/CardGrid";
+import { useInfiniteScroll } from "@/features/shared/hooks/useInfiniteScroll";
+import { useCategories } from "@/features/categories/hooks/useCategories";
 import {
   INFRA_TYPES,
   type InfraType,
-} from "@/types/infrastructure";
-import InfraCard from "@/components/infrastructure/InfraCard";
-import InfraForm from "@/components/infrastructure/InfraForm";
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
+} from "@/features/infrastructure/types/infrastructure";
+import InfraCard from "@/features/infrastructure/components/InfraCard";
+import InfraForm from "@/features/infrastructure/components/InfraForm";
+import Button from "@/features/shared/ui/Button";
+import Modal from "@/features/shared/ui/Modal";
 import {
   LucideChevronDown,
   LucideDatabase,

@@ -3,23 +3,22 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useSnippet, useDeleteSnippet, useToggleSnippetFavorite } from "@/hooks/useSnippet";
-import { useItemMembership } from "@/hooks/useProjects";
-import { useProjectAwareEdit } from "@/hooks/useProjectAwareEdit";
-import { type Snippet, type SnippetType, SNIPPET_TYPES } from "@/types/snippet";
-import { getLanguageName } from "@/lib/languageDetector";
-import { testRegex, getMatchParts } from "@/lib/snippetUtils";
-import PageLayout from "@/components/layout/PageLayout";
-import EmptyState from "@/components/ui/EmptyState";
-import Badge from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
-import CodeBlock from "@/components/ui/CodeBlock";
-import CopyButton from "@/components/shared/CopyButton";
-import TagSection from "@/components/shared/TagSection";
-import ConfirmDeleteModal from "@/components/shared/ConfirmDeleteModal";
-import MultiProjectEditWarning from "@/components/projects/MultiProjectEditWarning";
-import Modal from "@/components/ui/Modal";
-import SnippetForm from "@/components/snippets/SnippetForm";
+import { useSnippet, useDeleteSnippet, useToggleSnippetFavorite } from "@/features/snippets/hooks/useSnippet";
+import { useItemMembership } from "@/features/projects/hooks/useProjects";
+import { useProjectAwareEdit } from "@/features/shared/hooks/useProjectAwareEdit";
+import { type Snippet, type SnippetType, SNIPPET_TYPES } from "@/features/snippets/types/snippet";
+import { getLanguageName } from "@/features/snippets/utils/languageDetector";
+import { testRegex, getMatchParts } from "@/features/snippets/utils/snippetUtils";
+import PageLayout from "@/features/shared/layout/PageLayout";
+import EmptyState from "@/features/shared/ui/EmptyState";
+import Badge from "@/features/shared/ui/Badge";
+import Button from "@/features/shared/ui/Button";
+import CodeBlock from "@/features/shared/ui/CodeBlock";
+import CopyButton from "@/features/shared/components/CopyButton";
+import TagSection from "@/features/shared/components/TagSection";
+import ConfirmDeleteModal from "@/features/shared/components/ConfirmDeleteModal";
+import MultiProjectEditWarning from "@/features/projects/components/MultiProjectEditWarning";
+import Modal from "@/features/shared/ui/Modal";
 import {
   LucideChevronRight,
   LucideCodeXml,
@@ -28,6 +27,7 @@ import {
   LucideTrash2,
   LucideLayers,
 } from "@/Icons/Icons";
+import SnippetForm from "@/features/snippets/components/SnippetForm";
 
 const LANG_COLORS: Record<string, string> = {
   js: 'orange', jsx: 'orange', ts: 'cyan', tsx: 'cyan',

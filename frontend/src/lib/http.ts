@@ -86,7 +86,7 @@ api.interceptors.response.use(
         const { accessToken, refreshToken: newRefreshToken } = data;
 
         // Update store + localStorage
-        const { useAuthStore } = await import("@/store/authStore");
+        const { useAuthStore } = await import("@/features/auth/store/authStore");
         useAuthStore.getState().setAccessToken(accessToken, newRefreshToken);
 
         isRefreshing = false;
@@ -113,7 +113,7 @@ api.interceptors.response.use(
 
 async function doLogout(error: AxiosError) {
   if (typeof window !== "undefined") {
-    const { useAuthStore } = await import("@/store/authStore");
+    const { useAuthStore } = await import("@/features/auth/store/authStore");
     useAuthStore.getState().logout();
     window.location.href = "/login";
   }

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useCategories } from "@/hooks/useCategories";
-import { type Category } from "@/types/category";
-import CategoryTree from "@/components/categories/CategoryTree";
-import CategoryForm from "@/components/categories/CategoryForm";
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
+import { useCategories } from "@/features/categories/hooks/useCategories";
+import { type Category } from "@/features/categories/types/category";
+import CategoryTree from "@/features/categories/components/CategoryTree";
+import CategoryForm from "@/features/categories/components/CategoryForm";
+import Button from "@/features/shared/ui/Button";
+import Modal from "@/features/shared/ui/Modal";
 import { LucidePlus, LucideSearchX } from "@/Icons/Icons";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────

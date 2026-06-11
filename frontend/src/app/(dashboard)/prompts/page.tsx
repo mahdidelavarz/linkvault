@@ -2,20 +2,20 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { usePrompts, usePrompt } from "@/hooks/usePrompt";
-import { usePromptCollections } from "@/hooks/usePromptCollections";
-import PageLayout from "@/components/layout/PageLayout";
-import PageHeader from "@/components/ui/PageHeader";
-import EmptyState from "@/components/ui/EmptyState";
-import CardGrid from "@/components/shared/CardGrid";
-import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
-import { useCategories } from "@/hooks/useCategories";
-import { PROMPT_TYPES } from "@/types/prompt";
-import PromptCard from "@/components/prompts/PromptCard";
-import PromptForm from "@/components/prompts/PromptForm";
-import ManageCollectionsModal from "@/components/prompts/ManageCollectionsModal";
-import Button from "@/components/ui/Button";
-import Modal from "@/components/ui/Modal";
+import { usePrompts, usePrompt } from "@/features/prompts/hooks/usePrompt";
+import { usePromptCollections } from "@/features/prompts/hooks/usePromptCollections";
+import PageLayout from "@/features/shared/layout/PageLayout";
+import PageHeader from "@/features/shared/ui/PageHeader";
+import EmptyState from "@/features/shared/ui/EmptyState";
+import CardGrid from "@/features/shared/components/CardGrid";
+import { useInfiniteScroll } from "@/features/shared/hooks/useInfiniteScroll";
+import { useCategories } from "@/features/categories/hooks/useCategories";
+import { PROMPT_TYPES } from "@/features/prompts/types/prompt";
+import PromptCard from "@/features/prompts/components/PromptCard";
+import PromptForm from "@/features/prompts/components/PromptForm";
+import ManageCollectionsModal from "@/features/prompts/components/ManageCollectionsModal";
+import Button from "@/features/shared/ui/Button";
+import Modal from "@/features/shared/ui/Modal";
 import {
   LucideArrowDownUp,
   LucideChevronDown,
@@ -29,8 +29,8 @@ import {
   LucideStar,
   LucideX,
 } from "@/Icons/Icons";
-import TagSelector from "@/components/tags/TagSelector";
-import { useTags } from "@/hooks/useTag";
+import TagSelector from "@/features/tags/components/TagSelector";
+import { useTags } from "@/features/tags/hooks/useTag";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
