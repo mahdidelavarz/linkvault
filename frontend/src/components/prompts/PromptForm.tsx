@@ -12,7 +12,7 @@ import {
   type PromptType,
   type AIPlatform,
 } from "@/types/prompt";
-import { useCreatePrompt, useUpdatePrompt, usePrompt } from "@/hooks/usePrompt";
+import { useCreatePrompt, useUpdatePrompt } from "@/hooks/usePrompt";
 import { useCategories } from "@/hooks/useCategories";
 import { extractVariables } from "@/lib/promptUtils";
 import FormLayout from "@/components/layout/FormLayout";
@@ -23,8 +23,6 @@ import {
   LucideMessageSquare,
   LucideBot,
   LucideVariable,
-  LucideClock,
-  LucideRefreshCw,
   LucideCircleAlert,
 } from "@/Icons/Icons";
 
@@ -40,7 +38,6 @@ export default function PromptForm({ prompt, onClose, initialValues }: PromptFor
   const [titleError,   setTitleError]   = useState("");
   const [contentError, setContentError] = useState("");
   const [varDefaults, setVarDefaults]   = useState<Record<string, string>>({});
-  const [restoredIdx, setRestoredIdx]   = useState<number | null>(null);
   const [dupCheckTitle, setDupCheckTitle] = useState("");
   const dupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -58,7 +55,6 @@ export default function PromptForm({ prompt, onClose, initialValues }: PromptFor
 
   const createPrompt = useCreatePrompt();
   const updatePrompt = useUpdatePrompt();
-  const { data: freshPrompt } = usePrompt(prompt?.id ?? 0);
   const { data: categories } = useCategories();
 
   // Debounce title for duplicate check (create mode only)
@@ -173,24 +169,6 @@ export default function PromptForm({ prompt, onClose, initialValues }: PromptFor
       }
       return next;
     });
-  };
-
-  const restoreVersion = (ver: NonNullable<Prompt['versions']>[number]) => {
-    setFormData((prev) => ({
-      ...prev,
-      title:          ver.title,
-      content:        ver.content,
-      description:    ver.description || '',
-      promptType:     ver.promptType as PromptType,
-      targetAI:       (ver.targetAI || undefined) as AIPlatform,
-      expectedOutput: ver.expectedOutput || '',
-    }));
-    if (ver.variables) {
-      const defaults: Record<string, string> = {};
-      for (const v of ver.variables) defaults[v.name] = v.defaultValue;
-      setVarDefaults(defaults);
-    }
-    setRestoredIdx(null);
   };
 
   return (
@@ -426,54 +404,6 @@ export default function PromptForm({ prompt, onClose, initialValues }: PromptFor
           <span>Mark as favorite</span>
         </label>
 
-        {/* P3-9: Version history (edit mode only) */}
-        {isEditing && (
-          <div className="pf-versions">
-            <div className="pf-versions-header">
-              <LucideClock width={13} />
-              Version history
-              {((freshPrompt?.versions ?? prompt?.versions)?.length ?? 0) > 0 && (
-                <span className="pf-versions-count">{(freshPrompt?.versions ?? prompt?.versions)!.length}</span>
-              )}
-            </div>
-            {((freshPrompt?.versions ?? prompt?.versions)?.length ?? 0) > 0 ? (
-              <div className="pf-versions-list">
-                {(freshPrompt?.versions ?? prompt?.versions)!.map((ver, idx) => (
-                  <div
-                    key={idx}
-                    className={["pf-version-item", restoredIdx === idx ? "pf-version-item--restored" : ""].filter(Boolean).join(" ")}
-                  >
-                    <div className="pf-version-meta">
-                      <span className="pf-version-title">{ver.title}</span>
-                      <span className="pf-version-date">
-                        {new Date(ver.savedAt).toLocaleDateString('en-US', {
-                          month: 'short', day: 'numeric',
-                          hour: '2-digit', minute: '2-digit',
-                        })}
-                      </span>
-                    </div>
-                    <pre className="pf-version-preview">
-                      {ver.content.length > 140 ? ver.content.slice(0, 140) + '…' : ver.content}
-                    </pre>
-                    <button
-                      type="button"
-                      className="pf-version-restore"
-                      onClick={() => { restoreVersion(ver); setRestoredIdx(idx); }}
-                    >
-                      <LucideRefreshCw width={11} />
-                      Restore
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="pf-versions-empty">
-                No history yet — versions are saved automatically when you update this prompt.
-              </p>
-            )}
-          </div>
-        )}
-
         </div>
       </FormLayout>
     </>
@@ -679,109 +609,4 @@ const CSS = `
 }
 .pf-var-input:focus { border-color: var(--border-focus); }
 .pf-var-input::placeholder { color: var(--text-tertiary); }
-
-/* P3-9: Version history */
-.pf-versions {
-  display:        flex;
-  flex-direction: column;
-  gap:            10px;
-  padding:        14px;
-  background:     var(--bg-elevated);
-  border:         1px solid var(--border-subtle);
-  border-radius:  var(--radius-md);
-}
-.pf-versions-header {
-  display:     flex;
-  align-items: center;
-  gap:         6px;
-  font-size:   var(--text-sm);
-  font-weight: 600;
-  color:       var(--text-secondary);
-}
-.pf-versions-count {
-  display:         inline-flex;
-  align-items:     center;
-  justify-content: center;
-  width:           18px;
-  height:          18px;
-  background:      var(--bg-overlay);
-  border:          1px solid var(--border-subtle);
-  border-radius:   50%;
-  font-size:       10px;
-  color:           var(--text-tertiary);
-}
-.pf-versions-list {
-  display:        flex;
-  flex-direction: column;
-  gap:            8px;
-}
-.pf-version-item {
-  display:        flex;
-  flex-direction: column;
-  gap:            6px;
-  padding:        10px 12px;
-  background:     var(--bg-subtle);
-  border:         1px solid var(--border-default);
-  border-radius:  var(--radius-md);
-  transition:     border-color var(--transition-fast);
-}
-.pf-version-item--restored { border-color: var(--accent-border); }
-.pf-version-meta {
-  display:     flex;
-  align-items: center;
-  gap:         8px;
-  flex-wrap:   wrap;
-}
-.pf-version-title {
-  font-size:   var(--text-xs);
-  font-weight: 600;
-  color:       var(--text-primary);
-  flex:        1;
-  min-width:   0;
-  overflow:    hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.pf-version-date {
-  font-size:   var(--text-xs);
-  color:       var(--text-tertiary);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.pf-version-preview {
-  font-family:        var(--font-mono);
-  font-size:          var(--text-xs);
-  color:              var(--text-secondary);
-  line-height:        var(--leading-relaxed);
-  white-space:        pre-wrap;
-  word-break:         break-word;
-  display:            -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow:           hidden;
-  margin:             0;
-}
-.pf-version-restore {
-  display:       inline-flex;
-  align-items:   center;
-  gap:           5px;
-  align-self:    flex-start;
-  padding:       4px 10px;
-  background:    transparent;
-  border:        1px solid var(--border-default);
-  border-radius: var(--radius-sm);
-  color:         var(--text-secondary);
-  font-size:     var(--text-xs);
-  font-family:   var(--font-sans);
-  cursor:        pointer;
-  transition:    all var(--transition-fast);
-}
-.pf-version-restore:hover { border-color: var(--accent-border); color: var(--accent); }
-.pf-versions-empty {
-  font-size:  var(--text-xs);
-  color:      var(--text-tertiary);
-  font-style: italic;
-  margin:     0;
-}
-
 `;

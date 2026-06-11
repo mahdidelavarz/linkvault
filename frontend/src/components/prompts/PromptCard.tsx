@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   type Prompt,
   PROMPT_TYPES,
@@ -9,7 +10,6 @@ import {
 } from "@/types/prompt";
 import {
   useTogglePromptFavorite,
-  useDeletePrompt,
   useIncrementPromptUsage,
 } from "@/hooks/usePrompt";
 import {
@@ -19,19 +19,14 @@ import {
   sendToAI,
 } from "@/lib/promptUtils";
 import VariableForm from "./VariableForm";
+import Modal from "@/components/ui/Modal";
 import ProjectBadge from "@/components/projects/ProjectBadge";
-import CollectionBadge from "./CollectionBadge";
-import MultiProjectEditWarning from "@/components/projects/MultiProjectEditWarning";
-import { useProjectAwareEdit } from "@/hooks/useProjectAwareEdit";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
 import {
   LucideStar,
   LucideCopy,
-  LucidePencil,
-  LucideTrash2,
   LucideExternalLink,
-  LucideVariable,
   LucideFolder,
   LucideTag,
   LucideClock,
@@ -40,13 +35,10 @@ import {
   LucideBrain,
   LucideSparkles,
   LucideGem,
-  LucideRefreshCw,
 } from "@/Icons/Icons";
 
 interface PromptCardProps {
   prompt: Prompt;
-  onEdit: (prompt: Prompt) => void;
-  onDuplicate?: (prompt: Prompt) => void;
 }
 
 const platformIcons: Record<string, React.ComponentType<{ width?: number }>> = {
@@ -56,18 +48,17 @@ const platformIcons: Record<string, React.ComponentType<{ width?: number }>> = {
   gemini: LucideGem,
 };
 
-export default function PromptCard({ prompt, onEdit, onDuplicate }: PromptCardProps) {
-  const [showVariables, setShowVariables] = useState(false);
-  const [filledContent, setFilledContent] = useState(prompt.content);
+type PendingAction = { kind: "copy" } | { kind: "send"; platform: AIPlatform } | null;
+
+export default function PromptCard({ prompt }: PromptCardProps) {
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [sentToAI, setSentToAI] = useState<AIPlatform | null>(null);
+  const [varModalOpen, setVarModalOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
   const toggleFavorite = useTogglePromptFavorite();
-  const deletePrompt = useDeletePrompt();
   const incrementUsage = useIncrementPromptUsage();
-
-  const { handleEdit, confirmEdit, cancelEdit, isWarnOpen, projectNames } =
-    useProjectAwareEdit({ itemType: 'prompt', itemId: prompt.id, onEdit });
 
   // Merge extracted variables with stored defaults (P3-8 persistence)
   const variables = extractVariables(prompt.content).map(v => ({
@@ -75,13 +66,14 @@ export default function PromptCard({ prompt, onEdit, onDuplicate }: PromptCardPr
     defaultValue: prompt.variables?.find(sv => sv.name === v.name)?.defaultValue ?? v.defaultValue,
   }));
 
-  const isTestMode = filledContent !== prompt.content;
-
   const promptType = PROMPT_TYPES[prompt.promptType];
   const aiPlatform = prompt.targetAI ? AI_PLATFORMS[prompt.targetAI] : null;
+  const PlatformIcon = prompt.targetAI ? platformIcons[prompt.targetAI] : null;
 
-  const handleCopy = async () => {
-    const success = await copyToClipboard(filledContent);
+  const goToDetail = () => router.push(`/prompts/${prompt.id}`);
+
+  const doCopy = async (text: string) => {
+    const success = await copyToClipboard(text);
     if (success) {
       setCopied(true);
       incrementUsage.mutate(prompt.id);
@@ -89,8 +81,8 @@ export default function PromptCard({ prompt, onEdit, onDuplicate }: PromptCardPr
     }
   };
 
-  const handleSendToAI = (platform: AIPlatform) => {
-    const success = sendToAI(filledContent, platform);
+  const doSend = (text: string, platform: AIPlatform) => {
+    const success = sendToAI(text, platform);
     if (success) {
       setSentToAI(platform);
       incrementUsage.mutate(prompt.id);
@@ -98,31 +90,54 @@ export default function PromptCard({ prompt, onEdit, onDuplicate }: PromptCardPr
     }
   };
 
-  const handleVariablesFilled = (values: Record<string, string>) => {
-    const replaced = replaceVariables(prompt.content, values);
-    setFilledContent(replaced);
-    setShowVariables(false);
-  };
-
-  const resetTest = () => {
-    setFilledContent(prompt.content);
-    setShowVariables(false);
-  };
-
-  const handleDelete = () => {
-    if (window.confirm("Are you sure you want to delete this prompt?")) {
-      deletePrompt.mutate(prompt.id);
+  const handleCopyClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (variables.length > 0) {
+      setPendingAction({ kind: "copy" });
+      setVarModalOpen(true);
+    } else {
+      doCopy(prompt.content);
     }
   };
 
-  const PlatformIcon = prompt.targetAI
-    ? platformIcons[prompt.targetAI]
-    : null;
+  const handleSendClick = (e: React.MouseEvent, platform: AIPlatform) => {
+    e.stopPropagation();
+    if (variables.length > 0) {
+      setPendingAction({ kind: "send", platform });
+      setVarModalOpen(true);
+    } else {
+      doSend(prompt.content, platform);
+    }
+  };
+
+  const handleVariablesFilled = (values: Record<string, string>) => {
+    const replaced = replaceVariables(prompt.content, values);
+    setVarModalOpen(false);
+    if (pendingAction?.kind === "copy") {
+      doCopy(replaced);
+    } else if (pendingAction?.kind === "send") {
+      doSend(replaced, pendingAction.platform);
+    }
+    setPendingAction(null);
+  };
+
+  const closeVarModal = () => {
+    setVarModalOpen(false);
+    setPendingAction(null);
+  };
 
   return (
     <>
       <style>{CSS}</style>
-      <div className="prompt-card">
+      <div
+        className="prompt-card"
+        role="button"
+        tabIndex={0}
+        onClick={goToDetail}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goToDetail(); }
+        }}
+      >
         {/* Header */}
         <div className="prompt-card-header">
           <div className="prompt-card-type">
@@ -145,7 +160,7 @@ export default function PromptCard({ prompt, onEdit, onDuplicate }: PromptCardPr
             </div>
           </div>
           <button
-            onClick={() => toggleFavorite.mutate(prompt.id)}
+            onClick={(e) => { e.stopPropagation(); toggleFavorite.mutate(prompt.id); }}
             className={[
               "prompt-card-fav",
               prompt.isFavorite ? "prompt-card-fav--active" : "",
@@ -164,64 +179,9 @@ export default function PromptCard({ prompt, onEdit, onDuplicate }: PromptCardPr
         )}
 
         {/* Content Preview */}
-        <div className={["prompt-card-content", isTestMode ? "prompt-card-content--test" : ""].filter(Boolean).join(" ")}>
-          <pre className="prompt-card-content-text">{filledContent}</pre>
+        <div className="prompt-card-content">
+          <pre className="prompt-card-content-text">{prompt.content}</pre>
         </div>
-
-        {/* Variables / Test Mode */}
-        {variables.length > 0 && (
-          <div className="prompt-card-vars-section">
-            {isTestMode ? (
-              <div className="prompt-card-test-row">
-                <span className="prompt-card-test-label">
-                  <LucideVariable width={12} />
-                  Variables filled
-                </span>
-                <button
-                  className="prompt-card-test-btn"
-                  onClick={() => { setShowVariables(true); }}
-                  title="Re-fill with different values"
-                >
-                  Re-fill
-                </button>
-                <button
-                  className="prompt-card-test-btn prompt-card-test-btn--reset"
-                  onClick={resetTest}
-                  title="Reset to original content"
-                >
-                  <LucideRefreshCw width={11} />
-                  Reset
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setShowVariables(!showVariables)}
-                className={[
-                  "prompt-card-vars-toggle",
-                  showVariables ? "prompt-card-vars-toggle--active" : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
-                <LucideVariable width={12} />
-                {variables.length} variable{variables.length > 1 ? "s" : ""}
-                <span className="prompt-card-vars-names">
-                  ({variables.map((v) => v.name).join(", ")})
-                </span>
-              </button>
-            )}
-
-            {showVariables && (
-              <div className="prompt-card-vars-form">
-                <VariableForm
-                  variables={variables}
-                  onSubmit={handleVariablesFilled}
-                  onCancel={() => setShowVariables(false)}
-                />
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Tags & Category */}
         <div className="prompt-card-taxonomy">
@@ -274,47 +234,45 @@ export default function PromptCard({ prompt, onEdit, onDuplicate }: PromptCardPr
             variant="secondary"
             size="sm"
             leftIcon={LucideCopy}
-            onClick={handleCopy}
+            onClick={handleCopyClick}
           >
             Copy
           </Button>
 
-          {aiPlatform && prompt.targetAI && (
+          {aiPlatform && prompt.targetAI ? (
             <Button
               variant="secondary"
               size="sm"
               leftIcon={LucideExternalLink}
-              onClick={() => handleSendToAI(prompt.targetAI as AIPlatform)}
+              onClick={(e) => handleSendClick(e, prompt.targetAI as AIPlatform)}
             >
               Send to {aiPlatform.name}
             </Button>
-          )}
-
-          {!aiPlatform && (
+          ) : (
             <div className="prompt-card-quick-send">
               <button
-                onClick={() => handleSendToAI("chatgpt")}
+                onClick={(e) => handleSendClick(e, "chatgpt")}
                 className="quick-send-btn quick-send-btn--green"
                 title="Send to ChatGPT"
               >
                 <LucideBot width={14} />
               </button>
               <button
-                onClick={() => handleSendToAI("deepseek")}
+                onClick={(e) => handleSendClick(e, "deepseek")}
                 className="quick-send-btn quick-send-btn--teal"
                 title="Send to DeepSeek"
               >
                 <LucideBrain width={14} />
               </button>
               <button
-                onClick={() => handleSendToAI("claude")}
+                onClick={(e) => handleSendClick(e, "claude")}
                 className="quick-send-btn quick-send-btn--orange"
                 title="Send to Claude"
               >
                 <LucideSparkles width={14} />
               </button>
               <button
-                onClick={() => handleSendToAI("gemini")}
+                onClick={(e) => handleSendClick(e, "gemini")}
                 className="quick-send-btn quick-send-btn--blue"
                 title="Send to Gemini"
               >
@@ -324,40 +282,13 @@ export default function PromptCard({ prompt, onEdit, onDuplicate }: PromptCardPr
           )}
 
           <ProjectBadge itemType="prompt" itemId={prompt.id} />
-          <CollectionBadge promptId={prompt.id} />
-          <div className="prompt-card-actions-right">
-            {onDuplicate && (
-              <button
-                className="prompt-card-action-btn"
-                onClick={(e) => { e.stopPropagation(); onDuplicate(prompt); }}
-                title="Duplicate prompt"
-              >
-                <LucideCopy width={14} />
-              </button>
-            )}
-            <button
-              className="prompt-card-action-btn"
-              onClick={() => handleEdit(prompt)}
-              title="Edit"
-            >
-              <LucidePencil width={14} />
-            </button>
-            <button
-              className="prompt-card-action-btn prompt-card-action-btn--danger"
-              onClick={handleDelete}
-              title="Delete"
-            >
-              <LucideTrash2 width={14} />
-            </button>
-          </div>
         </div>
       </div>
-      <MultiProjectEditWarning
-        isOpen={isWarnOpen}
-        projectNames={projectNames}
-        onConfirm={confirmEdit}
-        onCancel={cancelEdit}
-      />
+
+      {/* Variable-fill modal for Copy / Send-to-AI */}
+      <Modal isOpen={varModalOpen} onClose={closeVarModal} size="sm">
+        <VariableForm variables={variables} onSubmit={handleVariablesFilled} onCancel={closeVarModal} />
+      </Modal>
     </>
   );
 }
@@ -371,12 +302,14 @@ const CSS = `
   display:       flex;
   flex-direction: column;
   gap:           12px;
+  cursor:        pointer;
   transition:    border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .prompt-card:hover {
   border-color: var(--border-strong);
   box-shadow:   0 2px 12px rgba(0,0,0,0.05);
 }
+.prompt-card:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
 
 /* Header */
 .prompt-card-header {
@@ -457,66 +390,6 @@ const CSS = `
   margin:        0;
 }
 
-/* Content — test mode */
-.prompt-card-content--test { border: 1px solid var(--accent-border); }
-
-/* Variables */
-.prompt-card-vars-section {
-  display:        flex;
-  flex-direction: column;
-  gap:            8px;
-}
-.prompt-card-vars-toggle {
-  display:       inline-flex;
-  align-items:   center;
-  gap:           6px;
-  padding:       4px 10px;
-  background:    var(--bg-subtle);
-  border:        1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  color:         var(--text-secondary);
-  font-size:     var(--text-xs);
-  font-family:   var(--font-sans);
-  cursor:        pointer;
-  transition:    all var(--transition-fast);
-  align-self:    flex-start;
-}
-.prompt-card-vars-toggle:hover { border-color: var(--border-strong); color: var(--text-primary); }
-.prompt-card-vars-toggle--active { border-color: var(--primary); color: var(--primary); }
-.prompt-card-vars-names { color: var(--text-tertiary); }
-
-/* Test mode row */
-.prompt-card-test-row {
-  display:     flex;
-  align-items: center;
-  gap:         8px;
-  flex-wrap:   wrap;
-}
-.prompt-card-test-label {
-  display:     flex;
-  align-items: center;
-  gap:         5px;
-  font-size:   var(--text-xs);
-  font-weight: 500;
-  color:       var(--accent);
-}
-.prompt-card-test-btn {
-  display:       inline-flex;
-  align-items:   center;
-  gap:           4px;
-  padding:       3px 10px;
-  background:    var(--bg-subtle);
-  border:        1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  color:         var(--text-secondary);
-  font-size:     var(--text-xs);
-  font-family:   var(--font-sans);
-  cursor:        pointer;
-  transition:    all var(--transition-fast);
-}
-.prompt-card-test-btn:hover { border-color: var(--border-strong); color: var(--text-primary); }
-.prompt-card-test-btn--reset:hover { border-color: var(--danger); color: var(--danger); }
-
 /* Taxonomy */
 .prompt-card-taxonomy {
   display:   flex;
@@ -571,28 +444,6 @@ const CSS = `
   padding-top: 12px;
   border-top:  1px solid var(--border-default);
 }
-.prompt-card-actions-right {
-  display:     flex;
-  align-items: center;
-  gap:         2px;
-  margin-left: auto;
-}
-.prompt-card-action-btn {
-  display:         flex;
-  align-items:     center;
-  justify-content: center;
-  width:           30px;
-  height:          30px;
-  padding:         0;
-  background:      transparent;
-  border:          none;
-  border-radius:   var(--radius-sm);
-  color:           var(--text-tertiary);
-  cursor:          pointer;
-  transition:      color var(--transition-fast), background var(--transition-fast);
-}
-.prompt-card-action-btn:hover          { color: var(--text-primary); background: var(--bg-overlay); }
-.prompt-card-action-btn--danger:hover  { color: var(--danger); background: var(--danger-muted); }
 
 /* Quick send */
 .prompt-card-quick-send {

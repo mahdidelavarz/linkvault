@@ -21,7 +21,6 @@ import InfraCard from "@/components/infrastructure/InfraCard";
 import LinkForm from "@/components/links/LinkForm";
 import NoteForm from "@/components/notes/NoteForm";
 import SnippetForm from "@/components/snippets/SnippetForm";
-import PromptForm from "@/components/prompts/PromptForm";
 import InfraForm from "@/components/infrastructure/InfraForm";
 import {
     LucideBox,
@@ -115,7 +114,7 @@ export default function ProjectDashboardPage() {
             case 'link':        return <LinkCard link={pi.item} onEdit={openEdit} />;
             case 'note':        return <NoteCard note={pi.item} isActive={false} onSelect={() => {}} onEditDetails={() => openEdit(pi.item)} />;
             case 'snippet':     return <SnippetCard snippet={pi.item} onDuplicate={() => {}} />;
-            case 'prompt':      return <PromptCard prompt={pi.item} onEdit={openEdit} onDuplicate={() => {}} />;
+            case 'prompt':      return <PromptCard prompt={pi.item} />;
             case 'infrastructure': return <InfraCard item={pi.item} />;
             default:            return null;
         }
@@ -255,11 +254,6 @@ export default function ProjectDashboardPage() {
             {editingItem?.type === 'snippet' && (
                 <Modal isOpen onClose={() => setEditingItem(null)} title="Edit snippet">
                     <SnippetForm snippet={editingItem.item} onClose={() => setEditingItem(null)} />
-                </Modal>
-            )}
-            {editingItem?.type === 'prompt' && (
-                <Modal isOpen onClose={() => setEditingItem(null)} title="Edit prompt">
-                    <PromptForm prompt={editingItem.item} onClose={() => setEditingItem(null)} />
                 </Modal>
             )}
             {editingItem?.type === 'infrastructure' && (

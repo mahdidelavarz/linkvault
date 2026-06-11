@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { usePrompts, usePrompt } from "@/hooks/usePrompt";
 import { usePromptCollections } from "@/hooks/usePromptCollections";
 import PageLayout from "@/components/layout/PageLayout";
@@ -10,7 +10,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import CardGrid from "@/components/shared/CardGrid";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { useCategories } from "@/hooks/useCategories";
-import { type Prompt, PROMPT_TYPES } from "@/types/prompt";
+import { PROMPT_TYPES } from "@/types/prompt";
 import PromptCard from "@/components/prompts/PromptCard";
 import PromptForm from "@/components/prompts/PromptForm";
 import ManageCollectionsModal from "@/components/prompts/ManageCollectionsModal";
@@ -36,9 +36,8 @@ import { useTags } from "@/hooks/useTag";
 
 export default function PromptsPage() {
   const searchParams   = useSearchParams();
+  const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
-  const [duplicateFrom, setDuplicateFrom] = useState<Prompt | null>(null);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [selectedType, setSelectedType] = useState("");
@@ -49,15 +48,12 @@ export default function PromptsPage() {
   const [collectionId, setCollectionId] = useState("");
   const [manageCollectionsOpen, setManageCollectionsOpen] = useState(false);
 
-  // P1-6: Deep-link from search — ?open=<id> opens that prompt's form directly
+  // P1-6: Deep-link from search — ?open=<id> redirects to the detail page
   const openParam = searchParams.get("open");
   const { data: openPrompt } = usePrompt(openParam ? parseInt(openParam) : 0);
   useEffect(() => {
-    if (openPrompt) {
-      setEditingPrompt(openPrompt);
-      setModalOpen(true);
-    }
-  }, [openPrompt]);
+    if (openPrompt) router.replace(`/prompts/${openPrompt.id}`);
+  }, [openPrompt, router]);
 
   const { data: categories } = useCategories();
   const { data: allTags }    = useTags();
@@ -86,26 +82,8 @@ export default function PromptsPage() {
   const hasFilters = !!(search || categoryId || selectedType || showFavorites || selectedTagIds.length || sortBy || collectionId);
   const activeFilterCount = [categoryId, selectedType, showFavorites, selectedTagIds.length, sortBy, collectionId].filter(Boolean).length;
 
-  const openCreate = () => {
-    setEditingPrompt(null);
-    setDuplicateFrom(null);
-    setModalOpen(true);
-  };
-  const openEdit = (prompt: Prompt) => {
-    setEditingPrompt(prompt);
-    setDuplicateFrom(null);
-    setModalOpen(true);
-  };
-  const openDuplicate = (prompt: Prompt) => {
-    setDuplicateFrom(prompt);
-    setEditingPrompt(null);
-    setModalOpen(true);
-  };
-  const closeModal = () => {
-    setModalOpen(false);
-    setEditingPrompt(null);
-    setDuplicateFrom(null);
-  };
+  const openCreate = () => setModalOpen(true);
+  const closeModal = () => setModalOpen(false);
   const clearFilters = () => {
     setSearch("");
     setCategoryId("");
@@ -268,7 +246,7 @@ export default function PromptsPage() {
         ) : prompts.length > 0 ? (
           <>
             <CardGrid minCardWidth={380}>
-              {prompts.map((prompt) => <PromptCard key={prompt.id} prompt={prompt} onEdit={openEdit} onDuplicate={openDuplicate} />)}
+              {prompts.map((prompt) => <PromptCard key={prompt.id} prompt={prompt} />)}
             </CardGrid>
             <div ref={sentinelRef} style={{ height: 1 }} />
             {isFetchingNextPage && (
@@ -291,14 +269,10 @@ export default function PromptsPage() {
       <Modal
         isOpen={modalOpen}
         onClose={closeModal}
-        title={editingPrompt ? "Edit Prompt" : duplicateFrom ? "Duplicate Prompt" : "New Prompt"}
+        title="New Prompt"
         size="lg"
       >
-        <PromptForm
-          prompt={editingPrompt}
-          onClose={closeModal}
-          initialValues={duplicateFrom ?? undefined}
-        />
+        <PromptForm prompt={null} onClose={closeModal} />
       </Modal>
 
       <ManageCollectionsModal
