@@ -144,7 +144,7 @@ export const useUpdateEndpoint = () => {
 export const useDeleteEndpoint = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: number) => async () => {
+    mutationFn: async (id: number) => {
       await api.delete(`/api-client/endpoints/${id}`);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['api-endpoints'] }),

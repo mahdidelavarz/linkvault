@@ -5,7 +5,7 @@
 | Scope | Status |
 |-------|--------|
 | **MVP Relation #1** — Infra → API Client (functional env injection) | ✅ **Done (P4-B)** |
-| **MVP Relations #2–4** — Snippet↔Prompt, Note↔Everything, API→Snippet | ⬜ Not started |
+| **MVP Relations #2–4** — Snippet↔Prompt, Note↔Everything, API→Snippet | ⬜ Not started — see [DEVMAP.md](DEVMAP.md) P5-10 (R-1 to R-4) |
 | **V2 Relations** — Prompt↔API Client, Prompt↔Infrastructure, etc. | ⬜ Not started |
 | **V3 Knowledge Graph** | ⬜ Not started |
 
@@ -35,7 +35,7 @@ MVP should build both, starting with the functional one.
 
 ---
 
-## The Data Model
+## The Data Model (R-1)
 
 A single polymorphic junction table — the same pattern as the existing `Taggable` entity.
 
@@ -115,31 +115,15 @@ Both sides surface the connection. No need to store duplicate rows.
 
 ---
 
-## MVP Relations — Build These First
+## MVP Relations
 
-### 1. ~~Infrastructure → API Client (`uses`) — Functional~~ ✅ Done (P4-B)
+### Done — Infrastructure → API Client (`uses`) — Functional ✅ (P4-B)
 
-**The highest-value connection in the entire app.**
+Implemented via direct UI injection rather than the `item_relations` junction table (the simpler, correct approach for this functional relation): `env`-type Infrastructure items appear as a "From Infrastructure" optgroup in the API Client environment dropdown; `KEY=VALUE` content is parsed into variables and interpolated on Send. See [dev_api-client.md](dev_api-client.md) and [dev_infras.md](dev_infras.md) for the implementation.
 
-An Infrastructure `env` config stores variables like:
-```
-BASE_URL=https://api.myapp.com
-JWT_TOKEN=eyJ...
-```
+### Remaining — P5-10 (R-2 to R-4)
 
-An API Client endpoint references them:
-```
-GET {{BASE_URL}}/users
-Authorization: Bearer {{JWT_TOKEN}}
-```
-
-At test time, the active Infrastructure config is selected from a dropdown in the API Client toolbar. Variables are interpolated before the request is sent. This is the Environment Variables feature documented in `dev_api-client.md` — the relation system is its backbone.
-
-**UX:** Environment switcher in the API Client header. Dropdown lists all `env`-type Infrastructure items. Selecting one binds it as the active variable source. The relation is stored as `infrastructure → api_endpoint, type=uses`.
-
----
-
-### 2. Snippet ↔ Prompt (`references`) — Associative
+#### R-2. Snippet ↔ Prompt (`references`) — Associative
 
 A "Review React code" prompt is always used alongside specific components. A SQL query snippet is always tested with a specific SQL generation prompt. These pairs are natural and high-frequency.
 
@@ -147,9 +131,7 @@ A "Review React code" prompt is always used alongside specific components. A SQL
 
 **UX on the Snippet card:** Symmetric — "Related Prompts (1)" section.
 
----
-
-### 3. Note ↔ Everything (`references`) — Associative
+#### R-3. Note ↔ Everything (`references`) — Associative
 
 Notes are the natural hub. A note about "Authentication System" should be able to attach:
 - The JWT snippet
@@ -163,11 +145,9 @@ Notes become the connective tissue between all other items — similar to how Ob
 
 This is the most impactful single UX feature for making the vault feel cohesive rather than siloed.
 
----
+#### R-4. API Client → Snippet (`generates`) — Functional
 
-### 4. API Client → Snippet (`generates`) — Functional
-
-After testing an endpoint, a "Generate Code" action creates a new Snippet pre-filled with the equivalent `fetch()`, `axios`, or `curl` code. The relation is recorded automatically: `api_endpoint → snippet, type=generates`.
+After testing an endpoint, a "Generate Code" action creates a new Snippet pre-filled with the equivalent `fetch()`, `axios`, or `curl` code (this is also P5-8 A-1 — see [dev_api-client.md](dev_api-client.md)). The relation is recorded automatically: `api_endpoint → snippet, type=generates`.
 
 **UX:** The generated snippet links back to the source endpoint in its "Related" section. If the endpoint URL changes, the snippet shows a "Source endpoint updated" notice.
 
@@ -283,9 +263,3 @@ useDeleteRelation()           // mutation
 ```
 
 Query key: `['relations', type, id]`. Mutations invalidate both sides of the relation.
-
-**Implementation Status:**
-- ✅ **MVP Relation #1 (Infra → API Client)** done in P4-B — env items appear as "From Infrastructure" optgroup in API Client env dropdown; `KEY=VALUE` parsed into variables. Note: implemented via UI injection rather than the `item_relations` junction table (the simpler, correct approach for this functional relation).
-- ⬜ **MVP Relations #2–4** (Snippet↔Prompt, Note↔Everything, API Client→Snippet) — not yet built; require `item_relations` table + relation API + UI on cards.
-- ⬜ **V2 Relations** — not started.
-- ⬜ **V3 Knowledge Graph** — not started.

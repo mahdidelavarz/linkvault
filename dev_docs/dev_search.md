@@ -22,39 +22,6 @@ Search is the most important module in the entire app. If a user cannot find som
 
 ---
 
-## Potential Bugs & Issues
-
-### 1. ~~Prompts and Infrastructure not searched~~ ✅ Fixed (P1)
-`searchPrompts()` and `searchInfrastructures()` added to `Search.service.ts`. Controller type validation updated to include `'prompt'` and `'infrastructure'`. Total result count includes all 5 types. `SearchResultCard` now handles prompt and infrastructure result types with correct icons and deep-link navigation.
-
-### 2. ~~Empty query fires `LIKE '%%'`~~ ✅ Fixed (P1)
-**File:** `Search.service.ts`, `useSearch.ts`
-When `query` is empty, each service method runs `LIKE '%%'` — matching all rows. Up to 20 per type are returned and rendered as search results, with no label distinguishing them from real search results. The page appears populated on first load with no user intent. The correct behavior for an empty query: don't execute the search query; instead show recent items, pinned favorites, or a start-searching state.
-
-### 3. ~~Clicking a result navigates to the module list, not the item~~ ✅ Fixed (P1)
-**File:** `SearchResultCard.tsx`
-Link results correctly open the URL externally. But note and snippet results navigate to `/notes` or `/snippets` — the list page, with no filter, scroll-to, or highlight. The user must search again within the module. This flow is broken.
-
-### 4. ~~20-item hard limit per type with no indicator~~ ✅ Fixed (P3-12)
-`Search.service.ts` now uses `take(100)` per type. `search/page.tsx` tracks `shownCounts` state (20 per type by default) with a "Load more N" button per group and "Showing X of Y" count display. `getManyAndCount()` returns the real total.
-
-### 5. ~~Type filter validation excludes future modules~~ ✅ Fixed (P1-4 / P1-5)
-Controller now validates against `['link', 'note', 'snippet', 'prompt', 'infrastructure']`.
-
-### 6. `loadTagsForItems()` appears duplicated in the search service
-**File:** `Search.service.ts`
-The search service likely has its own tag-loading logic instead of using the centralized utility. If the centralized version is updated, this copy diverges silently, producing different tag data in search results vs. other pages.
-
-### 7. Tag button state may not sync from URL on initial load
-**File:** `SearchFilters.tsx`
-`tagIds` lives in both the URL and local React state. A user who loads a shared search URL with `?tagIds=1,2,3` may see the filter visually unselected if the component initializes from local state before reading URL params.
-
-### 8. `cleanMarkdown()` preview may leave artifacts
-**File:** `SearchResultCard.tsx`
-A naive markdown stripper (removing `#`, `*`, `_`) leaves code block markers, escaped characters, and link syntax artifacts (`[text](url)` → `texturl`). Note content with complex markdown produces confusing previews.
-
----
-
 ## Current Features
 
 - **Full-text search** across 5 modules: links, notes, snippets, prompts, infrastructure
@@ -86,87 +53,41 @@ A naive markdown stripper (removing `#`, `*`, `_`) leaves code block markers, es
 
 ---
 
-## Missing Features
+## Remaining Work
 
-### S-Tier — Completed
+### Open Bugs
 
-1. ~~**Prompts and Infrastructure in search**~~ ✅ **Done (P1)**
+1. **`loadTagsForItems()` appears duplicated in the search service** — `Search.service.ts` likely has its own tag-loading logic instead of using the centralized utility. If the centralized version is updated, this copy diverges silently, producing different tag data in search results vs. other pages.
 
-2. ~~**Deep-link to specific item**~~ ✅ **Done (P1)** — All module pages (Notes, Snippets, Prompts, Infrastructure) handle `?open=<id>` via `useSearchParams` + single-item hook, auto-opening the item.
+2. **Tag button state may not sync from URL on initial load** — `SearchFilters.tsx`: `tagIds` lives in both the URL and local React state. A user who loads a shared search URL with `?tagIds=1,2,3` may see the filter visually unselected if the component initializes from local state before reading URL params.
 
-3. ~~**Empty query redesign**~~ ✅ **Done (P1)** — Service returns empty immediately; hook disabled when query is empty; "start typing" empty state displayed.
+3. **`cleanMarkdown()` preview may leave artifacts** — `SearchResultCard.tsx`: a naive markdown stripper (removing `#`, `*`, `_`) leaves code block markers, escaped characters, and link syntax artifacts (`[text](url)` → `texturl`). Note content with complex markdown produces confusing previews.
 
-4. ~~**Relevance ranking**~~ ✅ **Done (P3-11)** — `scoreResult()` + `sortByScore()` in `Search.service.ts`. Score: title exact +10, title contains +6, tag match +3, ≤7 days +2, favorited +1. `_score` field returned on each result.
+### P5-4 S-3 (DEVMAP) — Not Started
+
+**Audit remaining B/C-tier items below — cut or keep.**
 
 ### Strategic / Future
-
-5. **Unified search index (architectural)** — The current pattern (`searchLinks()`, `searchNotes()`, `searchSnippets()`, ...) does not scale. Every new module requires a new function and a controller update. A `search_documents` view or materialized table that aggregates all searchable content makes new modules trivially searchable by insertion. Not urgent now, but the right long-term direction.
-
-### A-Tier — Completed
-
-6. ~~**Quick Open Palette**~~ ✅ **Done (P3-10)** — Floating overlay; arrow key navigation; Enter to open; Escape to close.
-
-7. ~~**Load More**~~ ✅ **Done (P3-12)** — "Load more N" button below each group; progressive reveal in steps of 20; `shownCounts` state resets on query/filter change.
-
-8. ~~**Result count**~~ ✅ **Done (P3-12)** — "Showing X of Y" per group; total result count in page subtitle.
+- **Unified search index (architectural)** — The current pattern (`searchLinks()`, `searchNotes()`, `searchSnippets()`, ...) does not scale. Every new module requires a new function and a controller update. A `search_documents` view or materialized table that aggregates all searchable content makes new modules trivially searchable by insertion. Not urgent now, but the right long-term direction.
 
 ### A-Tier — Remaining
-
-9. **Keyboard navigation in results** — Arrow Up/Down moves focus between results. Enter opens. Already have Ctrl+K to focus input; navigating results is the missing half.
+- **Keyboard navigation in results** — Arrow Up/Down moves focus between results. Enter opens. Already have Ctrl+K to focus input; navigating results is the missing half.
 
 ### B-Tier — Medium Value
+- **Recent searches** — A short history of previous queries shown on the empty state. Helps users repeat searches they do regularly.
+- **Search analytics (internal)** — Log queries that returned zero results. This is developer/product intelligence, not a user-facing feature. Reveals what users are looking for but not finding — invaluable for understanding vault gaps.
+- **Related terms** — Below the search results, show: "Related: Authentication, OAuth, Token" — not autocomplete, but a knowledge graph connection. This is a long-term vision feature, not MVP.
+- **Sort controls** — Sort by date, relevance, alphabetical. Add after relevance ranking is in place.
 
-10. **Recent searches** — A short history of previous queries shown on the empty state. Helps users repeat searches they do regularly.
-11. **Search analytics (internal)** — Log queries that returned zero results. This is developer/product intelligence, not a user-facing feature. Reveals what users are looking for but not finding — invaluable for understanding vault gaps.
-12. **Related terms** — Below the search results, show: "Related: Authentication, OAuth, Token" — not autocomplete, but a knowledge graph connection. This is a long-term vision feature, not MVP.
-13. **Sort controls** — Sort by date, relevance, alphabetical. Add after relevance ranking is in place.
-
-### C-Tier — Not Recommended
-
-14. **Saved searches** — Most users search → find → leave. Saving a search is a rarely-used feature that adds UI complexity for minimal return.
-15. **Export results** — Low real-world utility.
-16. **Bulk actions from search** — Search is for finding, not managing. Bulk operations belong on module pages.
-17. **Spell correction** — Too complex for the current architecture without a dedicated search engine (Elasticsearch, Typesense).
+### C-Tier — Decided Against (for now)
+- **Saved searches** — Most users search → find → leave. Saving a search is a rarely-used feature that adds UI complexity for minimal return.
+- **Export results** — Low real-world utility.
+- **Bulk actions from search** — Search is for finding, not managing. Bulk operations belong on module pages.
+- **Spell correction** — Too complex for the current architecture without a dedicated search engine (Elasticsearch, Typesense).
 
 ---
 
-## Result UI/UX — Best Idea
-
-### Core Problem
-Search results as cards take too much vertical space. In a search context, users scan — they don't browse. Dense, scannable rows outperform tall cards. The current design also buries metadata below the preview, requiring the eye to travel far per result.
-
-### Proposed Design: Compact Row List
-
-**Rows, not cards**
-```
-[icon] Title (highlighted)            [type chip]  [date]
-       Category > #tag1 #tag2
-       Preview text with highlighted terms...
-```
-- **Row at rest:** ~48px — icon, title, type chip, date
-- **Hover to expand:** Row expands smoothly to show preview (~80px)
-- **Actions on hover:** Copy, Open, Edit icons appear on the right — no separate action area
-
-**Groups with collapse toggle**
-```
-Links  (4)   [▼]
-──────────────────────────────────────────────
-[🔗] Stripe API docs              [link] May 2
-     payments > #api
-     Official Stripe API reference for...
-
-Notes  (12)  [▼]
-──────────────────────────────────────────────
-```
-
-**Muted highlight instead of solid yellow box**
-Amber text color or underline instead of a yellow background block. The solid yellow box breaks visual flow and is jarring when many words are highlighted.
-
----
-
-## Filter Panel UI/UX — Best Idea
-
-### Filter Bar Rule (App-Wide)
+## App-Wide Filter Bar Rule (Reference)
 
 The app uses a consistent two-pattern filter system based on filter count:
 
@@ -181,16 +102,54 @@ Search has **3 filters** (type, category, tags) → uses the Snippets pattern. T
 - Links: 2 (category, favorites) → inline ✓
 - Notes: 2 (category, pinned) → inline ✓
 - Snippets: 4 (type, language, category, favorites) → Filters button ✓
-- Prompts: 4 (type, AI platform, category, favorites) → Filters button ✓ (done P1)
-- Infrastructure: 3 (type, category, favorites) → Filters button ✓ (done P1)
-- API Client sidebar: 4 (collection, category, method, favorites) → Filters button ✓ (done P1)
+- Prompts: 4+ (type, AI platform, category, favorites, sort, collections) → Filters button ✓
+- Infrastructure: 3 (type, category, favorites) → Filters button ✓
+- API Client sidebar: 4 (collection, category, method, favorites) → Filters button ✓
 
 ---
 
-### Core Problem
+## Future Redesign Proposals
+
+Not scheduled — kept as reference for the S-3 audit and any future search UI redesign.
+
+### Result UI/UX — Compact Row List
+
+**Core Problem**
+Search results as cards take too much vertical space. In a search context, users scan — they don't browse. Dense, scannable rows outperform tall cards. The current design also buries metadata below the preview, requiring the eye to travel far per result.
+
+**Proposed Design**
+
+*Rows, not cards*
+```
+[icon] Title (highlighted)            [type chip]  [date]
+       Category > #tag1 #tag2
+       Preview text with highlighted terms...
+```
+- **Row at rest:** ~48px — icon, title, type chip, date
+- **Hover to expand:** Row expands smoothly to show preview (~80px)
+- **Actions on hover:** Copy, Open, Edit icons appear on the right — no separate action area
+
+*Groups with collapse toggle*
+```
+Links  (4)   [▼]
+──────────────────────────────────────────────
+[🔗] Stripe API docs              [link] May 2
+     payments > #api
+     Official Stripe API reference for...
+
+Notes  (12)  [▼]
+──────────────────────────────────────────────
+```
+
+*Muted highlight instead of solid yellow box*
+Amber text color or underline instead of a yellow background block. The solid yellow box breaks visual flow and is jarring when many words are highlighted.
+
+### Filter Panel UI/UX — Sidebar Improvements
+
+**Core Problem**
 The current sidebar takes significant real estate for only 3 filter types. Tags overflow into a scrollable box. Category doesn't surface the active selection clearly.
 
-### Proposed Design: Keep Sidebar on Desktop, Drawer on Mobile
+**Proposed Design: Keep Sidebar on Desktop, Drawer on Mobile**
 
 On desktop, the sidebar stays — when tags and categories grow, a popover becomes too cramped. On mobile, a drawer triggered by `[Filters]` button. This is correct because filter complexity grows with usage, and a sidebar scales better than a popover for 15+ tags.
 

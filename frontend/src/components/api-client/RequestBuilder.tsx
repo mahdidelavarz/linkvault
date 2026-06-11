@@ -37,6 +37,7 @@ interface RequestBuilderProps {
   onQueryParamsChange: (params: KeyValue[]) => void
   onAuthTypeChange:   (t: AuthType) => void
   onAuthDataChange:   (d: Partial<AuthData>) => void
+  onImportCurl:       () => void
   title:        string
 }
 
@@ -49,7 +50,7 @@ export default function RequestBuilder({
   authType, authData, endpointId,
   onMethodChange, onUrlChange, onHeadersChange, onBodyChange, onBodyTypeChange,
   onSend, onSave, onDelete, onEnvChange, onManageEnvs, onQueryParamsChange,
-  onAuthTypeChange, onAuthDataChange,
+  onAuthTypeChange, onAuthDataChange, onImportCurl,
   title,
 }: RequestBuilderProps) {
   const [activeTab, setActiveTab] = useState<Tab>('params')
@@ -85,6 +86,10 @@ export default function RequestBuilder({
         <div className="rb-title-row">
           <span className="rb-title">{title}</span>
           <div className="rb-title-actions">
+            <button className="rb-import-btn" onClick={onImportCurl} title="Import from cURL">
+              <Icon icon="lucide:terminal" width={14} />
+              <span className="rb-import-label">Import cURL</span>
+            </button>
             <button className="rb-save-btn" onClick={onSave} title={isSaved ? 'Update' : 'Save'}>
               <Icon icon={isSaved ? 'lucide:save' : 'lucide:bookmark-plus'} width={14} />
               {isSaved ? 'Update' : 'Save'}
@@ -500,6 +505,17 @@ const CSS = `
   transition:    background var(--transition-fast), box-shadow var(--transition-fast);
 }
 .rb-save-btn:hover { background: var(--accent); color: white; }
+.rb-import-btn {
+  display:       flex; align-items: center; gap: 6px;
+  height:        30px; padding: 0 12px;
+  background:    transparent; border: 1px solid var(--border-default);
+  border-radius: var(--radius-md); color: var(--text-tertiary);
+  font-size:     var(--text-xs); font-family: var(--font-sans); font-weight: 500;
+  cursor:        pointer; min-height: 44px;
+  transition:    background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+.rb-import-btn:hover { border-color: var(--border-strong); color: var(--text-primary); }
+@media (max-width: 559px) { .rb-import-label { display: none; } }
 .rb-del-btn {
   display:         flex; align-items: center; justify-content: center;
   width:           34px; height: 30px; min-height: 44px;

@@ -38,6 +38,17 @@ export class ApiEndpoint {
     @Column({ type: 'simple-json', nullable: true, name: 'auth_data' })
     authData?: any;
 
+    @Column({ type: 'simple-json', nullable: true, name: 'example_response' })
+    exampleResponse?: {
+        status: number;
+        statusText: string;
+        headers: Record<string, string>;
+        body: string;
+        time: number;
+        size: number;
+        timestamp: string;
+    };
+
     @Column({ type: 'boolean', default: false, name: 'is_favorite' })
     isFavorite!: boolean;
 

@@ -13,13 +13,15 @@ import {
 import { useCategories } from '@/hooks/useCategories'
 import { useQuery } from '@tanstack/react-query'
 import api from '@/lib/http'
-import { type ApiEndpoint, type HttpMethod, type KeyValue, type Environment, type AuthType, type AuthData } from '@/types/api'
+import { type ApiEndpoint, type HttpMethod, type KeyValue, type Environment, type AuthType, type AuthData, HTTP_METHODS } from '@/types/api'
 import { useVault } from '@/hooks/useVault'
 import { type Infrastructure } from '@/types/infrastructure'
+import { type RequestSnapshot } from '@/lib/apiCodegen'
 import CollectionSidebar  from '@/components/api-client/CollectionSidebar'
 import RequestBuilder     from '@/components/api-client/RequestBuilder'
 import ResponseViewer     from '@/components/api-client/ResponseViewer'
 import EnvironmentModal   from '@/components/api-client/EnvironmentModal'
+import ImportCurlModal, { type ParsedCurl } from '@/components/api-client/ImportCurlModal'
 import Button            from '@/components/ui/Button'
 import Modal             from '@/components/ui/Modal'
 import FormLayout        from '@/components/layout/FormLayout'
@@ -63,6 +65,12 @@ export default function ApiClientPage() {
 
   // Confirm delete
   const [confirmDel, setConfirmDel] = useState(false)
+
+  // Import from cURL (P5-8 A-3)
+  const [importCurlOpen, setImportCurlOpen] = useState(false)
+
+  // Saved example response (P5-8 A-2)
+  const [isExampleResponse, setIsExampleResponse] = useState(false)
 
   // Query params (P3-15)
   const [queryParams,   setQueryParams]   = useState<KeyValue[]>([])
@@ -237,6 +245,8 @@ export default function ApiClientPage() {
       body:        body || undefined,
       bodyType:    bodyType as any,
       authType,
+      // P5-8 A-2: snapshot the last response as the saved example, if any
+      exampleResponse: response ?? selectedEndpoint?.exampleResponse,
     }
 
     try {
@@ -287,37 +297,67 @@ export default function ApiClientPage() {
     })
   }
 
+  // ─── Header resolution (shared by Send and Generate Code) ───────────────────
+  const buildRequestHeaders = (resolvedHeaders: string): Record<string, string> => {
+    let parsedHeaders: Record<string, string> = {}
+    if (resolvedHeaders.trim()) {
+      try { parsedHeaders = JSON.parse(resolvedHeaders) }
+      catch {
+        resolvedHeaders.split('\n').forEach((line) => {
+          const [key, ...vals] = line.split(':')
+          if (key && vals.length) parsedHeaders[key.trim()] = vals.join(':').trim()
+        })
+      }
+    }
+    // Apply auth headers client-side so credentials never touch the backend
+    if (authType === 'bearer' && authData.token) {
+      parsedHeaders['Authorization'] = `Bearer ${authData.token}`
+    } else if (authType === 'basic' && authData.username) {
+      parsedHeaders['Authorization'] = `Basic ${btoa(`${authData.username}:${authData.password ?? ''}`)}`
+    } else if (authType === 'api-key' && authData.apiKey) {
+      parsedHeaders[authData.apiKeyHeader ?? 'X-API-Key'] = authData.apiKey
+    }
+    return parsedHeaders
+  }
+
   // ─── Send request ────────────────────────────────────────────────────────────
   const handleSend = async () => {
     if (!url.trim()) return
+    setIsExampleResponse(false)
     try {
       const resolvedUrl     = interpolateVars(url)
       const resolvedHeaders = interpolateVars(headers)
       const resolvedBody    = interpolateVars(body)
+      const parsedHeaders   = buildRequestHeaders(resolvedHeaders)
 
-      let parsedHeaders: Record<string, string> = {}
-      if (resolvedHeaders.trim()) {
-        try { parsedHeaders = JSON.parse(resolvedHeaders) }
-        catch {
-          resolvedHeaders.split('\n').forEach((line) => {
-            const [key, ...vals] = line.split(':')
-            if (key && vals.length) parsedHeaders[key.trim()] = vals.join(':').trim()
-          })
-        }
-      }
-      // Apply auth headers client-side so credentials never touch the backend
-      if (authType === 'bearer' && authData.token) {
-        parsedHeaders['Authorization'] = `Bearer ${authData.token}`
-      } else if (authType === 'basic' && authData.username) {
-        parsedHeaders['Authorization'] = `Basic ${btoa(`${authData.username}:${authData.password ?? ''}`)}`
-      } else if (authType === 'api-key' && authData.apiKey) {
-        parsedHeaders[authData.apiKeyHeader ?? 'X-API-Key'] = authData.apiKey
-      }
       const result = await testEndpoint.mutateAsync({ method, url: resolvedUrl, headers: parsedHeaders, body: resolvedBody || undefined, bodyType })
-      setResponse(result)
+      setResponse({ ...result, timestamp: new Date().toISOString() })
     } catch (err: any) {
-      setResponse({ status: 0, statusText: 'Error', body: JSON.stringify({ error: err.message }, null, 2), headers: {}, size: 0, time: 0 })
+      setResponse({ status: 0, statusText: 'Error', body: JSON.stringify({ error: err.message }, null, 2), headers: {}, size: 0, time: 0, timestamp: new Date().toISOString() })
     }
+  }
+
+  // ─── Generate Code snapshot — current request, resolved like Send ───────────
+  const requestSnapshot: RequestSnapshot | undefined = response ? {
+    method,
+    url: interpolateVars(url),
+    headers: buildRequestHeaders(interpolateVars(headers)),
+    body: interpolateVars(body) || undefined,
+  } : undefined
+
+  // ─── Import from cURL (P5-8 A-3) ─────────────────────────────────────────────
+  const handleImportCurl = (parsed: ParsedCurl) => {
+    const importedMethod = (HTTP_METHODS as string[]).includes(parsed.method) ? (parsed.method as HttpMethod) : 'GET'
+    setMethod(importedMethod)
+    setUrl(parsed.url)
+    setQueryParams(parseUrlParams(parsed.url))
+    setHeaders(Object.entries(parsed.headers).map(([k, v]) => `${k}: ${v}`).join('\n'))
+    setBody(parsed.body)
+    if (parsed.body) {
+      try { JSON.parse(parsed.body); setBodyType('json') } catch { setBodyType('raw') }
+    }
+    setResponse(null)
+    setIsExampleResponse(false)
   }
 
   // ─── Select endpoint ─────────────────────────────────────────────────────────
@@ -331,7 +371,9 @@ export default function ApiClientPage() {
     setQueryParams((ep.queryParams ?? []).map((p) => ({ ...p, id: (p as any).id ?? crypto.randomUUID() })))
     setDraftRestored(false)
     setMobileTab('request')
-    setResponse(null)
+    // P5-8 A-2: show the saved example response until the user sends a live request
+    setResponse(ep.exampleResponse ?? null)
+    setIsExampleResponse(!!ep.exampleResponse)
     // Load auth
     setAuthType((ep.authType as AuthType) ?? 'none')
     if (vaultEnabled && vaultUnlocked) {
@@ -349,6 +391,7 @@ export default function ApiClientPage() {
     setMethod('GET'); setUrl(''); setHeaders(''); setBody(''); setBodyType('json')
     setQueryParams([]); setAuthType('none'); setAuthData({})
     setDraftRestored(false); setMobileTab('request'); setResponse(null)
+    setIsExampleResponse(false)
   }
 
   const handleDelete = async () => {
@@ -460,6 +503,7 @@ export default function ApiClientPage() {
                 onDelete={() => setConfirmDel(true)}
                 onEnvChange={setActiveEnvId}
                 onManageEnvs={() => setEnvModalOpen(true)}
+                onImportCurl={() => setImportCurlOpen(true)}
               />
             </div>
 
@@ -470,7 +514,12 @@ export default function ApiClientPage() {
 
             {/* Response section — fills remaining height */}
             <div className="acp-response-wrap">
-              <ResponseViewer response={response} isLoading={testEndpoint.isPending} />
+              <ResponseViewer
+                response={response}
+                isLoading={testEndpoint.isPending}
+                requestSnapshot={requestSnapshot}
+                isExample={isExampleResponse}
+              />
             </div>
           </div>
         </div>
@@ -589,6 +638,13 @@ export default function ApiClientPage() {
             </div>
         </div>
       </Modal>
+
+      {/* ── Import from cURL ── */}
+      <ImportCurlModal
+        isOpen={importCurlOpen}
+        onClose={() => setImportCurlOpen(false)}
+        onImport={handleImportCurl}
+      />
     </>
   )
 }

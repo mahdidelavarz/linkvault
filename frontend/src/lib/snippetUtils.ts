@@ -57,25 +57,36 @@ export function parseCurlCommand(curlCommand: string): {
       body: ''
     };
 
-    // Extract URL
-    const urlMatch = curlCommand.match(/curl\s+(?:-[^\s]+\s+)*['"]?([^'"]+)['"]?/);
-    if (urlMatch) result.url = urlMatch[1];
+    // Join line-continuations so multi-line cURL commands parse as one
+    const cmd = curlCommand.replace(/\\\r?\n/g, ' ');
+
+    // Extract URL — first quoted or bare http(s) token, regardless of flag order
+    const urlMatch = cmd.match(/curl\s+[\s\S]*?(?:['"](https?:\/\/[^'"]+)['"]|(https?:\/\/\S+))/);
+    if (urlMatch) result.url = (urlMatch[1] ?? urlMatch[2]).replace(/[,;]+$/, '');
+    if (!result.url) return null;
 
     // Extract method
-    const methodMatch = curlCommand.match(/-X\s+(\w+)/);
-    if (methodMatch) result.method = methodMatch[1];
+    const methodMatch = cmd.match(/(?:-X|--request)\s+['"]?(\w+)['"]?/);
+    if (methodMatch) result.method = methodMatch[1].toUpperCase();
 
-    // Extract headers
-    const headerRegex = /-H\s+['"]([^'"]+)['"]/g;
+    // Extract headers (-H / --header). Use indexOf so a colon inside the
+    // value (e.g. "Authorization: Bearer abc:def") isn't truncated.
+    const headerRegex = /(?:-H|--header)\s+['"]([^'"]+)['"]/g;
     let headerMatch;
-    while ((headerMatch = headerRegex.exec(curlCommand)) !== null) {
-      const [key, value] = headerMatch[1].split(':');
-      result.headers[key.trim()] = value.trim();
+    while ((headerMatch = headerRegex.exec(cmd)) !== null) {
+      const colonIdx = headerMatch[1].indexOf(':');
+      if (colonIdx === -1) continue;
+      const key = headerMatch[1].slice(0, colonIdx).trim();
+      const value = headerMatch[1].slice(colonIdx + 1).trim();
+      if (key) result.headers[key] = value;
     }
 
-    // Extract body
-    const bodyMatch = curlCommand.match(/-d\s+['"]([^'"]+)['"]/);
+    // Extract body (-d / --data / --data-raw / --data-binary)
+    const bodyMatch = cmd.match(/(?:-d|--data(?:-raw|-binary)?)\s+['"]([\s\S]*?)['"](?=\s+-|\s*$)/);
     if (bodyMatch) result.body = bodyMatch[1];
+
+    // cURL defaults to POST when a body is given without an explicit method
+    if (!methodMatch && result.body) result.method = 'POST';
 
     return result;
   } catch {

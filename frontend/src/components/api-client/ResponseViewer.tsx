@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { Icon } from '@iconify/react'
 import JsonTree from './JsonTree'
+import GenerateCodeModal from './GenerateCodeModal'
+import { type RequestSnapshot } from '@/lib/apiCodegen'
 
 interface ApiResponse {
   status:     number
@@ -16,6 +18,8 @@ interface ApiResponse {
 interface ResponseViewerProps {
   response: ApiResponse | null
   isLoading: boolean
+  requestSnapshot?: RequestSnapshot
+  isExample?: boolean
 }
 
 type Tab = 'body' | 'headers'
@@ -48,11 +52,12 @@ function tryParseJson(body: any): { ok: true; data: any } | { ok: false } {
   return { ok: false }
 }
 
-export default function ResponseViewer({ response, isLoading }: ResponseViewerProps) {
+export default function ResponseViewer({ response, isLoading, requestSnapshot, isExample }: ResponseViewerProps) {
   const [tab,      setTab]      = useState<Tab>('body')
   const [copied,   setCopied]   = useState(false)
   const [wordWrap, setWordWrap] = useState(true)
   const [viewMode, setViewMode] = useState<'tree' | 'raw'>('tree')
+  const [codeOpen, setCodeOpen] = useState(false)
 
   const handleCopyBody = async () => {
     if (!response) return
@@ -107,9 +112,21 @@ export default function ResponseViewer({ response, isLoading }: ResponseViewerPr
             {response.size > 0 && (
               <span className="rv-stat"><Icon icon="lucide:hard-drive" width={12} />{formatSize(response.size)}</span>
             )}
+            {isExample && (
+              <span className="rv-example-badge" title="Saved example response — send the request again for a live result">
+                <Icon icon="lucide:bookmark" width={11} />
+                Saved example
+              </span>
+            )}
           </div>
 
           <div className="rv-status-right">
+            {requestSnapshot && (
+              <button className="rv-tool-btn rv-tool-btn--wide" onClick={() => setCodeOpen(true)} title="Generate code for this request">
+                <Icon icon="lucide:code-2" width={13} />
+                Generate
+              </button>
+            )}
             {isJson && tab === 'body' && (
               <div className="rv-view-toggle">
                 <button
@@ -199,6 +216,10 @@ export default function ResponseViewer({ response, isLoading }: ResponseViewerPr
           </div>
         )}
       </div>
+
+      {requestSnapshot && (
+        <GenerateCodeModal isOpen={codeOpen} onClose={() => setCodeOpen(false)} request={requestSnapshot} />
+      )}
     </>
   )
 }
@@ -287,6 +308,14 @@ const CSS = `
 }
 .rv-tool-btn:hover      { background: var(--bg-overlay); color: var(--text-primary); }
 .rv-tool-btn--active    { background: var(--accent-muted); border-color: var(--accent-border); color: var(--cyan-300); }
+.rv-tool-btn--wide      { width: auto; gap: 5px; padding: 0 10px; font-size: var(--text-xs); font-family: var(--font-sans); font-weight: 500; }
+
+.rv-example-badge {
+  display:       flex; align-items: center; gap: 4px;
+  font-size:     var(--text-xs); color: var(--cyan-400);
+  background:    var(--accent-muted); border: 1px solid var(--accent-border);
+  border-radius: 99px; padding: 1px 8px;
+}
 
 .rv-copy-btn {
   display:       flex; align-items: center; gap: 5px;

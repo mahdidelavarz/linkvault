@@ -115,7 +115,7 @@ export class ApiService {
         if (filters?.isFavorite)
             qb.andWhere('endpoint.isFavorite = :isFavorite', { isFavorite: filters.isFavorite });
 
-        const endpoints = await qb.orderBy('endpoint.updatedAt', 'DESC').getMany();
+        const endpoints = await qb.orderBy('endpoint.updatedAt', 'DESC').take(200).getMany();
 
         const withTags = await this.loadTags(endpoints);
         // P0-3: decrypt authData for each endpoint before returning to client

@@ -23,6 +23,7 @@ export interface ApiEndpoint {
   createdAt: string;
   updatedAt: string;
   lastResponse?: ApiResponse;
+  exampleResponse?: ApiResponse;
   collection?: ApiCollection;
   category?: { id: number; name: string };
   tags?: Tag[];
@@ -93,6 +94,7 @@ export interface CreateEndpointDto {
   isFavorite?: boolean;
   categoryId?: number;
   tagIds?: number[];
+  exampleResponse?: ApiResponse;
 }
 
 export interface CreateCollectionDto {
