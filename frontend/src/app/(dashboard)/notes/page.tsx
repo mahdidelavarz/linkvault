@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { Suspense, useState, useRef, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useNotes, useNote } from "@/features/notes/hooks/useNote";
 import { useInfiniteScroll } from "@/features/shared/hooks/useInfiniteScroll";
@@ -27,6 +27,14 @@ import {
 } from "@/Icons/Icons";
 
 export default function NotesPage() {
+  return (
+    <Suspense fallback={null}>
+      <NotesPageContent />
+    </Suspense>
+  );
+}
+
+function NotesPageContent() {
   const searchParams  = useSearchParams();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [formOpen, setFormOpen] = useState(false);

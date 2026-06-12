@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { Suspense, useState, useMemo, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSnippets } from "@/features/snippets/hooks/useSnippet";
 import PageLayout from "@/features/shared/layout/PageLayout";
@@ -64,6 +64,14 @@ const ALL_LANGUAGES: Record<string, string> = {
 };
 
 export default function SnippetsPage() {
+  return (
+    <Suspense fallback={null}>
+      <SnippetsPageContent />
+    </Suspense>
+  );
+}
+
+function SnippetsPageContent() {
   const searchParams   = useSearchParams();
   const router         = useRouter();
   const [formOpen, setFormOpen]           = useState(false);
