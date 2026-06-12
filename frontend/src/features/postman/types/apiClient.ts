@@ -1,4 +1,4 @@
-import { Tag } from "./tag";
+import { Tag } from "@/features/tags/types/tag";
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS';
 

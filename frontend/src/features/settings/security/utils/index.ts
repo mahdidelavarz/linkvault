@@ -6,10 +6,10 @@ import {
     deriveMasterKey, encryptField, decryptField,
     exportVaultKeyRaw, importVaultKeyRaw,
     derivePinKey, encryptRawWithPinKey, decryptRawWithPinKey,
-} from './utils/crypto';
-import { storeVaultKey, loadVaultKey, clearVaultKey } from './store/storage';
-import { VaultSession } from './utils/session';
-import { post, get, del } from '../../../lib/http';
+} from './crypto';
+import { storeVaultKey, loadVaultKey, clearVaultKey } from '../store/storage';
+import { VaultSession } from './session';
+import { post, get, del } from '../../../../lib/http';
 
 // ─── API calls (server only ever sees ciphertext) ────────────────────────────
 
