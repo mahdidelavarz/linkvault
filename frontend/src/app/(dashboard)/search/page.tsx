@@ -1,10 +1,6 @@
 "use client";
 
-<<<<<<< HEAD
 import { useState, useEffect, useCallback, useMemo } from "react";
-=======
-import { Suspense, useState, useEffect, useCallback, useMemo } from "react";
->>>>>>> 0716009 (init)
 import { useGlobalSearch } from "@/features/search/hooks/useSearch";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useRecentSearches } from "@/features/search/hooks/useRecentSearches";
@@ -32,17 +28,6 @@ const LOAD_MORE_STEP = 20;
 const ZERO_SHOWN = { links: INITIAL_SHOWN, notes: INITIAL_SHOWN, snippets: INITIAL_SHOWN, prompts: INITIAL_SHOWN, infrastructures: INITIAL_SHOWN };
 
 export default function SearchPage() {
-<<<<<<< HEAD
-=======
-  return (
-    <Suspense fallback={null}>
-      <SearchPageContent />
-    </Suspense>
-  );
-}
-
-function SearchPageContent() {
->>>>>>> 0716009 (init)
   const router = useRouter();
   const searchParams = useSearchParams();
 

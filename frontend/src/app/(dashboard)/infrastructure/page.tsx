@@ -1,10 +1,6 @@
 "use client";
 
-<<<<<<< HEAD
 import { useState, useCallback, useEffect } from "react";
-=======
-import { Suspense, useState, useCallback, useEffect } from "react";
->>>>>>> 0716009 (init)
 import { useSearchParams, useRouter } from "next/navigation";
 import { useInfrastructures, useInfrastructure } from "@/features/infrastructure/hooks/useInfrastructure";
 import TagSelector from "@/features/tags/components/TagSelector";
@@ -36,17 +32,6 @@ import {
 import { LucideServer } from "../../../Icons/Icons";
 
 export default function InfrastructurePage() {
-<<<<<<< HEAD
-=======
-  return (
-    <Suspense fallback={null}>
-      <InfrastructurePageContent />
-    </Suspense>
-  );
-}
-
-function InfrastructurePageContent() {
->>>>>>> 0716009 (init)
   const searchParams   = useSearchParams();
   const router = useRouter();
   const [formOpen, setFormOpen] = useState(false);

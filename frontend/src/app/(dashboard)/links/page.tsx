@@ -1,10 +1,6 @@
 "use client";
 
-<<<<<<< HEAD
 import { useState, useCallback, useEffect } from "react";
-=======
-import { Suspense, useState, useCallback, useEffect } from "react";
->>>>>>> 0716009 (init)
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLinks, useDeleteLink, useUpdateLink } from "@/features/links/hooks/useLinks";
 import PageLayout from "@/features/shared/layout/PageLayout";
@@ -35,17 +31,6 @@ import TagSelector from "@/features/tags/components/TagSelector";
 import { useTags } from "@/features/tags/hooks/useTag";
 
 export default function LinksPage() {
-<<<<<<< HEAD
-=======
-  return (
-    <Suspense fallback={null}>
-      <LinksPageContent />
-    </Suspense>
-  );
-}
-
-function LinksPageContent() {
->>>>>>> 0716009 (init)
   const router = useRouter();
   const searchParams = useSearchParams();
   const [modalOpen, setModalOpen] = useState(false);

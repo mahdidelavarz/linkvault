@@ -1,11 +1,7 @@
 "use client";
 
 import Link from "next/link";
-<<<<<<< HEAD
 import { useState } from "react";
-=======
-import { Suspense, useState } from "react";
->>>>>>> 0716009 (init)
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -43,17 +39,6 @@ type FormData = z.infer<typeof schema>;
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ResetPasswordPage() {
-<<<<<<< HEAD
-=======
-  return (
-    <Suspense fallback={null}>
-      <ResetPasswordForm />
-    </Suspense>
-  );
-}
-
-function ResetPasswordForm() {
->>>>>>> 0716009 (init)
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const searchParams = useSearchParams();

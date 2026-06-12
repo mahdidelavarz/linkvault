@@ -5,6 +5,9 @@ export class InitialSchema1780479245602 implements MigrationInterface {
 
     public async up(queryRunner: QueryRunner): Promise<void> {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 0a76e87 (updated)
         await queryRunner.query(`DROP INDEX "public"."idx_notes_title_trgm"`);
         await queryRunner.query(`DROP INDEX "public"."idx_notes_content_trgm"`);
         await queryRunner.query(`DROP INDEX "public"."idx_links_title_trgm"`);
@@ -36,6 +39,7 @@ export class InitialSchema1780479245602 implements MigrationInterface {
         await queryRunner.query(`CREATE INDEX "idx_links_title_trgm" ON "links" ("title") `);
         await queryRunner.query(`CREATE INDEX "idx_notes_content_trgm" ON "notes" ("content") `);
         await queryRunner.query(`CREATE INDEX "idx_notes_title_trgm" ON "notes" ("title") `);
+<<<<<<< HEAD
 =======
         await queryRunner.query(`CREATE TABLE "user_vaults" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "user_id" integer NOT NULL, "encrypted_vault_key" text, "is_enabled" boolean NOT NULL DEFAULT false, "enabled_at" TIMESTAMP, "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_e16cf2e24234539ac21a8aa47c1" UNIQUE ("user_id"), CONSTRAINT "PK_d8cc1d4dc2c0a791f1f04cfa398" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "notes" ("id" SERIAL NOT NULL, "title" character varying(255) NOT NULL, "content" text, "is_pinned" boolean NOT NULL DEFAULT false, "category_id" integer, "user_id" integer NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_af6206538ea96c4e77e9f400c3d" PRIMARY KEY ("id"))`);
@@ -215,6 +219,8 @@ export class InitialSchema1780479245602 implements MigrationInterface {
         await queryRunner.query(`DROP TABLE "notes"`);
         await queryRunner.query(`DROP TABLE "user_vaults"`);
 >>>>>>> 0716009 (init)
+=======
+>>>>>>> 0a76e87 (updated)
     }
 
 }
