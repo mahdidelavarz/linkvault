@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { Suspense, useState, useCallback, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { usePrompts, usePrompt } from "@/features/prompts/hooks/usePrompt";
 import { usePromptCollections } from "@/features/prompts/hooks/usePromptCollections";
@@ -35,6 +35,14 @@ import { useTags } from "@/features/tags/hooks/useTag";
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PromptsPage() {
+  return (
+    <Suspense fallback={null}>
+      <PromptsPageContent />
+    </Suspense>
+  );
+}
+
+function PromptsPageContent() {
   const searchParams   = useSearchParams();
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);

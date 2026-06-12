@@ -1,0 +1,22 @@
+# Keep the build context small and prevent host-platform artifacts
+# (node_modules, .next, dist) from being copied over the in-container
+# install/build output.
+
+**/node_modules
+**/.next
+**/dist
+**/.git
+**/.turbo
+**/coverage
+**/tsconfig.tsbuildinfo
+**/*.log
+
+# Env files (never needed inside the build context)
+**/.env
+**/.env.*
+!**/.env.example
+
+# Docs / misc
+dev_docs/
+docs/
+*.md
