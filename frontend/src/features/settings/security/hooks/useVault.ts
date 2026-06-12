@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { VaultService } from '@/features/settings/security';
+import { VaultService } from '@/features/settings/security/utils';
 import { VaultSession } from '@/features/settings/security/utils/session';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { get } from '@/lib/http';

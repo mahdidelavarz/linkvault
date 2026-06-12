@@ -13,8 +13,18 @@ declare const self: ServiceWorkerGlobalScope & {
   __SW_MANIFEST: (PrecacheEntry | string)[];
 };
 
+// Background Sync API isn't in the default TS DOM lib.
+interface SyncEvent extends ExtendableEvent {
+  readonly tag: string;
+}
+
 const serwist = new Serwist({
-  precacheEntries: self.__SW_MANIFEST,
+  // In dev, Next.js doesn't generate a precache manifest (__SW_MANIFEST is
+  // undefined), so the /offline fallback below would never be precached and
+  // a fully-offline document request (no cache entry yet) would surface as
+  // an uncaught "no-response" error instead of the fallback page.
+  // Precaching it explicitly here makes the fallback work in both dev and prod.
+  precacheEntries: [...(self.__SW_MANIFEST ?? []), "/offline"],
   skipWaiting: true,
   clientsClaim: true,
 
@@ -58,3 +68,18 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// PW-3: when the page registers a 'replay-mutations' background sync (on reconnect),
+// wake up any open clients so they can replay the offline mutation queue. The actual
+// replay runs on the page (it needs the live React Query client + auth token) — see
+// features/shared/hooks/useOfflineSync.ts.
+self.addEventListener("sync", (event) => {
+  const syncEvent = event as SyncEvent;
+  if (syncEvent.tag === "replay-mutations") {
+    syncEvent.waitUntil(
+      self.clients.matchAll().then((clients) => {
+        clients.forEach((client) => client.postMessage({ type: "REPLAY_MUTATIONS" }));
+      }),
+    );
+  }
+});

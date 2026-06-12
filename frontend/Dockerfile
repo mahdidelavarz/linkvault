@@ -5,8 +5,8 @@ WORKDIR /app
 # Copy package files
 COPY frontend/package*.json ./
 
-# Install dependencies
-RUN npm ci
+RUN npm config set registry https://mirror2.chabokan.net/npm/ && npm install
+
 
 # Copy all frontend source
 COPY frontend/ ./

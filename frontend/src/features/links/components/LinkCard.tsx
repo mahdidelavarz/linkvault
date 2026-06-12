@@ -1,154 +1,32 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { type Link as LinkType } from "@/features/links/types/link";
-import { useToggleFavorite, useDeleteLink } from "@/features/links/hooks/useLinks";
-import { useVault } from "@/features/settings/security/hooks/useVault";
+import { useToggleFavorite } from "@/features/links/hooks/useLinks";
+import { CredentialsSection } from "@/features/links/components/LinkCredentials";
 import FavoriteButton from "@/features/shared/components/FavoriteButton";
-import ActionButtons from "@/features/shared/components/ActionButtons";
 import TagSection from "@/features/shared/components/TagSection";
-import ConfirmDeleteModal from "@/features/shared/components/ConfirmDeleteModal";
 import ProjectBadge from "@/features/projects/components/ProjectBadge";
-import MultiProjectEditWarning from "@/features/projects/components/MultiProjectEditWarning";
-import { useProjectAwareEdit } from "@/features/shared/hooks/useProjectAwareEdit";
 import {
   LucideCheck,
   LucideCopy,
   LucideExternalLink,
-  LucideEye,
-  LucideEyeOff,
-  LucideLock,
-  LucideMail,
-  LucidePhone,
-  LucideUser,
 } from "@/Icons/Icons";
-
-// ─── Vault-aware password row ────────────────────────────────────────────────
-
-function VaultPasswordRow({ link }: { link: LinkType }) {
-  const { isEnabled, isUnlocked, decrypt, requestUnlock, isLoading: vaultLoading } = useVault();
-
-  const [vaultValue, setVaultValue] = useState<string | null>(null);
-  const [show, setShow] = useState(false);
-
-  const isVaultProtected =
-    isEnabled && (!link.passwordEncrypted || link.passwordEncrypted === 'vault:encrypted');
-
-  useEffect(() => {
-    if (!isVaultProtected || !isUnlocked) { setVaultValue(null); return; }
-    decrypt('link', String(link.id), 'password').then(v => setVaultValue(v));
-  }, [isUnlocked, isVaultProtected, link.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Sentinel left after vault was disabled — data is gone
-  if (link.passwordEncrypted === 'vault:encrypted') return null;
-
-  // Pre-vault plaintext password (backward compat)
-  if (!isVaultProtected && link.passwordEncrypted) {
-    return (
-      <div className="lcard-cred-row">
-        <LucideLock width={12} />
-        <span className="lcard-password">{show ? link.passwordEncrypted : '••••••••'}</span>
-        <button className="lcard-eye" onClick={(e) => { e.stopPropagation(); setShow(p => !p); }}>
-          {show ? <LucideEyeOff width={11} /> : <LucideEye width={11} />}
-        </button>
-      </div>
-    );
-  }
-
-  // Vault not set up
-  if (!isEnabled) {
-    return (
-      <div className="lcard-cred-row lcard-cred-row--vault">
-        <LucideLock width={12} />
-        <span className="lcard-password">••••••••</span>
-        <Link href="/settings/vault" className="lcard-vault-hint" onClick={e => e.stopPropagation()}>
-          Enable vault
-        </Link>
-      </div>
-    );
-  }
-
-  // Vault enabled but locked
-  if (!isUnlocked) {
-    return (
-      <div className="lcard-cred-row lcard-cred-row--vault">
-        <LucideLock width={12} />
-        <span className="lcard-password">••••••••</span>
-        <button className="lcard-eye lcard-eye--lock" onClick={(e) => { e.stopPropagation(); requestUnlock(); }} disabled={vaultLoading}>
-          🔒
-        </button>
-      </div>
-    );
-  }
-
-  // Vault unlocked
-  const displayValue = vaultValue ?? '(not set)';
-  return (
-    <div className="lcard-cred-row">
-      <LucideLock width={12} />
-      <span className="lcard-password">{show ? displayValue : '••••••••'}</span>
-      <button className="lcard-eye" onClick={(e) => { e.stopPropagation(); setShow(p => !p); }}>
-        {show ? <LucideEyeOff width={11} /> : <LucideEye width={11} />}
-      </button>
-    </div>
-  );
-}
-
-// ─── Credentials section ─────────────────────────────────────────────────────
-// When vault is enabled + locked: ALL credential rows are masked and not in the DOM.
-// When vault is disabled or unlocked: render normally.
-
-function CredentialsSection({ link, isSelectMode }: { link: LinkType; isSelectMode: boolean }) {
-  const { isEnabled, isUnlocked, requestUnlock } = useVault();
-  const vaultLocked = isEnabled && !isUnlocked;
-
-  if (vaultLocked) {
-    return (
-      <div className="lcard-creds">
-        <div className="lcard-cred-row lcard-cred-row--vault">
-          <LucideLock width={12} />
-          <span className="lcard-password lcard-cred-masked">Credentials hidden</span>
-          <button
-            className="lcard-eye lcard-eye--lock"
-            onClick={e => { e.stopPropagation(); requestUnlock(); }}
-            title="Unlock vault to view"
-          >
-            🔒
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="lcard-creds">
-      {link.username && <div className="lcard-cred-row"><LucideUser width={12} /><span>{link.username}</span></div>}
-      {link.email    && <div className="lcard-cred-row"><LucideMail width={12} /><span>{link.email}</span></div>}
-      {link.phone    && <div className="lcard-cred-row"><LucidePhone width={12} /><span>{link.phone}</span></div>}
-      {link.passwordEncrypted && (
-        !isSelectMode ? <VaultPasswordRow link={link} /> : (
-          <div className="lcard-cred-row"><LucideLock width={12} /><span className="lcard-password">••••••••</span></div>
-        )
-      )}
-    </div>
-  );
-}
 
 interface LinkCardProps {
   link: LinkType;
-  onEdit: (link: LinkType) => void;
   isSelectMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (id: number) => void;
 }
 
 export default function LinkCard({
-  link, onEdit,
+  link,
   isSelectMode = false, isSelected = false, onToggleSelect,
 }: LinkCardProps) {
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const [copied, setCopied] = useState(false);
+  const router = useRouter();
 
   const handleCopyUrl = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -159,10 +37,6 @@ export default function LinkCard({
   };
 
   const toggleFavorite = useToggleFavorite();
-  const deleteLink = useDeleteLink();
-
-  const { handleEdit, confirmEdit, cancelEdit, isWarnOpen, projectNames } =
-    useProjectAwareEdit({ itemType: 'link', itemId: link.id, onEdit });
 
   const hostname = (() => {
     try { return new URL(link.url).hostname.replace("www.", ""); }
@@ -172,7 +46,8 @@ export default function LinkCard({
   const faviconUrl = `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`;
   const hasCredentials = link.username || link.email || link.phone || link.passwordEncrypted;
 
-  const handleCardClick = () => { if (isSelectMode) onToggleSelect?.(link.id); };
+  const goToDetail = () => router.push(`/links/${link.id}`);
+  const handleCardClick = () => { isSelectMode ? onToggleSelect?.(link.id) : goToDetail(); };
 
   return (
     <>
@@ -181,10 +56,10 @@ export default function LinkCard({
       <div
         className={["lcard", isSelectMode ? "lcard--selectable" : "", isSelected ? "lcard--selected" : ""].filter(Boolean).join(" ")}
         onClick={handleCardClick}
-        role={isSelectMode ? "checkbox" : undefined}
+        role={isSelectMode ? "checkbox" : "button"}
         aria-checked={isSelectMode ? isSelected : undefined}
-        tabIndex={isSelectMode ? 0 : undefined}
-        onKeyDown={isSelectMode ? (e) => { if (e.key === " " || e.key === "Enter") handleCardClick(); } : undefined}
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); handleCardClick(); } }}
       >
         {/* Selection checkbox */}
         {isSelectMode && (
@@ -202,12 +77,16 @@ export default function LinkCard({
           <div className="lcard-info">
             <button className="lcard-title"
               onClick={(e) => {
-                if (isSelectMode) { e.stopPropagation(); onToggleSelect?.(link.id); return; }
+                e.stopPropagation();
+                if (isSelectMode) { onToggleSelect?.(link.id); return; }
                 window.open(link.url, "_blank", "noopener,noreferrer");
               }}
             >{link.title}</button>
             <a href={link.url} target="_blank" rel="noopener noreferrer" className="lcard-url" title={link.url}
-              onClick={(e) => { if (isSelectMode) e.preventDefault(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isSelectMode) { e.preventDefault(); onToggleSelect?.(link.id); }
+              }}
             >{hostname}</a>
           </div>
           {!isSelectMode && (
@@ -233,46 +112,23 @@ export default function LinkCard({
         {/* Footer */}
         {!isSelectMode && (
           <div className="lcard-footer">
-            <span className="lcard-date">
-              {new Date(link.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-            </span>
             <ProjectBadge itemType="link" itemId={link.id} />
-            <ActionButtons
-              onEdit={() => handleEdit(link)}
-              onDelete={() => setConfirmDelete(true)}
-              extra={
-                <>
-                  <button className={["ab-btn", copied ? "ab-btn--copied" : ""].filter(Boolean).join(" ")}
-                    onClick={handleCopyUrl} aria-label="Copy URL" type="button" title={copied ? "Copied!" : "Copy URL"}
-                  >
-                    {copied ? <LucideCheck width={14} /> : <LucideCopy width={14} />}
-                  </button>
-                  <button className="ab-btn"
-                    onClick={(e) => { e.stopPropagation(); window.open(link.url, "_blank", "noopener,noreferrer"); }}
-                    aria-label="Open link" type="button"
-                  >
-                    <LucideExternalLink width={14} />
-                  </button>
-                </>
-              }
-            />
+            <div className="lcard-quick-actions">
+              <button className={["lcard-icon-btn", copied ? "lcard-icon-btn--copied" : ""].filter(Boolean).join(" ")}
+                onClick={handleCopyUrl} aria-label="Copy URL" type="button" title={copied ? "Copied!" : "Copy URL"}
+              >
+                {copied ? <LucideCheck width={14} /> : <LucideCopy width={14} />}
+              </button>
+              <button className="lcard-icon-btn"
+                onClick={(e) => { e.stopPropagation(); window.open(link.url, "_blank", "noopener,noreferrer"); }}
+                aria-label="Open link" type="button" title="Open link"
+              >
+                <LucideExternalLink width={14} />
+              </button>
+            </div>
           </div>
         )}
       </div>
-
-      <ConfirmDeleteModal
-        isOpen={confirmDelete}
-        onClose={() => setConfirmDelete(false)}
-        itemName={link.title}
-        isLoading={deleteLink.isPending}
-        onConfirm={() => deleteLink.mutate(link.id, { onSuccess: () => setConfirmDelete(false) })}
-      />
-      <MultiProjectEditWarning
-        isOpen={isWarnOpen}
-        projectNames={projectNames}
-        onConfirm={confirmEdit}
-        onCancel={cancelEdit}
-      />
     </>
   );
 }
@@ -282,14 +138,14 @@ const CSS = `
   display: flex; flex-direction: column; gap: 12px;
   padding: 14px 16px;
   background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-lg);
+  cursor: pointer; user-select: none;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
   width: 100%; min-width: 0; overflow: hidden; box-sizing: border-box; position: relative;
 }
 .lcard:hover { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
+.lcard:active { opacity: 0.85; }
 @media (max-width: 479px) { .lcard { padding: 12px; gap: 10px; } }
 
-.lcard--selectable { cursor: pointer; user-select: none; }
-.lcard--selectable:active { opacity: 0.85; }
 .lcard--selected { border-color: var(--accent-border); background: var(--accent-muted); box-shadow: 0 0 0 1px var(--accent-border); }
 
 .lcard-checkbox {
@@ -331,42 +187,19 @@ const CSS = `
   overflow: hidden; word-break: break-word;
 }
 
-.lcard-creds {
-  display: flex; flex-direction: column; gap: 5px; padding: 10px 12px;
-  background: var(--bg-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
-  overflow: hidden; min-width: 0;
-}
-@media (max-width: 479px) { .lcard-creds { padding: 8px 10px; } }
-.lcard-cred-row { display: flex; align-items: center; gap: 7px; font-size: var(--text-xs); color: var(--text-secondary); min-width: 0; }
-.lcard-cred-row svg  { color: var(--text-tertiary); flex-shrink: 0; }
-.lcard-cred-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
-.lcard-password { font-family: var(--font-mono); letter-spacing: 0.05em; }
-.lcard-eye {
-  display: flex; align-items: center; background: transparent; border: none;
-  color: var(--text-tertiary); cursor: pointer; padding: 2px; flex-shrink: 0;
-  transition: color var(--transition-fast);
-}
-.lcard-eye:hover { color: var(--text-primary); }
-.lcard-eye--lock { font-size: 11px; }
-.lcard-eye:disabled { opacity: 0.5; cursor: default; }
-
-.lcard-cred-row--vault .lcard-password { color: var(--text-muted); }
-.lcard-cred-masked { font-style: italic; font-size: 11px; }
-.lcard-vault-hint {
-  font-size: 10px; font-weight: 600;
-  color: var(--accent); text-decoration: none; flex-shrink: 0;
-  padding: 1px 6px; border: 1px solid rgba(6,182,212,0.3); border-radius: 4px;
-  white-space: nowrap;
-}
-.lcard-vault-hint:hover { opacity: 0.8; }
-
 .lcard-footer {
   display: flex; align-items: center; justify-content: space-between;
   gap: 8px; padding-top: 10px; border-top: 1px solid var(--border-subtle); margin-top: auto; min-width: 0;
 }
-.lcard-date {
-  font-size: var(--text-xs); color: var(--text-tertiary);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex-shrink: 1;
+.lcard-quick-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.lcard-icon-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm);
+  color: var(--text-tertiary); cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
-.ab-btn--copied { color: var(--success) !important; }
+@media (hover: none) { .lcard-icon-btn { width: 40px; height: 40px; } }
+.lcard-icon-btn:hover { background: var(--bg-overlay); border-color: var(--border-default); color: var(--text-primary); }
+.lcard-icon-btn--copied { color: var(--success) !important; }
 `;

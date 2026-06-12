@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useVault } from '@/features/settings/security/hooks/useVault';
-import { VaultService } from '@/features/settings/security';
+import { VaultService } from '@/features/settings/security/utils';
 import { get, put } from '@/lib/http';
 
 interface PlaintextItem {

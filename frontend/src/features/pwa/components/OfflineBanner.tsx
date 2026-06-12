@@ -13,7 +13,7 @@ export default function OfflineBanner() {
       <style>{CSS}</style>
       <div className="offline-banner" role="alert" aria-live="assertive">
         <LucideWifiOff width={13} />
-        <span>You're offline — read-only mode, changes cannot be saved</span>
+        <span>You're offline — changes will be saved locally and synced when you're back online</span>
       </div>
     </>
   );

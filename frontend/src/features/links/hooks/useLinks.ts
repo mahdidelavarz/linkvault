@@ -1,5 +1,7 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, type InfiniteData, type QueryClient } from '@tanstack/react-query';
 import api from '@/lib/http';
+import { useOfflineMutation } from '@/features/shared/hooks/useOfflineMutation';
+import { useVault } from '@/features/settings/security/hooks/useVault';
 import { Link, CreateLinkDto, UpdateLinkDto } from '@/features/links/types/link';
 
 export type Page<T> = { items: T[]; total: number; page: number; limit: number; hasMore: boolean };
@@ -41,67 +43,127 @@ export const useLink = (id: number) => {
             const { data } = await api.get(`/links/${id}`);
             return data.link as Link;
         },
-        enabled: !!id,
+        // Offline-created links (negative tempId) only exist in the cache until they sync —
+        // never fetch for them, the consumer should read straight from the cache.
+        enabled: !!id && id > 0,
     });
 };
 
+// ─── Offline cache helpers ─────────────────────────────────────────────────────
+
+function patchLinksLists(
+    qc: QueryClient,
+    updater: (items: Link[]) => Link[],
+) {
+    qc.setQueriesData<InfiniteData<Page<Link>>>({ queryKey: ['links'], exact: false }, (old) => {
+        if (!old) return old;
+        return {
+            ...old,
+            pages: old.pages.map((page) => ({ ...page, items: updater(page.items) })),
+        };
+    });
+}
+
 // Create link
 export const useCreateLink = () => {
-    const queryClient = useQueryClient();
+    const { isEnabled } = useVault();
 
-    return useMutation({
-        mutationFn: async (linkData: CreateLinkDto) => {
-            const { data } = await api.post('/links', linkData);
-            return data.link as Link;
+    return useOfflineMutation<CreateLinkDto, Link>({
+        module: 'links',
+        method: 'post',
+        url: () => '/links',
+        payload: (vars) => vars,
+        parseResponse: (data) => (data as { link: Link }).link,
+        vaultSensitive: (vars) => !!vars.password && isEnabled,
+        detailKey: 'link',
+        optimisticUpdate: (qc, vars, tempId) => {
+            const now = new Date().toISOString();
+            const optimisticLink: Link = {
+                id: tempId!,
+                url: vars.url,
+                title: vars.title,
+                description: vars.description,
+                username: vars.username,
+                email: vars.email,
+                phone: vars.phone,
+                isFavorite: vars.isFavorite ?? false,
+                categoryId: vars.categoryId,
+                userId: 0,
+                createdAt: now,
+                updatedAt: now,
+            };
+            patchLinksLists(qc, (items) => [optimisticLink, ...items]);
+            qc.setQueryData(['link', tempId], optimisticLink);
+            return optimisticLink;
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['links'] });
-        },
+        invalidates: () => [['links']],
     });
 };
 
 // Update link
 export const useUpdateLink = () => {
-    const queryClient = useQueryClient();
+    const { isEnabled } = useVault();
 
-    return useMutation({
-        mutationFn: async ({ id, ...linkData }: UpdateLinkDto & { id: number }) => {
-            const { data } = await api.put(`/links/${id}`, linkData);
-            return data.link as Link;
+    return useOfflineMutation<UpdateLinkDto & { id: number }, Link>({
+        module: 'links',
+        method: 'put',
+        url: (vars) => `/links/${vars.id}`,
+        payload: (vars) => {
+            const { id, ...rest } = vars;
+            return rest;
         },
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: ['links'] });
-            queryClient.invalidateQueries({ queryKey: ['link', variables.id] });
+        parseResponse: (data) => (data as { link: Link }).link,
+        vaultSensitive: (vars) => !!vars.password && isEnabled,
+        optimisticUpdate: (qc, vars) => {
+            const { id, ...patch } = vars;
+            const now = new Date().toISOString();
+            let updated: Link | undefined;
+            const apply = (item: Link): Link => {
+                if (item.id !== id) return item;
+                updated = { ...item, ...patch, updatedAt: now };
+                return updated;
+            };
+            patchLinksLists(qc, (items) => items.map(apply));
+            qc.setQueryData<Link>(['link', id], (old) => (old ? apply(old) : old));
+            return updated ?? ({ id, ...patch, updatedAt: now } as Link);
         },
+        invalidates: (vars) => [['links'], ['link', vars.id]],
     });
 };
 
 // Delete link
 export const useDeleteLink = () => {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: async (id: number) => {
-            await api.delete(`/links/${id}`);
+    return useOfflineMutation<number, void>({
+        module: 'links',
+        method: 'delete',
+        url: (id) => `/links/${id}`,
+        optimisticUpdate: (qc, id) => {
+            patchLinksLists(qc, (items) => items.filter((item) => item.id !== id));
+            qc.removeQueries({ queryKey: ['link', id] });
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['links'] });
-        },
+        invalidates: () => [['links']],
     });
 };
 
 // Toggle favorite
 export const useToggleFavorite = () => {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: async (id: number) => {
-            const { data } = await api.patch(`/links/${id}/favorite`);
-            return data.link as Link;
+    return useOfflineMutation<number, Link>({
+        module: 'links',
+        method: 'patch',
+        url: (id) => `/links/${id}/favorite`,
+        parseResponse: (data) => (data as { link: Link }).link,
+        optimisticUpdate: (qc, id) => {
+            let updated: Link | undefined;
+            const apply = (item: Link): Link => {
+                if (item.id !== id) return item;
+                updated = { ...item, isFavorite: !item.isFavorite };
+                return updated;
+            };
+            patchLinksLists(qc, (items) => items.map(apply));
+            qc.setQueryData<Link>(['link', id], (old) => (old ? apply(old) : old));
+            return updated as Link;
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['links'] });
-        },
+        invalidates: (id) => [['links'], ['link', id]],
     });
 };
 

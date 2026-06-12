@@ -98,7 +98,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
       dehydrateOptions: {
         shouldDehydrateQuery: (query) => {
           const key = String(query.queryKey[0] ?? "");
-          return !key.startsWith("vault");
+          if (key.startsWith("vault")) return false;
+          // Only persist settled queries — persisting a query mid-fetch ("pending")
+          // serializes its in-flight promise to "{}" (JSON.stringify strips Promises),
+          // which breaks on restore: "promise.then is not a function" / "A query that
+          // was dehydrated as pending ended up rejecting" (CancelledError).
+          return query.state.status === "success";
         },
       },
     });

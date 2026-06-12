@@ -3,6 +3,7 @@
 
 import InstallBanner from "@/features/pwa/components/InstallBanner";
 import OfflineBanner from "@/features/pwa/components/OfflineBanner";
+import SyncStatusBadge from "@/features/pwa/components/SyncStatusBadge";
 import { VaultMigrationModal } from "@/features/settings/security/components/VaultMigrationModal";
 import { useVaultMigration } from "@/features/settings/security/hooks/useVaultMigration";
 import Header from "@/features/shared/layout/Header";
@@ -24,6 +25,7 @@ export default function DashboardLayout({
 
       {/* Offline banner sits between header and body as a flex row — flex-shrink:0 keeps it visible */}
       <OfflineBanner />
+      <SyncStatusBadge />
 
       <div className="dashboard-layout-body">
         {/* Sidebar is a flex child with no overflow — it never grows taller than the body */}

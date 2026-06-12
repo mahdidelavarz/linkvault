@@ -17,7 +17,6 @@ import LinkCard from "@/features/links/components/LinkCard";
 import NoteCard from "@/features/notes/components/NoteCard";
 import PromptCard from "@/features/prompts/components/PromptCard";
 import InfraCard from "@/features/infrastructure/components/InfraCard";
-import LinkForm from "@/features/links/components/LinkForm";
 import NoteForm from "@/features/notes/components/NoteForm";
 
 import {
@@ -112,7 +111,7 @@ export default function ProjectDashboardPage() {
         if (!pi.item) return <div className="pd-missing">Item no longer exists</div>;
 
         switch (pi.itemType) {
-            case 'link':        return <LinkCard link={pi.item} onEdit={openEdit} />;
+            case 'link':        return <LinkCard link={pi.item} />;
             case 'note':        return <NoteCard note={pi.item} isActive={false} onSelect={() => {}} onEditDetails={() => openEdit(pi.item)} />;
             case 'snippet':     return <SnippetCard snippet={pi.item} onDuplicate={() => {}} />;
             case 'prompt':      return <PromptCard prompt={pi.item} />;
@@ -242,11 +241,6 @@ export default function ProjectDashboardPage() {
             />
 
             {/* Per-item edit modals */}
-            {editingItem?.type === 'link' && (
-                <Modal isOpen onClose={() => setEditingItem(null)} title="Edit link">
-                    <LinkForm link={editingItem.item} onClose={() => setEditingItem(null)} />
-                </Modal>
-            )}
             {editingItem?.type === 'note' && (
                 <Modal isOpen onClose={() => setEditingItem(null)} title="Edit note">
                     <NoteForm note={editingItem.item} onClose={() => setEditingItem(null)} />

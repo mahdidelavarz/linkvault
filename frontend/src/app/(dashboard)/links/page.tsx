@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useLinks, useDeleteLink, useUpdateLink } from "@/features/links/hooks/useLinks";
 import PageLayout from "@/features/shared/layout/PageLayout";
 import { useInfiniteScroll } from "@/features/shared/hooks/useInfiniteScroll";
 import { useCategories } from "@/features/categories/hooks/useCategories";
 import { useBulkSelection } from "@/features/links/hooks/useBulkSelection";
-import { type Link } from "@/features/links/types/link";
 import LinkCard from "@/features/links/components/LinkCard";
 import LinkForm from "@/features/links/components/LinkForm";
 import PageHeader from "@/features/shared/ui/PageHeader";
@@ -31,8 +31,9 @@ import TagSelector from "@/features/tags/components/TagSelector";
 import { useTags } from "@/features/tags/hooks/useTag";
 
 export default function LinksPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingLink, setEditingLink] = useState<Link | null>(null);
   const [search, setSearch] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [showFavorites, setShowFavorites] = useState(false);
@@ -63,6 +64,11 @@ export default function LinksPage() {
   const onReach = useCallback(() => { if (hasNextPage) fetchNextPage(); }, [hasNextPage, fetchNextPage]);
   const sentinelRef = useInfiniteScroll(onReach, !!hasNextPage && !isLoading);
 
+  const openParam = searchParams.get("open");
+  useEffect(() => {
+    if (openParam) router.replace(`/links/${openParam}`);
+  }, [openParam, router]);
+
   const SORT_OPTIONS = [
     { value: 'updatedAt|DESC', label: 'Recently updated' },
     { value: 'updatedAt|ASC',  label: 'Oldest updated' },
@@ -81,9 +87,8 @@ export default function LinksPage() {
   const hasFilters = !!(search || categoryId || showFavorites || selectedTagIds.length || !isDefaultSort);
   const activeFilterCount = [categoryId, showFavorites, selectedTagIds.length, !isDefaultSort].filter(Boolean).length;
 
-  const openCreate = () => { bulk.exit(); setEditingLink(null); setModalOpen(true); };
-  const openEdit   = (link: Link) => { setEditingLink(link); setModalOpen(true); };
-  const closeModal = () => { setModalOpen(false); setEditingLink(null); };
+  const openCreate = () => { bulk.exit(); setModalOpen(true); };
+  const closeModal = () => { setModalOpen(false); };
   const clearFilters = () => { setSearch(""); setCategoryId(""); setShowFavorites(false); setSelectedTagIds([]); setSortBy('updatedAt'); setSortDir('DESC'); };
 
   const sortLabel = SORT_OPTIONS.find((o) => o.value === sortValue)?.label ?? "";
@@ -219,7 +224,7 @@ export default function LinksPage() {
             <CardGrid>
               {links.map((link) => (
                 <LinkCard
-                  key={link.id} link={link} onEdit={openEdit}
+                  key={link.id} link={link}
                   isSelectMode={bulk.isSelectMode}
                   isSelected={bulk.selectedIds.has(link.id)}
                   onToggleSelect={bulk.toggle}
@@ -252,8 +257,8 @@ export default function LinksPage() {
         onFavorite={handleBulkFavorite}
       />
 
-      <Modal isOpen={modalOpen} onClose={closeModal} title={editingLink ? "Edit Link" : "Add Link"} size="lg">
-        <LinkForm link={editingLink} onClose={closeModal} />
+      <Modal isOpen={modalOpen} onClose={closeModal} title="Add Link" size="lg">
+        <LinkForm link={null} onClose={closeModal} />
       </Modal>
     </>
   );

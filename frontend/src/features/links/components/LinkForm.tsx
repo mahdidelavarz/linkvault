@@ -266,7 +266,9 @@ export default function LinkForm({ link, initialUrl, onClose }: LinkFormProps) {
 
         {/* Credentials */}
         <FormSection icon={LucideLock} title="Credentials" hint="optional">
-          <VaultGuard>
+          {/* Only gate behind vault-unlock when there's an existing encrypted secret to
+              protect — a brand-new link has nothing to unlock for yet. */}
+          <VaultGuard enabled={isEditing && !!link?.passwordEncrypted}>
             <div className="lf-grid-2">
               <Input label="Username" type="text" placeholder="username" leftIcon={LucideUser} optional error={errors.username?.message} {...register("username")} />
               <div>
