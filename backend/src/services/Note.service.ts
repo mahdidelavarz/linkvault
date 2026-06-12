@@ -1,0 +1,183 @@
+import { AppDataSource } from '../config/database';
+import { Note } from '../entities/Note';
+import { Taggable } from '../entities/Taggable';
+import { loadTagsForItems } from '../utils/tagLoader';
+
+export class NoteService {
+    private noteRepository = AppDataSource.getRepository(Note);
+    private taggableRepository = AppDataSource.getRepository(Taggable);
+
+    async findAll(
+        userId: number,
+        filters?: { search?: string; categoryId?: number; isPinned?: boolean; tagIds?: number[] },
+        pagination = { page: 1, limit: 20 }
+    ) {
+        const { page, limit } = pagination;
+        const skip = (page - 1) * limit;
+
+        const queryBuilder = this.noteRepository.createQueryBuilder('note')
+            .leftJoinAndSelect('note.category', 'category')
+            .where('note.userId = :userId', { userId });
+
+        if (filters?.search) {
+            queryBuilder.andWhere(
+                '(note.title LIKE :search OR note.content LIKE :search)',
+                { search: `%${filters.search}%` }
+            );
+        }
+        if (filters?.categoryId) {
+            queryBuilder.andWhere('note.categoryId = :categoryId', { categoryId: filters.categoryId });
+        }
+        if (filters?.isPinned !== undefined) {
+            queryBuilder.andWhere('note.isPinned = :isPinned', { isPinned: filters.isPinned });
+        }
+        if (filters?.tagIds && filters.tagIds.length > 0) {
+            const noteIds = await this.getItemIdsByTags('note', filters.tagIds);
+            if (noteIds.length === 0) return { items: [], total: 0, page, limit, hasMore: false };
+            queryBuilder.andWhere('note.id IN (:...noteIds)', { noteIds });
+        }
+
+        const [raw, total] = await queryBuilder
+            .orderBy('note.isPinned', 'DESC')
+            .addOrderBy('note.updatedAt', 'DESC')
+            .skip(skip)
+            .take(limit)
+            .getManyAndCount();
+
+        const items = await this.loadTagsForNotes(raw);
+        return { items, total, page, limit, hasMore: skip + raw.length < total };
+    }
+
+    async findOne(id: number, userId: number) {
+        const note = await this.noteRepository.findOne({
+            where: { id, userId },
+            relations: ['category']
+        });
+
+        if (!note) return null;
+
+        const notesWithTags = await this.loadTagsForNotes([note]);
+        return notesWithTags[0] || null;
+    }
+
+    async create(userId: number, data: {
+        title: string;
+        content?: string;
+        isPinned?: boolean;
+        categoryId?: number;
+        tagIds?: number[];
+    }) {
+        const note = new Note();
+        note.title = data.title;
+        note.content = data.content || '';
+        note.isPinned = data.isPinned || false;
+        note.userId = userId;
+
+        if (data.categoryId) {
+            note.categoryId = data.categoryId;
+        }
+
+        const savedNote = await this.noteRepository.save(note);
+
+        // Handle tags
+        if (data.tagIds && data.tagIds.length > 0) {
+            await this.syncTags(savedNote.id, data.tagIds);
+        }
+
+        return await this.findOne(savedNote.id, userId);
+    }
+
+    async update(id: number, userId: number, data: {
+        title?: string;
+        content?: string;
+        isPinned?: boolean;
+        categoryId?: number;
+        tagIds?: number[];
+    }) {
+        const note = await this.noteRepository.findOne({ where: { id, userId } });
+
+        if (!note) {
+            throw new Error('Note not found');
+        }
+
+        if (data.title !== undefined) note.title = data.title;
+        if (data.content !== undefined) note.content = data.content;
+        if (data.isPinned !== undefined) note.isPinned = data.isPinned;
+        if (data.categoryId !== undefined) {
+            note.categoryId = data.categoryId;
+        }
+
+        await this.noteRepository.save(note);
+
+        // Handle tags
+        if (data.tagIds) {
+            await this.syncTags(id, data.tagIds);
+        }
+
+        return await this.findOne(id, userId);
+    }
+
+    async delete(id: number, userId: number) {
+        const note = await this.noteRepository.findOne({ where: { id, userId } });
+
+        if (!note) {
+            throw new Error('Note not found');
+        }
+
+        // Delete related taggables
+        await this.taggableRepository.delete({
+            taggableId: id,
+            taggableType: 'note'
+        });
+
+        await this.noteRepository.remove(note);
+        return { message: 'Note deleted successfully' };
+    }
+
+    async togglePin(id: number, userId: number) {
+        const note = await this.noteRepository.findOne({ where: { id, userId } });
+
+        if (!note) {
+            throw new Error('Note not found');
+        }
+
+        note.isPinned = !note.isPinned;
+        await this.noteRepository.save(note);
+
+        return await this.findOne(id, userId);
+    }
+
+    private async getItemIdsByTags(type: string, tagIds: number[]): Promise<number[]> {
+        const taggables = await this.taggableRepository.find({ where: { taggableType: type } });
+        return taggables
+            .filter(t => tagIds.map(Number).includes(Number(t.tagId)))
+            .map(t => t.taggableId);
+    }
+
+    private async syncTags(noteId: number, tagIds: number[]) {
+        // Remove existing tags
+        await this.taggableRepository.delete({
+            taggableId: noteId,
+            taggableType: 'note'
+        });
+
+        // Add new tags
+        if (tagIds.length > 0) {
+            const taggablesToSave: Taggable[] = [];
+
+            for (const tagId of tagIds) {
+                const taggable = new Taggable();
+                taggable.tagId = tagId;
+                taggable.taggableId = noteId;
+                taggable.taggableType = 'note';
+                taggablesToSave.push(taggable);
+            }
+
+            await this.taggableRepository.save(taggablesToSave);
+        }
+    }
+
+    private async loadTagsForNotes(notes: Note[]): Promise<any[]> {
+        return loadTagsForItems(notes, 'note');
+    }
+}
