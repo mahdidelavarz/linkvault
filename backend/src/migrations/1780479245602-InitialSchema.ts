@@ -4,43 +4,6 @@ export class InitialSchema1780479245602 implements MigrationInterface {
     name = 'InitialSchema1780479245602'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 0a76e87 (updated)
-        await queryRunner.query(`DROP INDEX "public"."idx_notes_title_trgm"`);
-        await queryRunner.query(`DROP INDEX "public"."idx_notes_content_trgm"`);
-        await queryRunner.query(`DROP INDEX "public"."idx_links_title_trgm"`);
-        await queryRunner.query(`DROP INDEX "public"."idx_links_url_trgm"`);
-        await queryRunner.query(`DROP INDEX "public"."idx_links_description_trgm"`);
-        await queryRunner.query(`DROP INDEX "public"."idx_snippets_title_trgm"`);
-        await queryRunner.query(`DROP INDEX "public"."idx_snippets_content_trgm"`);
-        await queryRunner.query(`DROP INDEX "public"."idx_snippets_description_trgm"`);
-        await queryRunner.query(`DROP INDEX "public"."idx_prompts_title_trgm"`);
-        await queryRunner.query(`DROP INDEX "public"."idx_prompts_content_trgm"`);
-        await queryRunner.query(`DROP INDEX "public"."idx_prompts_description_trgm"`);
-        await queryRunner.query(`DROP INDEX "public"."idx_infras_title_trgm"`);
-        await queryRunner.query(`DROP INDEX "public"."idx_infras_content_trgm"`);
-        await queryRunner.query(`DROP INDEX "public"."idx_infras_description_trgm"`);
-    }
-
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`CREATE INDEX "idx_infras_description_trgm" ON "infrastructures" ("description") `);
-        await queryRunner.query(`CREATE INDEX "idx_infras_content_trgm" ON "infrastructures" ("content") `);
-        await queryRunner.query(`CREATE INDEX "idx_infras_title_trgm" ON "infrastructures" ("title") `);
-        await queryRunner.query(`CREATE INDEX "idx_prompts_description_trgm" ON "prompts" ("description") `);
-        await queryRunner.query(`CREATE INDEX "idx_prompts_content_trgm" ON "prompts" ("content") `);
-        await queryRunner.query(`CREATE INDEX "idx_prompts_title_trgm" ON "prompts" ("title") `);
-        await queryRunner.query(`CREATE INDEX "idx_snippets_description_trgm" ON "snippets" ("description") `);
-        await queryRunner.query(`CREATE INDEX "idx_snippets_content_trgm" ON "snippets" ("content") `);
-        await queryRunner.query(`CREATE INDEX "idx_snippets_title_trgm" ON "snippets" ("title") `);
-        await queryRunner.query(`CREATE INDEX "idx_links_description_trgm" ON "links" ("description") `);
-        await queryRunner.query(`CREATE INDEX "idx_links_url_trgm" ON "links" ("url") `);
-        await queryRunner.query(`CREATE INDEX "idx_links_title_trgm" ON "links" ("title") `);
-        await queryRunner.query(`CREATE INDEX "idx_notes_content_trgm" ON "notes" ("content") `);
-        await queryRunner.query(`CREATE INDEX "idx_notes_title_trgm" ON "notes" ("title") `);
-<<<<<<< HEAD
-=======
         await queryRunner.query(`CREATE TABLE "user_vaults" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "user_id" integer NOT NULL, "encrypted_vault_key" text, "is_enabled" boolean NOT NULL DEFAULT false, "enabled_at" TIMESTAMP, "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "UQ_e16cf2e24234539ac21a8aa47c1" UNIQUE ("user_id"), CONSTRAINT "PK_d8cc1d4dc2c0a791f1f04cfa398" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE TABLE "notes" ("id" SERIAL NOT NULL, "title" character varying(255) NOT NULL, "content" text, "is_pinned" boolean NOT NULL DEFAULT false, "category_id" integer, "user_id" integer NOT NULL, "created_at" TIMESTAMP NOT NULL DEFAULT now(), "updated_at" TIMESTAMP NOT NULL DEFAULT now(), CONSTRAINT "PK_af6206538ea96c4e77e9f400c3d" PRIMARY KEY ("id"))`);
         await queryRunner.query(`CREATE INDEX "IDX_216d98067d764c901b77d281e1" ON "notes" ("is_pinned") `);
@@ -218,9 +181,6 @@ export class InitialSchema1780479245602 implements MigrationInterface {
         await queryRunner.query(`DROP INDEX "public"."IDX_216d98067d764c901b77d281e1"`);
         await queryRunner.query(`DROP TABLE "notes"`);
         await queryRunner.query(`DROP TABLE "user_vaults"`);
->>>>>>> 0716009 (init)
-=======
->>>>>>> 0a76e87 (updated)
     }
 
 }
