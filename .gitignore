@@ -107,3 +107,8 @@ netlify/
 
 # Git
 .gitignore.local
+
+nginx/ssl/
+*.key
+*.crt
+.env
