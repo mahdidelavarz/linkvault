@@ -15,7 +15,6 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Docker
-.dockerignore
 .docker/
 *.docker-volumes
 
@@ -108,3 +107,9 @@ netlify/
 
 # Git
 .gitignore.local
+
+nginx/ssl/
+*.key
+*.crt
+.env
+.claude/

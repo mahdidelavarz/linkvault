@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY backend/package*.json ./
 # Install all deps (including devDeps) so TypeScript is available for the build
-RUN npm ci
+RUN npm config set registry https://mirror2.chabokan.net/npm/ && npm ci
 
 COPY backend/ ./
 RUN npm run build
@@ -14,9 +14,13 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Set npm mirror for production
+RUN npm config set registry https://mirror2.chabokan.net/npm/
+
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
-RUN npm ci --omit=dev
+# Install ALL dependencies (not just production)
+RUN npm ci
 
 ENV NODE_ENV=production
 ENV PORT=5000

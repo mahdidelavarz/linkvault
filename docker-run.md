@@ -28,8 +28,3 @@ docker-compose -f docker-compose.dev.yml logs -f
 docker-compose -f docker-compose.dev.yml exec backend sh
 docker-compose -f docker-compose.dev.yml exec postgres psql -U node_user -d linkvault
 
-
-
-
-rebuilds 
-link - note - infra - api-client - snippets

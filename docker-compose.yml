@@ -22,8 +22,6 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    ports:
-      - "5000:5000"
     env_file:
       - .env
     environment:
@@ -41,14 +39,26 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
-    ports:
-      - "3000:3000"
+      args:
+        BACKEND_INTERNAL_URL: http://backend:5000
     environment:
-      # Next.js server-side rewrite target — use the docker service name, not localhost
       BACKEND_INTERNAL_URL: http://backend:5000
       NODE_ENV: production
       PORT: 3000
     depends_on:
+      - backend
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - frontend
       - backend
     restart: unless-stopped
 
