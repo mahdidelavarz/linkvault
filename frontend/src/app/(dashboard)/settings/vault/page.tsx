@@ -214,10 +214,10 @@ function RecoverView({
 // ─── View: Active vault ───────────────────────────────────────────────────────
 
 function ActiveView({
-    isUnlocked, onLock, onRequestUnlock, onDisable, isLoading,
+    isUnlocked, needsRecovery, onLock, onRequestUnlock, onRecoverDevice, onDisable, isLoading,
 }: {
-    isUnlocked: boolean; onLock: () => void; onRequestUnlock: () => void;
-    onDisable: () => void; isLoading: boolean;
+    isUnlocked: boolean; needsRecovery: boolean; onLock: () => void; onRequestUnlock: () => void;
+    onRecoverDevice: () => void; onDisable: () => void; isLoading: boolean;
 }) {
     const [showDisableConfirm, setShowDisableConfirm] = useState(false);
 
@@ -233,6 +233,16 @@ function ActiveView({
                 <h3 className="vs-section-title">Session</h3>
                 {isUnlocked ? (
                     <button className="vs-btn vs-btn--secondary" onClick={onLock}>Lock Vault Now</button>
+                ) : needsRecovery ? (
+                    <>
+                        <p className="vs-desc">
+                            This device hasn't been set up for the vault yet. Enter your 12-word
+                            recovery phrase to unlock it here and choose a PIN for this device.
+                        </p>
+                        <button className="vs-btn vs-btn--primary" onClick={onRecoverDevice}>
+                            Recover with Recovery Phrase
+                        </button>
+                    </>
                 ) : (
                     <button className="vs-btn vs-btn--primary" onClick={onRequestUnlock} disabled={isLoading}>
                         {isLoading ? 'Unlocking…' : 'Unlock Vault'}
@@ -245,8 +255,8 @@ function ActiveView({
             <div className="vs-section">
                 <h3 className="vs-section-title">Recovery</h3>
                 <p className="vs-desc">
-                    To recover your vault on a new device, use the "Recover with existing phrase" option
-                    on the Vault setup screen and enter your 12-word recovery phrase.
+                    To recover your vault on a new device, use the "Recover with Recovery Phrase" option
+                    above and enter your 12-word recovery phrase.
                 </p>
             </div>
 
@@ -279,7 +289,7 @@ function ActiveView({
 
 export default function VaultSettingsPage() {
     const router = useRouter();
-    const { isEnabled, isUnlocked, isLoading, setup, requestUnlock, lock, recover, disable } = useVault();
+    const { isEnabled, isUnlocked, needsRecovery, isLoading, setup, requestUnlock, lock, recover, disable } = useVault();
 
     const [mode, setMode] = useState<'idle' | 'setup' | 'recover'>('idle');
     const [setupStep, setSetupStep] = useState<SetupStep>('pin');
@@ -342,7 +352,7 @@ export default function VaultSettingsPage() {
             )}
 
             {/* ─── Recovery flow ─── */}
-            {mode === 'recover' && !isEnabled && (
+            {mode === 'recover' && (
                 <RecoverView
                     onRecover={handleRecover}
                     onBack={() => setMode('idle')}
@@ -362,8 +372,10 @@ export default function VaultSettingsPage() {
             {isEnabled && mode === 'idle' && (
                 <ActiveView
                     isUnlocked={isUnlocked}
+                    needsRecovery={needsRecovery}
                     onLock={lock}
                     onRequestUnlock={requestUnlock}
+                    onRecoverDevice={() => setMode('recover')}
                     onDisable={handleDisable}
                     isLoading={isLoading}
                 />

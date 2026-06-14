@@ -48,11 +48,11 @@ export default function ProjectsPage() {
                         action={
                             <div style={{ display: 'flex', gap: 8 }}>
                                 <Button variant="ghost" onClick={() => setTemplateOpen(true)}>
-                                    <LucideSparkles width={14} />
+                                    <LucideSparkles width={20} />
                                     Templates
                                 </Button>
                                 <Button onClick={openCreate}>
-                                    <LucidePlus width={14} />
+                                    <LucidePlus width={20} />
                                     New project
                                 </Button>
                             </div>

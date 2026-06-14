@@ -24,7 +24,7 @@ export default function Header() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const { theme, toggleTheme } = useTheme();
-  const { isEnabled, isUnlocked, unlock, requestUnlock, lock } = useVault();
+  const { isEnabled, isUnlocked, needsRecovery, unlock, requestUnlock, lock } = useVault();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [pinOpen, setPinOpen] = useState(false);
@@ -32,10 +32,18 @@ export default function Header() {
 
   // Listen for global unlock requests (from VaultGuard, ActiveView, etc.)
   useEffect(() => {
-    const handler = () => setPinOpen(true);
+    const handler = () => {
+      if (needsRecovery) {
+        // This device has no cached vault key — PIN unlock can never
+        // succeed here. Send the user to recover with their phrase instead.
+        router.push('/settings/vault');
+        return;
+      }
+      setPinOpen(true);
+    };
     window.addEventListener('vault:unlock-requested', handler);
     return () => window.removeEventListener('vault:unlock-requested', handler);
-  }, []);
+  }, [needsRecovery, router]);
 
   // Close dropdown on outside click
   useEffect(() => {

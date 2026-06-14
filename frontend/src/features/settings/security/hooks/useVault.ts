@@ -18,12 +18,22 @@ export function useVault() {
 
     const [isUnlocked, setIsUnlocked] = useState<boolean>(VaultSession.isUnlocked());
     const [isLoading, setIsLoading] = useState(false);
+    const [hasLocalKey, setHasLocalKey] = useState<boolean>(true);
 
     // Subscribe to VaultSession lock/unlock events
     useEffect(() => {
         const unsubscribe = VaultSession.subscribe(() => setIsUnlocked(VaultSession.isUnlocked()));
         return unsubscribe;
     }, []);
+
+    const refreshHasLocalKey = useCallback(async () => {
+        setHasLocalKey(await VaultService.hasLocalKey());
+    }, []);
+
+    // Check once on mount whether this device has a cached vault key.
+    useEffect(() => {
+        refreshHasLocalKey();
+    }, [refreshHasLocalKey]);
 
     const { data, refetch: refetchStatus } = useQuery({
         queryKey: ['vault-status'],
@@ -57,20 +67,23 @@ export function useVault() {
         try {
             const mnemonic = await VaultService.setup(userId, pin);
             await refetchStatus();
+            await refreshHasLocalKey();
             return mnemonic;
         } finally {
             setIsLoading(false);
         }
-    }, [userId, refetchStatus]);
+    }, [userId, refetchStatus, refreshHasLocalKey]);
 
     const recover = useCallback(async (mnemonic: string, pin: string): Promise<boolean> => {
         setIsLoading(true);
         try {
-            return await VaultService.recover(mnemonic, userId, pin);
+            const ok = await VaultService.recover(mnemonic, userId, pin);
+            if (ok) await refreshHasLocalKey();
+            return ok;
         } finally {
             setIsLoading(false);
         }
-    }, [userId]);
+    }, [userId, refreshHasLocalKey]);
 
     const disable = useCallback(async (): Promise<void> => {
         setIsLoading(true);
@@ -96,10 +109,17 @@ export function useVault() {
         return VaultService.loadAndDecrypt(module, recordId, fieldName);
     }, []);
 
+    // Vault is enabled on the account but this device has never run setup()
+    // or recover() — PIN unlock can never succeed here until the user
+    // recovers with their recovery phrase.
+    const needsRecovery = isEnabled && !hasLocalKey;
+
     return {
         isEnabled,
         isUnlocked,
         isLoading,
+        hasLocalKey,
+        needsRecovery,
         userId,
         unlock,
         requestUnlock,

@@ -67,6 +67,14 @@ export const VaultService = {
         return mnemonic;
     },
 
+    // Whether this device has a PIN-wrapped vault key cached locally.
+    // false on a fresh device that has never run setup() or recover() here —
+    // in that case unlock() can never succeed and the user needs to recover
+    // with their recovery phrase instead.
+    async hasLocalKey(): Promise<boolean> {
+        return (await loadVaultKey()) !== null;
+    },
+
     // PIN unlock: derive pinKey → decrypt IndexedDB blob → import session key.
     // Returns false if PIN is wrong (decryption throws) or no local key stored.
     async unlock(pin: string, userId: string): Promise<boolean> {
