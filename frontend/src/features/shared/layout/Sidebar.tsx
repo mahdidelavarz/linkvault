@@ -18,11 +18,14 @@ import {
   LucideMessageSquare,
   LucideServer,
   LucideSettings,
+  LucideShield,
   LucideTag,
   LucideUser,
   LucideVault,
   LucideX,
 } from "@/Icons/Icons";
+
+const ADMIN_EMAIL = "mdelever77@gmail.com";
 
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
@@ -44,6 +47,10 @@ const NAV_MANAGE = [
 
 const NAV_SETTINGS = [
   { name: "Vault", href: "/settings/vault", icon: LucideSettings },
+];
+
+const NAV_ADMIN = [
+  { name: "Admin", href: "/admin", icon: LucideShield },
 ];
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
@@ -145,6 +152,19 @@ export default function Sidebar() {
             />
           ))}
         </NavSection>
+
+        {user?.email === ADMIN_EMAIL && (
+          <NavSection label="Admin" collapsed={collapsed}>
+            {NAV_ADMIN.map((item) => (
+              <NavItem
+                key={item.href}
+                {...item}
+                active={pathname.startsWith(item.href)}
+                collapsed={collapsed}
+              />
+            ))}
+          </NavSection>
+        )}
       </nav>
 
       {/* Footer */}
@@ -235,6 +255,19 @@ export default function Sidebar() {
                 />
               ))}
             </NavSection>
+
+            {user?.email === ADMIN_EMAIL && (
+              <NavSection label="Admin" collapsed={false}>
+                {NAV_ADMIN.map((item) => (
+                  <NavItem
+                    key={item.href}
+                    {...item}
+                    active={pathname.startsWith(item.href)}
+                    collapsed={false}
+                  />
+                ))}
+              </NavSection>
+            )}
           </nav>
 
           <div className="sidebar-footer">
