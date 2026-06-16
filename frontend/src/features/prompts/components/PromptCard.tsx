@@ -129,15 +129,7 @@ export default function PromptCard({ prompt }: PromptCardProps) {
   return (
     <>
       <style>{CSS}</style>
-      <div
-        className="prompt-card"
-        role="button"
-        tabIndex={0}
-        onClick={goToDetail}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goToDetail(); }
-        }}
-      >
+      <div className="prompt-card">
         {/* Header */}
         <div className="prompt-card-header">
           <div className="prompt-card-type">
@@ -178,8 +170,16 @@ export default function PromptCard({ prompt }: PromptCardProps) {
           <p className="prompt-card-description">{prompt.description}</p>
         )}
 
-        {/* Content Preview */}
-        <div className="prompt-card-content">
+        {/* Content Preview — clicking here navigates to detail */}
+        <div
+          className="prompt-card-content"
+          role="button"
+          tabIndex={0}
+          onClick={goToDetail}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goToDetail(); }
+          }}
+        >
           <pre className="prompt-card-content-text">{prompt.content}</pre>
         </div>
 
@@ -302,14 +302,13 @@ const CSS = `
   display:       flex;
   flex-direction: column;
   gap:           12px;
-  cursor:        pointer;
+  cursor:        default;
   transition:    border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .prompt-card:hover {
   border-color: var(--border-strong);
   box-shadow:   0 2px 12px rgba(0,0,0,0.05);
 }
-.prompt-card:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
 
 /* Header */
 .prompt-card-header {
@@ -380,7 +379,11 @@ const CSS = `
   padding:       14px;
   max-height:    160px;
   overflow-y:    auto;
+  cursor:        pointer;
+  border:        1px solid transparent;
+  transition:    border-color var(--transition-fast);
 }
+.prompt-card-content:hover { border-color: rgba(255,255,255,0.12); }
 .prompt-card-content-text {
   font-family:   var(--font-mono, monospace);
   font-size:     var(--text-xs);

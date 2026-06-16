@@ -86,15 +86,7 @@ export default function InfraCard({ item }: InfraCardProps) {
   return (
     <>
       <style>{CSS}</style>
-      <div
-        className="ic"
-        role="button"
-        tabIndex={0}
-        onClick={goToDetail}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToDetail() }
-        }}
-      >
+      <div className="ic">
         {/* ── Header ── */}
         <div className="ic-header">
           <div className="ic-icon-wrap">
@@ -144,7 +136,15 @@ export default function InfraCard({ item }: InfraCardProps) {
         {/* ── Content preview ── */}
         {/* Guard ALL env items when vault is enabled — not just vault-encrypted ones */}
         <VaultGuard enabled={isEnv && isEnabled}>
-          <div className="ic-code-wrap">
+          <div
+            className="ic-code-wrap"
+            role="button"
+            tabIndex={0}
+            onClick={goToDetail}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToDetail() }
+            }}
+          >
             {/* ENV reveal toggle */}
             {isEnv && (
               <button
@@ -193,7 +193,7 @@ const CSS = `
   background:     var(--bg-surface);
   border:         1px solid var(--border-default);
   border-radius:  var(--radius-lg);
-  cursor:         pointer;
+  cursor:         default;
   transition:     border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 .ic:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
@@ -230,7 +230,10 @@ const CSS = `
   border:        1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   overflow:      hidden;
+  cursor:        pointer;
+  transition:    border-color var(--transition-fast);
 }
+.ic-code-wrap:hover { border-color: rgba(255,255,255,0.18); }
 .ic-reveal-btn {
   display:     flex;
   align-items: center;
