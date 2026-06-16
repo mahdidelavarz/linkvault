@@ -38,6 +38,8 @@ import ImportCurlModal, {
 } from "@/features/postman/components/ImportCurlModal";
 import Button from "@/features/shared/ui/Button";
 import Modal from "@/features/shared/ui/Modal";
+import BottomSheet from "@/features/shared/ui/BottomSheet";
+import { useIsMobile } from "@/features/shared/hooks/useIsMobile";
 import Input from "@/features/shared/ui/Input";
 import Textarea from "@/features/shared/ui/TextArea";
 import Alert from "@/features/shared/ui/Alert";
@@ -98,6 +100,10 @@ export default function ApiClientPage() {
   // Environment
   const [activeEnvId, setActiveEnvId] = useState<number | null>(null);
   const [envModalOpen, setEnvModalOpen] = useState(false);
+
+  // Mobile actions bottom sheet (secondary actions: save / import / env / delete)
+  const [actionsSheetOpen, setActionsSheetOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Auth
   const [authType, setAuthType] = useState<AuthType>("none");
@@ -203,10 +209,10 @@ export default function ApiClientPage() {
 
   // Auto-switch to response tab on mobile when response arrives
   useEffect(() => {
-    if (response && typeof window !== "undefined" && window.innerWidth < 768) {
+    if (response && isMobile) {
       setMobileTab("response");
     }
-  }, [response]);
+  }, [response, isMobile]);
 
   // ─── P3-15: URL ↔ params bidirectional sync ──────────────────────────────────
 
@@ -578,7 +584,27 @@ export default function ApiClientPage() {
             <Icon icon="lucide:panel-left" width={18} />
           </button>
           <span className="acp-mobile-title">API Client</span>
-          <button className="acp-new-btn" onClick={handleNewRequest}>
+          {activeEnv && (
+            <span
+              className="acp-mobile-env"
+              title={`Environment: ${activeEnv.name}`}
+            >
+              <Icon icon="lucide:layers" width={11} />
+              {activeEnv.name}
+            </span>
+          )}
+          <button
+            className="acp-actions-btn"
+            onClick={() => setActionsSheetOpen(true)}
+            aria-label="More actions"
+          >
+            <Icon icon="lucide:more-horizontal" width={18} />
+          </button>
+          <button
+            className="acp-new-btn"
+            onClick={handleNewRequest}
+            aria-label="New request"
+          >
             <Icon icon="lucide:plus" width={18} />
           </button>
         </div>
@@ -884,18 +910,125 @@ export default function ApiClientPage() {
         onClose={() => setImportCurlOpen(false)}
         onImport={handleImportCurl}
       />
+
+      {/* ── Mobile actions sheet (secondary actions live here on mobile) ── */}
+      <BottomSheet
+        isOpen={actionsSheetOpen}
+        onClose={() => setActionsSheetOpen(false)}
+        title="Request actions"
+      >
+        <div className="acp-sheet">
+          {/* Environment */}
+          <div className="acp-sheet-section">
+            <label className="acp-sheet-label">Environment</label>
+            <div className="acp-sheet-env-row">
+              <div className="acp-sheet-env-pill">
+                <Icon icon="lucide:layers" width={13} />
+                <select
+                  className="acp-sheet-env-select"
+                  value={activeEnvId ?? ""}
+                  onChange={(e) =>
+                    setActiveEnvId(
+                      e.target.value ? parseInt(e.target.value) : null,
+                    )
+                  }
+                >
+                  <option value="">No environment</option>
+                  {allEnvironments.filter((e) => e.id > 0).length > 0 && (
+                    <optgroup label="Environments">
+                      {allEnvironments
+                        .filter((e) => e.id > 0)
+                        .map((env) => (
+                          <option key={env.id} value={env.id}>
+                            {env.name}
+                          </option>
+                        ))}
+                    </optgroup>
+                  )}
+                  {allEnvironments.filter((e) => e.id < 0).length > 0 && (
+                    <optgroup label="From Infrastructure">
+                      {allEnvironments
+                        .filter((e) => e.id < 0)
+                        .map((env) => (
+                          <option key={env.id} value={env.id}>
+                            {env.name}
+                          </option>
+                        ))}
+                    </optgroup>
+                  )}
+                </select>
+                <Icon icon="lucide:chevron-down" width={12} />
+              </div>
+            </div>
+            <button
+              className="acp-sheet-item"
+              onClick={() => {
+                setActionsSheetOpen(false);
+                setEnvModalOpen(true);
+              }}
+            >
+              <Icon icon="lucide:settings-2" width={16} />
+              Manage environments
+            </button>
+          </div>
+
+          <div className="acp-sheet-divider" />
+
+          {/* Primary secondary-actions */}
+          <button
+            className="acp-sheet-item acp-sheet-item--accent"
+            onClick={() => {
+              setActionsSheetOpen(false);
+              openSave();
+            }}
+          >
+            <Icon
+              icon={selectedEndpoint ? "lucide:save" : "lucide:bookmark-plus"}
+              width={16}
+            />
+            {selectedEndpoint ? "Update" : "Save"}
+          </button>
+          <button
+            className="acp-sheet-item"
+            onClick={() => {
+              setActionsSheetOpen(false);
+              setImportCurlOpen(true);
+            }}
+          >
+            <Icon icon="lucide:terminal" width={16} />
+            Import cURL
+          </button>
+          {selectedEndpoint && (
+            <button
+              className="acp-sheet-item acp-sheet-item--danger"
+              onClick={() => {
+                setActionsSheetOpen(false);
+                setConfirmDel(true);
+              }}
+            >
+              <Icon icon="lucide:trash-2" width={16} />
+              Delete endpoint
+            </button>
+          )}
+        </div>
+      </BottomSheet>
     </>
   );
 }
 
 const CSS = `
-.acp { display: flex; flex-direction: column; height: 100%; gap: 0; }
+.acp { display: flex; flex-direction: column; height: 100%; gap: 0;  }
+
+@media (max-width: 767px) {
+.acp {padding : 10px;}
+}
 
 /* Mobile top bar */
 .acp-mobile-bar {
   display:         none;
   align-items:     center;
   justify-content: space-between;
+  gap:             8px;
   padding:         10px 16px;
   background:      var(--bg-surface);
   border:          1px solid var(--border-default);
@@ -912,9 +1045,63 @@ const CSS = `
   min-height:      44px; min-width: 44px;
   transition:      background var(--transition-fast), color var(--transition-fast);
 }
-.acp-menu-btn:hover, .acp-new-btn:hover { background: var(--bg-overlay); color: var(--text-primary); }
+.acp-actions-btn {
+  display:         flex; align-items: center; justify-content: center;
+  width:           36px; height: 36px;
+  background:      transparent; border: 1px solid var(--border-default);
+  border-radius:   var(--radius-md); color: var(--text-secondary); cursor: pointer;
+  min-height:      44px; min-width: 44px;
+  transition:      background var(--transition-fast), color var(--transition-fast);
+}
+.acp-menu-btn:hover, .acp-new-btn:hover, .acp-actions-btn:hover { background: var(--bg-overlay); color: var(--text-primary); }
 .acp-new-btn { background: var(--accent-muted); border-color: var(--accent-border); color: var(--cyan-400); }
-.acp-mobile-title { font-size: var(--text-md); font-weight: 600; color: var(--text-primary); }
+.acp-mobile-title { font-size: var(--text-md); font-weight: 600; color: var(--text-primary); margin-right: auto; }
+.acp-mobile-env {
+  display:       inline-flex; align-items: center; gap: 4px;
+  max-width:     120px; padding: 2px 8px;
+  background:    var(--accent-muted); border: 1px solid var(--accent-border);
+  border-radius: 99px; color: var(--cyan-400);
+  font-size:     var(--text-xs); font-weight: 500;
+  white-space:   nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Mobile actions sheet content */
+.acp-sheet         { display: flex; flex-direction: column; gap: 8px; }
+.acp-sheet-section { display: flex; flex-direction: column; gap: 8px; }
+.acp-sheet-label   { font-size: var(--text-xs); font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.04em; }
+.acp-sheet-env-row { display: flex; }
+.acp-sheet-env-pill {
+  position:      relative;
+  display:       flex; align-items: center; gap: 8px;
+  flex:          1;
+  height:        44px; padding: 0 12px;
+  background:    var(--bg-surface); border: 1px solid var(--border-default);
+  border-radius: var(--radius-md); color: var(--text-secondary);
+}
+.acp-sheet-env-pill:focus-within { border-color: var(--border-focus); }
+.acp-sheet-env-select {
+  flex:               1;
+  background:         transparent; border: none; outline: none;
+  color:              var(--text-primary);
+  font-size:          var(--text-sm); font-family: var(--font-sans);
+  appearance:         none; -webkit-appearance: none; cursor: pointer;
+}
+.acp-sheet-env-select option { background: var(--bg-elevated); color: var(--text-primary); }
+.acp-sheet-divider { height: 1px; background: var(--border-subtle); margin: 4px 0; }
+.acp-sheet-item {
+  display:       flex; align-items: center; gap: 10px;
+  width:         100%; min-height: 48px; padding: 0 14px;
+  background:    transparent; border: 1px solid var(--border-default);
+  border-radius: var(--radius-md); color: var(--text-primary);
+  font-size:     var(--text-sm); font-family: var(--font-sans); font-weight: 500;
+  cursor:        pointer; text-align: left;
+  transition:    background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+.acp-sheet-item:hover { background: var(--bg-overlay); }
+.acp-sheet-item--accent { background: var(--accent-muted); border-color: var(--accent-border); color: var(--cyan-300); }
+.acp-sheet-item--accent:hover { background: var(--accent); color: white; }
+.acp-sheet-item--danger { color: var(--danger); }
+.acp-sheet-item--danger:hover { background: var(--danger-muted); border-color: rgba(239,68,68,0.3); }
 
 /* Layout */
 .acp-layout {

@@ -651,12 +651,20 @@ const CSS = `
 }
 .rb-send-btn:hover:not(:disabled) { background: var(--accent-hover); box-shadow: var(--shadow-glow); }
 .rb-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+/* ── Mobile (≤767px) ──
+   Secondary chrome (title actions + env bar) moves into the page-level
+   bottom action sheet, so it's hidden here. The URL input takes a full-width
+   row of its own; method + Send sit on the row beneath it. */
+@media (max-width: 767px) {
+  .rb-title-row  { display: none; }
+  .rb-env-bar    { display: none; }
+  .rb-url-bar    { flex-wrap: wrap; padding: 10px 12px; gap: 8px; }
+  .rb-url        { order: -1; width: 100%; flex: 1 0 100%; }
+  .rb-method-wrap { flex: 0 0 auto; }
+  .rb-send-btn   { flex: 1; justify-content: center; }
+}
 @media (max-width: 479px) {
   .rb-send-label { display: none; }
-  .rb-url-bar    { flex-wrap: wrap; padding: 10px 12px; gap: 6px; }
-  .rb-url        { order: -1; width: 100%; flex: none; }
-  .rb-method-wrap { flex: 1; }
-  .rb-send-btn   { flex: 1; justify-content: center; }
 }
 
 /* Resolved URL preview */
