@@ -55,15 +55,7 @@ export default function SnippetCard({ snippet, onDuplicate }: SnippetCardProps) 
   return (
     <>
       <style>{CSS}</style>
-      <div
-        className="sc"
-        role="button"
-        tabIndex={0}
-        onClick={goToDetail}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToDetail() }
-        }}
-      >
+      <div className="sc">
 
         {/* ── Header ── */}
         <div className="sc-header">
@@ -94,8 +86,16 @@ export default function SnippetCard({ snippet, onDuplicate }: SnippetCardProps) 
           <p className="sc-desc">{snippet.description}</p>
         )}
 
-        {/* ── Code block ── */}
-        <div className="sc-code-wrap">
+        {/* ── Code block — clicking here navigates to detail ── */}
+        <div
+          className="sc-code-wrap"
+          role="button"
+          tabIndex={0}
+          onClick={goToDetail}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToDetail() }
+          }}
+        >
           <div className="sc-code-header">
             <div className="sc-code-dots">
               <span className="sc-code-dot sc-code-dot--r" />
@@ -184,7 +184,7 @@ const CSS = `
   background:     var(--bg-surface);
   border:         1px solid var(--border-default);
   border-radius:  var(--radius-lg);
-  cursor:         pointer;
+  cursor:         default;
   transition:     border-color var(--transition-fast), box-shadow var(--transition-fast);
   min-width:      0;
   width:          100%;
@@ -259,7 +259,10 @@ const CSS = `
   min-width:     0;
   width:         100%;
   box-sizing:    border-box;
+  cursor:        pointer;
+  transition:    border-color var(--transition-fast);
 }
+.sc-code-wrap:hover { border-color: rgba(255,255,255,0.18); }
 
 .sc-code-header {
   display:         flex;
