@@ -28,3 +28,15 @@ docker-compose -f docker-compose.dev.yml logs -f
 docker-compose -f docker-compose.dev.yml exec backend sh
 docker-compose -f docker-compose.dev.yml exec postgres psql -U node_user -d linkvault
 
+
+
+
+
+# Restart only the frontend container (no rebuild)
+docker-compose restart frontend
+
+# If you made code changes and need to rebuild the image first:
+docker-compose up -d --build frontend
+
+# To also restart nginx after (it proxies to frontend):
+docker-compose restart frontend nginx
