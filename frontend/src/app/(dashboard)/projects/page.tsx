@@ -19,6 +19,7 @@ import { LucideFolderOpen, LucidePlus, LucideSearch, LucideSparkles, LucideX } f
 export default function ProjectsPage() {
     const [formOpen, setFormOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
+    const [templateGalleryOpen, setTemplateGalleryOpen] = useState(false);
     const [templateOpen, setTemplateOpen] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
     const [search, setSearch] = useState("");
@@ -47,8 +48,8 @@ export default function ProjectsPage() {
                         subtitle={isLoading ? '…' : `${projects.length} project${projects.length !== 1 ? 's' : ''}`}
                         action={
                             <div style={{ display: 'flex', gap: 8 }}>
-                                <Button variant="ghost" onClick={() => setTemplateOpen(true)}>
-                                    <LucideSparkles width={20} />
+                                <Button variant="ghost" onClick={() => setTemplateGalleryOpen(true)}>
+                                    <LucideSparkles width={16} />
                                     Templates
                                 </Button>
                                 <Button onClick={openCreate}>
@@ -76,19 +77,6 @@ export default function ProjectsPage() {
                                 <LucideX width={12} />
                             </button>
                         )}
-                    </div>
-                </div>
-
-                {/* Template strip */}
-                <div className="pp-templates">
-                    <div className="pp-templates-label">
-                        <LucideSparkles width={12} />
-                        Start from a template
-                    </div>
-                    <div className="pp-templates-row">
-                        {PROJECT_TEMPLATES.map(t => (
-                            <ProjectTemplateCard key={t.id} template={t} onUse={() => openTemplate(t)} />
-                        ))}
                     </div>
                 </div>
 
@@ -131,6 +119,26 @@ export default function ProjectsPage() {
 
             <Modal isOpen={formOpen} onClose={closeForm} title={editingProject ? 'Edit project' : 'New project'}>
                 <ProjectForm project={editingProject} onClose={closeForm} />
+            </Modal>
+
+            <Modal
+                isOpen={templateGalleryOpen}
+                onClose={() => setTemplateGalleryOpen(false)}
+                title="Project Templates"
+                size="lg"
+            >
+                <div className="pp-tgallery">
+                    <p className="pp-tgallery-sub">Pick a template to get started instantly</p>
+                    <div className="pp-tgallery-grid">
+                        {PROJECT_TEMPLATES.map(t => (
+                            <ProjectTemplateCard
+                                key={t.id}
+                                template={t}
+                                onUse={() => { setTemplateGalleryOpen(false); openTemplate(t); }}
+                            />
+                        ))}
+                    </div>
+                </div>
             </Modal>
 
             <ProjectTemplatePreviewModal
@@ -197,21 +205,28 @@ const CSS = `
     color:       var(--text-tertiary);
     cursor:      pointer;
 }
-.pp-templates {
-    margin-bottom: 8px;
+.pp-tgallery {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
-.pp-templates-label {
-    display: flex; align-items: center; gap: 5px;
-    font-size: var(--text-xs); font-weight: 600; color: var(--text-tertiary);
-    text-transform: uppercase; letter-spacing: 0.06em;
-    margin-bottom: 10px;
+.pp-tgallery-sub {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    margin: 0;
 }
-.pp-templates-label svg { color: var(--cyan-400); }
-.pp-templates-row {
-    display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px;
-    scrollbar-width: none;
+.pp-tgallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
 }
-.pp-templates-row::-webkit-scrollbar { display: none; }
+.pp-tgallery-grid .ptcard {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+    flex-shrink: 1;
+}
 .pp-skeleton {
     height: 90px;
     background: var(--bg-elevated);

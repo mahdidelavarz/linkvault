@@ -168,4 +168,5 @@ const CSS = `
 /* Icons */
 .btn-icon    { width: 15px; height: 15px; flex-shrink: 0; }
 .btn-spinner { width: 14px; height: 14px; flex-shrink: 0; }
+.btn > span  { display: inline-flex; align-items: center; gap: 6px; }
 `

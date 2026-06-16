@@ -96,14 +96,24 @@ export default function SnippetCard({ snippet, onDuplicate }: SnippetCardProps) 
 
         {/* ── Code block ── */}
         <div className="sc-code-wrap">
-          {/* Language label in corner */}
-          <span className="sc-code-lang">{snippet.language}</span>
-
-          <CodeBlock
-            code={snippet.content}
-            language={snippet.language}
-            className="sc-code"
-          />
+          <div className="sc-code-header">
+            <div className="sc-code-dots">
+              <span className="sc-code-dot sc-code-dot--r" />
+              <span className="sc-code-dot sc-code-dot--y" />
+              <span className="sc-code-dot sc-code-dot--g" />
+            </div>
+            <span className="sc-code-filename">
+              {snippet.title.toLowerCase().replace(/\s+/g, '-')}.{snippet.language}
+            </span>
+            <span className="sc-code-lang-pill">{snippet.language}</span>
+          </div>
+          <div className="sc-code-body">
+            <CodeBlock
+              code={snippet.content}
+              language={snippet.language}
+              className="sc-code"
+            />
+          </div>
         </div>
 
         {/* ── Regex metadata: flags + test string with highlighted matches ── */}
@@ -176,15 +186,20 @@ const CSS = `
   border-radius:  var(--radius-lg);
   cursor:         pointer;
   transition:     border-color var(--transition-fast), box-shadow var(--transition-fast);
+  min-width:      0;
+  width:          100%;
+  box-sizing:     border-box;
+  overflow:       hidden;
 }
 .sc:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
 
 /* Header */
-.sc-header   { display: flex; flex-direction: column; gap: 8px; }
+.sc-header   { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .sc-title-row {
   display:     flex;
   align-items: center;
   gap:         8px;
+  min-width:   0;
 }
 .sc-type-dot {
   width:         8px;
@@ -201,6 +216,7 @@ const CSS = `
   white-space:   nowrap;
   overflow:      hidden;
   text-overflow: ellipsis;
+  min-width:     0;
 }
 
 .sc-meta {
@@ -210,8 +226,8 @@ const CSS = `
   flex-wrap:   wrap;
 }
 .sc-type-label {
-  font-size:  var(--text-xs);
-  color:      var(--text-tertiary);
+  font-size:   var(--text-xs);
+  color:       var(--text-tertiary);
   font-weight: 500;
 }
 .sc-category {
@@ -233,41 +249,87 @@ const CSS = `
   overflow:           hidden;
 }
 
-/* Code block */
+/* ── Code editor chrome ─────────────────────────────────────── */
 .sc-code-wrap {
   position:      relative;
-  background:    var(--bg-elevated);
-  border:        1px solid var(--border-subtle);
+  background:    #0d1117;
+  border:        1px solid rgba(255,255,255,0.08);
   border-radius: var(--radius-md);
   overflow:      hidden;
+  min-width:     0;
+  width:         100%;
+  box-sizing:    border-box;
 }
-.sc-code-lang {
-  position:      absolute;
-  top:           6px;
-  right:         8px;
+
+.sc-code-header {
+  display:         flex;
+  align-items:     center;
+  gap:             8px;
+  padding:         7px 10px;
+  background:      rgba(255,255,255,0.03);
+  border-bottom:   1px solid rgba(255,255,255,0.07);
+  min-width:       0;
+}
+
+.sc-code-dots {
+  display:     flex;
+  align-items: center;
+  gap:         5px;
+  flex-shrink: 0;
+}
+.sc-code-dot {
+  width:         10px;
+  height:        10px;
+  border-radius: 50%;
+  flex-shrink:   0;
+}
+.sc-code-dot--r { background: #ff5f57; }
+.sc-code-dot--y { background: #febc2e; }
+.sc-code-dot--g { background: #28c840; }
+
+.sc-code-filename {
+  flex:          1;
+  font-size:     11px;
+  font-family:   var(--font-mono);
+  color:         rgba(148,163,184,0.6);
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  white-space:   nowrap;
+  min-width:     0;
+}
+
+.sc-code-lang-pill {
+  flex-shrink:   0;
   font-size:     10px;
   font-family:   var(--font-mono);
-  color:         var(--text-tertiary);
-  background:    var(--bg-overlay);
-  padding:       1px 6px;
+  font-weight:   600;
+  color:         var(--accent, #67e8f9);
+  background:    rgba(103,232,249,0.08);
+  padding:       1px 7px;
   border-radius: var(--radius-sm);
-  border:        1px solid var(--border-subtle);
-  pointer-events: none;
+  border:        1px solid rgba(103,232,249,0.18);
+  letter-spacing: 0.03em;
+  text-transform: lowercase;
 }
+
+.sc-code-body {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 180px;
+}
+.sc-code-body::-webkit-scrollbar         { height: 4px; width: 4px; }
+.sc-code-body::-webkit-scrollbar-thumb   { background: rgba(255,255,255,0.12); border-radius: 99px; }
+.sc-code-body::-webkit-scrollbar-track   { background: transparent; }
+
 .sc-code {
   display:     block;
   margin:      0;
   font-family: var(--font-mono);
   font-size:   var(--text-xs);
   line-height: var(--leading-relaxed);
-  overflow-x:  auto;
   white-space: pre;
-  max-height:  200px;
-  overflow-y:  auto;
   background:  transparent !important;
 }
-.sc-code::-webkit-scrollbar { height: 4px; width: 4px; }
-.sc-code::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
 
 /* Regex display */
 .sc-regex {
@@ -311,11 +373,11 @@ const CSS = `
 
 /* Footer */
 .sc-footer {
-  display:         flex;
-  align-items:     center;
-  gap:             8px;
-  padding-top:     12px;
-  border-top:      1px solid var(--border-subtle);
+  display:     flex;
+  align-items: center;
+  gap:         8px;
+  padding-top: 12px;
+  border-top:  1px solid var(--border-subtle);
 }
 
 .sc-actions { display: flex; align-items: center; gap: 4px; margin-left: auto; }
