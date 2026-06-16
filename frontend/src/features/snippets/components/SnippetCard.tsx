@@ -48,7 +48,7 @@ export default function SnippetCard({ snippet, onDuplicate }: SnippetCardProps) 
       title="Duplicate snippet"
       onClick={(e) => { e.stopPropagation(); onDuplicate(snippet); }}
     >
-      <LucideCopy width={14} />
+      <LucideCopy width={16} />
     </button>
   )
 
@@ -386,8 +386,8 @@ const CSS = `
   display:         flex;
   align-items:     center;
   justify-content: center;
-  width:           36px;
-  height:          36px;
+  width:           40px;
+  height:          40px;
   background:      transparent;
   border:          1px solid transparent;
   border-radius:   var(--radius-sm);

@@ -27,14 +27,18 @@ export function useSwUpdate() {
       });
     });
 
-    // When the new SW takes control, reload to get the fresh assets
-    let reloading = false;
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (!reloading) {
-        reloading = true;
-        window.location.reload();
-      }
-    });
+    // When the new SW takes control, reload to get the fresh assets.
+    // Skip this in dev: sw.js is rebuilt on every route compilation, so
+    // controllerchange fires on each HMR cycle and causes an infinite reload loop.
+    if (process.env.NODE_ENV !== "development") {
+      let reloading = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (!reloading) {
+          reloading = true;
+          window.location.reload();
+        }
+      });
+    }
   }, []);
 
   /** Activate the waiting service worker and reload the page. */

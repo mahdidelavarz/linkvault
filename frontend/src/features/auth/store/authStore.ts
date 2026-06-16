@@ -47,16 +47,24 @@ export const useAuthStore = create<AuthState>((set) => ({
 if (typeof window !== 'undefined') {
   const token = localStorage.getItem('token');
   const refreshToken = localStorage.getItem('refreshToken');
-  const user = localStorage.getItem('user');
+  const userRaw = localStorage.getItem('user');
 
-  if (token && user) {
-    useAuthStore.setState({
-      user: JSON.parse(user),
-      token,
-      refreshToken,
-      isAuthenticated: true,
-      isLoading: false,
-    });
+  if (token && userRaw) {
+    try {
+      useAuthStore.setState({
+        user: JSON.parse(userRaw),
+        token,
+        refreshToken,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+    } catch {
+      // Corrupted localStorage — clear and force re-login
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('user');
+      useAuthStore.setState({ isLoading: false });
+    }
   } else {
     useAuthStore.setState({ isLoading: false });
   }

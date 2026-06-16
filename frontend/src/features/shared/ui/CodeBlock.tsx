@@ -219,6 +219,7 @@ export default function CodeBlock({ code, language, className, customStyle }: Co
         fontSize:   'var(--text-xs)',
         fontFamily: 'var(--font-mono)',
         lineHeight: 'var(--leading-relaxed)',
+        border: 'none',
         ...customStyle,
       }}
       codeTagProps={{

@@ -37,7 +37,7 @@ export default function ProjectBadge({ itemType, itemId }: ProjectBadgeProps) {
                 type="button"
             >
                 <style>{CSS}</style>
-                <LucideFolderOpen width={11} />
+                <LucideFolderOpen width={16} />
                 {label && <span className="pbadge-label">{label}</span>}
             </button>
 
@@ -57,7 +57,7 @@ const CSS = `
     padding: 2px 8px;
     background: transparent;
     border: 1px solid var(--border-subtle);
-    border-radius: 99px;
+    border-radius: 8px;
     font-size: 10px; font-weight: 500;
     color: var(--pbadge-color, var(--text-muted));
     cursor: pointer;

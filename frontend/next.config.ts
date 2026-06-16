@@ -4,6 +4,10 @@ import withSerwistInit from "@serwist/next";
 const withSerwist = withSerwistInit({
   swSrc: "src/sw.ts",
   swDest: "public/sw.js",
+  // In dev, Next.js rebuilds sw.js on every route compilation. With skipWaiting+clientsClaim,
+  // each rebuild triggers controllerchange → window.location.reload() → infinite refresh loop.
+  // Disable the SW entirely in dev to avoid this. Production behavior is unchanged.
+  disable: process.env.NODE_ENV === "development",
 });
 
 const BACKEND_URL = process.env.BACKEND_INTERNAL_URL || "http://localhost:5000";
