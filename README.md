@@ -1,93 +1,264 @@
-# linkvault
+# NeoVault
 
+A self-hosted personal knowledge vault — one place to manage links, notes, code snippets, AI prompts, infrastructure configs, and API collections, with encrypted credential storage and offline PWA support.
 
+## Features
 
-## Getting started
+### Modules
+- **Links** — bookmark URLs with optional stored credentials (username, password, email, phone) encrypted at rest
+- **Notes** — markdown-ready notes with pin support
+- **Snippets** — code snippets with syntax highlighting for 15+ languages (JS, TS, Python, Rust, Go, SQL, YAML, and more) powered by CodeMirror
+- **Prompts** — AI prompt library with variables, version history, target AI tagging, usage tracking, and collections
+- **Infrastructure** — store server configs, Dockerfiles, SSH keys, and other infra content
+- **API Client** — Postman-like HTTP client with collections, environments, cURL import, and code generation
+- **Projects** — group items from any module into a unified project view with template support
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+### Cross-cutting
+- **Encrypted Vault** — optional client-side vault key encryption for sensitive fields
+- **Full-text Search** — PostgreSQL GIN indexes for fast search across all content types
+- **Tags & Categories** — hierarchical category tree and flexible tagging across all modules
+- **Dashboard** — activity stats, recent items, and quick-capture widget
+- **Favorites** — mark any item as favorite across all modules
+- **Bulk Actions** — select and act on multiple items at once
+- **PWA / Offline** — installable progressive web app with offline queue and sync status
+- **JWT Auth** — access + refresh token pair, password reset via email
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+## Tech Stack
 
-## Add your files
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS 4 |
+| State / Data | TanStack Query v5, Zustand |
+| Forms / Validation | React Hook Form, Zod |
+| Code Editor | CodeMirror 6 with multi-language support |
+| PWA | Serwist (Workbox) |
+| Backend | Express 5, TypeScript, TypeORM |
+| Database | PostgreSQL 16 |
+| Auth | JWT (jsonwebtoken), bcrypt |
+| Email | Nodemailer |
+| API Docs | Swagger UI |
+| Infrastructure | Docker Compose, Nginx |
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+## Project Structure
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.chabokan.net/mahdidelavarzir/linkvault.git
-git branch -M main
-git push -uf origin main
+neovault/
+├── backend/
+│   ├── src/
+│   │   ├── config/         # DB, JWT, env, search indexes
+│   │   ├── controllers/    # Route handlers
+│   │   ├── entities/       # TypeORM entities
+│   │   ├── middleware/      # Auth, validation, error handling
+│   │   ├── migrations/     # DB migrations
+│   │   ├── routes/         # Express routers
+│   │   ├── services/       # Business logic
+│   │   └── utils/          # Crypto, SSRF protection, helpers
+│   └── Dockerfile.dev
+├── frontend/
+│   └── src/
+│       ├── app/            # Next.js App Router pages
+│       └── features/       # Feature-sliced modules
+│           ├── auth/
+│           ├── links/
+│           ├── notes/
+│           ├── snippets/
+│           ├── prompts/
+│           ├── infrastructure/
+│           ├── postman/
+│           ├── projects/
+│           ├── categories/
+│           ├── search/
+│           ├── dashboard/
+│           ├── settings/
+│           └── shared/
+├── docker-compose.yml      # Production
+├── docker-compose.dev.yml  # Development
+├── .env.example
+└── nginx/                  # Nginx reverse proxy config
 ```
 
-## Integrate with your tools
+## Getting Started
 
-- [ ] [Set up project integrations](https://gitlab.chabokan.net/mahdidelavarzir/linkvault/-/settings/integrations)
+### Prerequisites
 
-## Collaborate with your team
+- [Docker](https://www.docker.com/get-started) and Docker Compose
+- Node.js 20+ (for local development without Docker)
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+### Quick Start with Docker (Recommended)
 
-## Test and Deploy
+**1. Clone and configure**
 
-Use the built-in continuous integration in GitLab.
+```bash
+git clone <repo-url>
+cd neovault
+cp .env.example .env
+```
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+**2. Edit `.env`** — at minimum change the secrets:
 
-***
+```env
+JWT_SECRET=your-strong-secret-here
+ENCRYPTION_KEY=exactly-32-characters-long!!!!!
+DB_PASSWORD=your-db-password
+```
 
-# Editing this README
+**3. Start development environment**
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+```bash
+docker compose -f docker-compose.dev.yml up
+```
 
-## Suggestions for a good README
+Services will be available at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:5000
+- Swagger UI: http://localhost:5000/api-docs
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+**4. Start production environment**
 
-## Name
-Choose a self-explaining name for your project.
+```bash
+docker compose up -d
+```
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+Production routes everything through Nginx on ports 80/443.
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+### Docker Commands Reference
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+```bash
+# Start in background
+docker compose -f docker-compose.dev.yml up -d
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+# Rebuild images after Dockerfile changes
+docker compose -f docker-compose.dev.yml up --build
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+# View logs
+docker compose -f docker-compose.dev.yml logs -f
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+# Stop services
+docker compose -f docker-compose.dev.yml down
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+# Stop and remove database volume (clears all data)
+docker compose -f docker-compose.dev.yml down -v
+
+# Shell into a service
+docker compose -f docker-compose.dev.yml exec backend sh
+docker compose -f docker-compose.dev.yml exec postgres psql -U node_user -d linkvault
+
+# Restart a single service
+docker compose -f docker-compose.dev.yml restart backend
+```
+
+### Local Development (without Docker)
+
+**Backend**
+
+```bash
+cd backend
+npm install
+cp ../.env.example ../.env   # then edit .env
+npm run dev
+```
+
+**Frontend**
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Make sure PostgreSQL is running locally and `DB_HOST=localhost` is set in `.env`.
+
+**Database migrations**
+
+```bash
+cd backend
+npm run migration:run        # development (ts-node)
+npm run migration:run:prod   # production (compiled JS)
+```
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and fill in the values:
+
+```env
+# Server
+NODE_ENV=development
+PORT=5000
+HOST=0.0.0.0
+
+# Database
+DB_HOST=localhost          # use "postgres" inside Docker Compose
+DB_PORT=5432
+DB_USERNAME=node_user
+DB_PASSWORD=change-me
+DB_DATABASE=linkvault
+DB_SYNCHRONIZE=true        # set to false in production
+
+# JWT & Encryption
+JWT_SECRET=change-me-in-production
+JWT_EXPIRES_IN=7d
+ENCRYPTION_KEY=32-character-encryption-key!!  # must be exactly 32 chars
+
+# SMTP (password reset emails)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your@gmail.com
+SMTP_PASS=your-app-password
+SMTP_FROM=NeoVault <noreply@yourdomain.com>
+
+# CORS
+ALLOWED_ORIGINS=http://localhost:3000
+FRONTEND_URL=http://localhost:3000
+
+# Frontend
+NEXT_PUBLIC_API_URL=http://localhost:5000/api
+```
+
+> **Security note:** Never commit `.env` to version control. The `ENCRYPTION_KEY` is used for AES encryption of credentials stored in the vault — rotating it will make existing encrypted data unreadable.
+
+## API Overview
+
+The backend exposes a RESTful API under `/api`. Swagger UI is available at `/api-docs` in development.
+
+| Resource | Endpoint prefix |
+|---|---|
+| Auth | `/api/auth` |
+| Links | `/api/links` |
+| Notes | `/api/notes` |
+| Snippets | `/api/snippets` |
+| Prompts | `/api/prompts` |
+| Prompt Collections | `/api/prompt-collections` |
+| Infrastructure | `/api/infra` |
+| API Collections | `/api/api-collections` |
+| Projects | `/api/projects` |
+| Categories | `/api/categories` |
+| Tags | `/api/tags` |
+| Search | `/api/search` |
+| Dashboard | `/api/dashboard` |
+| Vault | `/api/vault` |
+
+All protected routes require a `Bearer` JWT token in the `Authorization` header.
+
+## Security
+
+- Passwords and sensitive link credentials are AES-encrypted before storage using the `ENCRYPTION_KEY`
+- The optional Vault feature adds a second layer: a per-user vault key encrypted with a BIP39 passphrase, stored encrypted on the server
+- SSRF protection is applied to any user-supplied URLs
+- Rate limiting is enabled on auth endpoints via `express-rate-limit`
+- Security headers are set by `helmet`
+- Input validation uses `zod` schemas on both frontend and backend
 
 ## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Commit your changes: `git commit -m 'Add my feature'`
+4. Push to the branch: `git push origin feature/my-feature`
+5. Open a pull request
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+Please keep PRs focused — one feature or fix per PR.
 
 ## License
-For open source projects, say how it is licensed.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+MIT
