@@ -1,31 +1,31 @@
 // components/mobile/BottomNavBar.tsx
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
-  LucideLayoutDashboard,
-  LucideLink2,
-  LucideMessageSquare,
-  LucideCodeXml,
-  LucideFileText,
-  LucideSearch,
-} from '@/Icons/Icons';
+  SolarLinkMinimalisticBoldDuotone,
+  SolarCodeBoldDuotone,
+  SolarWidgetLineDuotone,
+  HugeiconsCommandLine,
+  SolarNotesLineDuotone,
+  SolarRoundedMagniferLineDuotone,
+} from "@/Icons/Icons";
 
 const NAV_ITEMS = [
-  { href: '/links',     label: 'Links',     icon: LucideLink2 },
-  { href: '/snippets',  label: 'Snippets',  icon: LucideCodeXml },
-  { href: '/dashboard', label: 'Dashboard', icon: LucideLayoutDashboard },
-  { href: '/prompts',   label: 'Prompts',   icon: LucideMessageSquare },
-  { href: '/notes',     label: 'Notes',     icon: LucideFileText },
-   { href: '/search',     label: 'Search',     icon: LucideSearch },
+  { href: "/links", label: "Links", icon: SolarLinkMinimalisticBoldDuotone },
+  { href: "/snippets", label: "Snippets", icon: SolarCodeBoldDuotone },
+  { href: "/dashboard", label: "Dashboard", icon: SolarWidgetLineDuotone },
+  { href: "/prompts", label: "Prompts", icon: HugeiconsCommandLine },
+  { href: "/notes", label: "Notes", icon: SolarNotesLineDuotone },
+  { href: "/search", label: "Search", icon: SolarRoundedMagniferLineDuotone },
 ];
 
 export default function BottomNavBar() {
   const pathname = usePathname();
 
   const activeIndex = NAV_ITEMS.findIndex(
-    (item) => pathname?.startsWith(item.href) ?? false
+    (item) => pathname?.startsWith(item.href) ?? false,
   );
 
   return (
@@ -39,11 +39,11 @@ export default function BottomNavBar() {
             <Link
               key={item.href}
               href={item.href}
-              className={['bn-item', active ? 'bn-item--active' : '']
+              className={["bn-item", active ? "bn-item--active" : ""]
                 .filter(Boolean)
-                .join(' ')}
+                .join(" ")}
               aria-label={item.label}
-              aria-current={active ? 'page' : undefined}
+              aria-current={active ? "page" : undefined}
             >
               <span className="bn-icon">
                 <Icon width={20} />
@@ -69,9 +69,8 @@ const CSS = `
   gap: 4px;
   padding: 7px;
   border-radius: 999px;
-  background: rgba(var(--bg-surface-rgb), 0.72);
-  backdrop-filter: blur(22px) saturate(180%);
-  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  background-color: var(--bg-surface);
+
   box-shadow:
     0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
     0 12px 32px -10px rgba(0, 0, 0, 0.55),
@@ -92,7 +91,7 @@ const CSS = `
   color: var(--text-tertiary);
   text-decoration: none;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
   white-space: nowrap;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -130,15 +129,6 @@ const CSS = `
   gap: 8px;
   padding: 11px 18px;
   color: var(--text-accent);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--text-accent) 22%, transparent),
-      color-mix(in srgb, var(--text-accent) 12%, transparent)
-    );
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--text-accent) 10%, transparent) inset,
-    0 5px 10px -6px color-mix(in srgb, var(--text-accent) 55%, transparent);
 }
 
 .bn-item--active .bn-icon {

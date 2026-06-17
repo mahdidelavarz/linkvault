@@ -74,6 +74,7 @@ export default function DashboardLayout({
         .main-content {
           flex:       1;
           min-width:  0;
+          padding-bottom:  65px;
           overflow:   hidden;   /* PageLayout controls its own scroll */
           display:    flex;
           flex-direction: column;
