@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   SolarLinkMinimalisticBoldDuotone,
-  SolarCodeBoldDuotone,
+  SolarCodeSquareLineDuotone,
   SolarWidgetLineDuotone,
   HugeiconsCommandLine,
   SolarNotesLineDuotone,
@@ -14,7 +14,7 @@ import {
 
 const NAV_ITEMS = [
   { href: "/links", label: "Links", icon: SolarLinkMinimalisticBoldDuotone },
-  { href: "/snippets", label: "Snippets", icon: SolarCodeBoldDuotone },
+  { href: "/snippets", label: "Snippets", icon: SolarCodeSquareLineDuotone },
   { href: "/dashboard", label: "Dashboard", icon: SolarWidgetLineDuotone },
   { href: "/prompts", label: "Prompts", icon: HugeiconsCommandLine },
   { href: "/notes", label: "Notes", icon: SolarNotesLineDuotone },
