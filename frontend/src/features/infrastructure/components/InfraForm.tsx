@@ -24,7 +24,6 @@ import Button from "@/features/shared/ui/Button";
 import Alert from "@/features/shared/ui/Alert";
 import TagSelector from "@/features/tags/components/TagSelector";
 import {
-  LucideCheck,
   LucideCircleAlert,
   LucideContainer,
   LucideDatabase,
@@ -38,12 +37,15 @@ import {
   LucideServer,
   LucideSettings,
   LucideShield,
+  LucideSlidersHorizontal,
   LucideStar,
   LucideType,
   LucideUser,
 } from "@/Icons/Icons";
 import FormLayout from "@/features/shared/layout/FormLayout";
 import Textarea from "@/features/shared/ui/TextArea";
+import Disclosure from "@/features/shared/ui/Disclosure";
+import Switch from "@/features/shared/ui/Switch";
 import FormSelect from "@/features/snippets/components/FormSelect";
 
 
@@ -267,23 +269,6 @@ export default function InfraForm({ item, onClose }: InfraFormProps) {
           {...register("title")}
         />
 
-        {/* ── Type-specific metadata ── */}
-        <TypeMetadata
-          type={watchedType}
-          register={register}
-          control={control}
-        />
-
-        {/* ── Description ── */}
-        <Textarea
-          label="Description"
-          placeholder="What is this config for? Any important notes?"
-          optional
-          rows={2}
-          error={errors.description?.message}
-          {...register("description")}
-        />
-
         {/* ── Content ── */}
         <div className="iform-field">
           <div className="iform-content-header">
@@ -333,71 +318,81 @@ export default function InfraForm({ item, onClose }: InfraFormProps) {
           )}
         </div>
 
-        {/* ── Organize ── */}
-        <div className="iform-organize">
-          <FormSelect
-            label="Category"
+        {/* ── More details (collapsed by default) ── */}
+        <Disclosure
+          title="More details"
+          summary="Options · description · category · tags · favorite"
+          icon={LucideSlidersHorizontal}
+          defaultOpen={isEditing}
+        >
+          {/* Type-specific metadata */}
+          <TypeMetadata
+            type={watchedType}
+            register={register}
+            control={control}
+          />
+
+          {/* Description */}
+          <Textarea
+            label="Description"
+            placeholder="What is this config for? Any important notes?"
             optional
-            leftIcon={LucideFolder}
-            {...register("categoryId", {
-              setValueAs: (v) => (v ? parseInt(v) : undefined),
-            })}
-          >
-            <option value="">No category</option>
-            {categories?.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </FormSelect>
+            rows={2}
+            error={errors.description?.message}
+            {...register("description")}
+          />
 
-          <div className="iform-field">
-            <label className="iform-label">
-              Tags <span className="iform-optional">optional</span>
-            </label>
-            <Controller
-              name="tagIds"
-              control={control}
-              render={({ field }) => (
-                <TagSelector
-                  selectedTagIds={field.value}
-                  onChange={field.onChange}
-                />
-              )}
-            />
-          </div>
-        </div>
+          {/* Organize */}
+          <div className="iform-organize">
+            <FormSelect
+              label="Category"
+              optional
+              leftIcon={LucideFolder}
+              {...register("categoryId", {
+                setValueAs: (v) => (v ? parseInt(v) : undefined),
+              })}
+            >
+              <option value="">No category</option>
+              {categories?.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </FormSelect>
 
-        {/* ── Favorite ── */}
-        <Controller
-          name="isFavorite"
-          control={control}
-          render={({ field }) => (
-            <label className="iform-checkbox">
-              <div
-                className={["iform-check", field.value ? "iform-check--on" : ""]
-                  .filter(Boolean)
-                  .join(" ")}
-              >
-                {field.value && <LucideCheck width={11} />}
-              </div>
-              <input
-                type="checkbox"
-                checked={field.value}
-                onChange={(e) => field.onChange(e.target.checked)}
-                style={{
-                  position: "absolute",
-                  opacity: 0,
-                  pointerEvents: "none",
-                }}
+            <div className="iform-field">
+              <label className="iform-label">
+                Tags <span className="iform-optional">optional</span>
+              </label>
+              <Controller
+                name="tagIds"
+                control={control}
+                render={({ field }) => (
+                  <TagSelector
+                    selectedTagIds={field.value}
+                    onChange={field.onChange}
+                  />
+                )}
               />
-              <span className="iform-check-label">
-                <LucideStar width={13} style={{ color: "#fbbf24" }} />
-                Mark as favorite
-              </span>
-            </label>
-          )}
-        />
+            </div>
+          </div>
+
+          {/* Favorite */}
+          <Controller
+            name="isFavorite"
+            control={control}
+            render={({ field }) => (
+              <Switch
+                checked={field.value}
+                onChange={field.onChange}
+                label="Mark as favorite"
+                description="Pin this config to the top of your list"
+                icon={LucideStar}
+                iconColor="#fbbf24"
+              />
+            )}
+          />
+        </Disclosure>
 
         </div>
 
@@ -679,17 +674,5 @@ const CSS = `
 
 /* Organize */
 .iform-organize { display: flex; flex-direction: column; gap: 12px; }
-
-/* Checkbox */
-.iform-checkbox { display: flex; align-items: center; gap: 10px; cursor: pointer; position: relative; width: fit-content; }
-.iform-check {
-  display: flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px;
-  background: var(--bg-subtle); border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm); flex-shrink: 0;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
-}
-.iform-check--on { background: var(--accent); border-color: var(--accent); color: white; }
-.iform-check-label { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-secondary); }
 
 `;

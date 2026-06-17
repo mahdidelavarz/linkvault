@@ -13,7 +13,7 @@ import PageLayout from "@/features/shared/layout/PageLayout";
 import EmptyState from "@/features/shared/ui/EmptyState";
 import Badge from "@/features/shared/ui/Badge";
 import Button from "@/features/shared/ui/Button";
-import CodeBlock from "@/features/shared/ui/CodeBlock";
+import CodeWindow from "@/features/shared/ui/CodeWindow";
 import CopyButton from "@/features/shared/components/CopyButton";
 import TagSection from "@/features/shared/components/TagSection";
 import ConfirmDeleteModal from "@/features/shared/components/ConfirmDeleteModal";
@@ -177,15 +177,13 @@ export default function SnippetDetailPage() {
         <div className="sd-layout">
           {/* ── Left column ── */}
           <div className="sd-main">
-            <div className="sd-code-block">
-              <div className="sd-code-bar">
-                <span className="sd-code-bar-label">{codeBarLabel}</span>
-                <CopyButton text={snippet.content} size="sm" />
-              </div>
-              <div className="sd-code-scroll">
-                <CodeBlock code={snippet.content} language={snippet.language} />
-              </div>
-            </div>
+            <CodeWindow
+              code={snippet.content}
+              language={snippet.language}
+              filename={codeBarLabel}
+              maxHeight="40vh"
+              headerActions={<CopyButton text={snippet.content} size="sm" />}
+            />
 
             {snippet.snippetType === 'regex' && (
               <div className="sd-panel">
@@ -376,21 +374,6 @@ const CSS = `
 }
 
 .sd-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-
-/* Code block */
-.sd-code-block {
-  background: var(--bg-surface); border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg); overflow: hidden;
-}
-.sd-code-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8px 14px; border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-elevated);
-}
-.sd-code-bar-label { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-tertiary); }
-.sd-code-scroll { max-height: 60vh; overflow-y: auto; }
-.sd-code-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
-.sd-code-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
 
 /* Regex tester panel */
 .sd-panel {

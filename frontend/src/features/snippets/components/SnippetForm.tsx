@@ -24,10 +24,8 @@ import Alert from "@/features/shared/ui/Alert";
 import TagSelector from "@/features/tags/components/TagSelector";
 import CopyButton from "@/features/shared/components/CopyButton";
 import {
-  LucideArrowRight,
   LucideArrowRightLeft,
   LucideBraces,
-  LucideCheck,
   LucideCircleAlert,
   LucideCodeXml,
   LucideCpu,
@@ -36,7 +34,7 @@ import {
   LucideFolder,
   LucideRegex,
   LucideServer,
-  LucideSettings2,
+  LucideSlidersHorizontal,
   LucideStar,
   LucideTerminal,
   LucideType,
@@ -45,6 +43,8 @@ import {
 import TypeSelector from "./TypeSelector";
 import FormSelect from "./FormSelect";
 import Textarea from "@/features/shared/ui/TextArea";
+import Disclosure from "@/features/shared/ui/Disclosure";
+import Switch from "@/features/shared/ui/Switch";
 import CodeEditor from "./CodeEditor";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
@@ -74,7 +74,6 @@ export default function SnippetForm({
   onClose: () => void;
 }) {
   const isEditing = !!snippet;
-  const [activeTab, setActiveTab]   = useState<"basic" | "meta">("basic");
   const [pasteToast, setPasteToast] = useState<string | null>(null);
   const [dupCheckTitle, setDupCheckTitle] = useState("");
   const pasteTimer    = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -280,6 +279,9 @@ export default function SnippetForm({
     }
   };
 
+  // Open "More details" by default when editing (so existing optional data is visible)
+  const detailsOpen = isEditing;
+
   return (
     <>
       <style>{CSS}</style>
@@ -290,20 +292,13 @@ export default function SnippetForm({
         footer={
           <>
             <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-            <div className="sform-footer-right">
-              {activeTab === "basic" && (
-                <Button type="button" variant="secondary" rightIcon={LucideArrowRight} onClick={() => setActiveTab("meta")}>
-                  Details
-                </Button>
-              )}
-              <Button type="submit" isLoading={isLoading}>
-                {isEditing ? "Save changes" : "Create snippet"}
-              </Button>
-            </div>
+            <Button type="submit" isLoading={isLoading}>
+              {isEditing ? "Save changes" : "Create snippet"}
+            </Button>
           </>
         }
       >
-        <div className="sform-top">
+        <div className="sform-body">
           {error && (
             <Alert
               type="error"
@@ -313,45 +308,8 @@ export default function SnippetForm({
             />
           )}
 
-          {/* ── Tabs: Basic / Metadata ── */}
-          <div className="sform-tabs">
-          <button
-            type="button"
-            className={[
-              "sform-tab",
-              activeTab === "basic" ? "sform-tab--active" : "",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-            onClick={() => setActiveTab("basic")}
-          >
-            <LucideFileCode2 width={14} />
-            Content
-            {(errors.title || errors.content) && (
-              <span className="sform-tab-error-dot" aria-label="Tab has errors" />
-            )}
-          </button>
-          <button
-            type="button"
-            className={[
-              "sform-tab",
-              activeTab === "meta" ? "sform-tab--active" : "",
-            ]
-              .filter(Boolean)
-              .join(" ")}
-            onClick={() => setActiveTab("meta")}
-          >
-            <LucideSettings2 width={14} />
-            Details
-          </button>
-          </div>
-          </div>
-
-          <div className="sform-content">
-
-        {/* ══ Tab: Basic ══ */}
-        {activeTab === "basic" && (
-          <div className="sform-panel">
+          {/* ══ Essentials ══ */}
+          <div className="sform-essentials">
             {/* Title */}
             <Input
               label="Title"
@@ -384,43 +342,7 @@ export default function SnippetForm({
               />
             </div>
 
-            {/* Language + auto-detect hint */}
-            <div className="sform-field">
-              <FormSelect
-                label="Language"
-                leftIcon={LucideCodeXml}
-                {...register("language")}
-              >
-                {typeLangs.map((lang) => (
-                  <option key={lang} value={lang}>
-                    {getLanguageName(lang)}
-                  </option>
-                ))}
-              </FormSelect>
-              {detectedLang && detectedLang !== watchedLang && typeLangs.includes(detectedLang) && (
-                <button
-                  type="button"
-                  className="sform-detect-hint"
-                  onClick={() => setValue("language", detectedLang)}
-                >
-                  <LucideZap width={12} />
-                  Auto-detected:{" "}
-                  <strong>{getLanguageName(detectedLang)}</strong> — click to apply
-                </button>
-              )}
-              {detectedType && detectedType !== watchedType && (
-                <button
-                  type="button"
-                  className="sform-detect-hint"
-                  onClick={() => handleTypeChange(detectedType as SnippetType)}
-                >
-                  <LucideZap width={12} />
-                  Detected type: <strong>{SNIPPET_TYPES[detectedType as SnippetType]?.label ?? detectedType}</strong> — click to apply
-                </button>
-              )}
-            </div>
-
-            {/* Code editor */}
+            {/* Code editor (hero) */}
             <div className="sform-field">
               <div className="sform-code-header">
                 <label className="sform-label">
@@ -450,7 +372,17 @@ export default function SnippetForm({
                       {canFormatJSON ? "Format JSON" : "Format SQL"}
                     </button>
                   )}
-                  <span className="sform-lang-pill">{watchedLang}</span>
+                  {/* Compact language picker, inline with the editor */}
+                  <div className="sform-lang-select-wrap">
+                    <LucideCodeXml className="sform-lang-select-icon" width={13} />
+                    <select className="sform-lang-select" {...register("language")}>
+                      {typeLangs.map((lang) => (
+                        <option key={lang} value={lang}>
+                          {getLanguageName(lang)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
               <div
@@ -470,6 +402,7 @@ export default function SnippetForm({
                       language={watchedLang}
                       height="280px"
                       className=""
+                      allowFullscreen
                       onChange={(val) => {
                         // Detect paste via large content delta
                         if (prevCodeLen.current === -1) {
@@ -496,6 +429,28 @@ export default function SnippetForm({
                   <LucideZap width={12} />
                   {pasteToast}
                 </div>
+              )}
+              {/* Auto-detect hints */}
+              {detectedLang && detectedLang !== watchedLang && typeLangs.includes(detectedLang) && (
+                <button
+                  type="button"
+                  className="sform-detect-hint"
+                  onClick={() => setValue("language", detectedLang)}
+                >
+                  <LucideZap width={12} />
+                  Auto-detected:{" "}
+                  <strong>{getLanguageName(detectedLang)}</strong> — click to apply
+                </button>
+              )}
+              {detectedType && detectedType !== watchedType && (
+                <button
+                  type="button"
+                  className="sform-detect-hint"
+                  onClick={() => handleTypeChange(detectedType as SnippetType)}
+                >
+                  <LucideZap width={12} />
+                  Detected type: <strong>{SNIPPET_TYPES[detectedType as SnippetType]?.label ?? detectedType}</strong> — click to apply
+                </button>
               )}
             </div>
 
@@ -600,6 +555,15 @@ export default function SnippetForm({
               </div>
             )}
 
+          </div>
+
+          {/* ══ More details (collapsed by default) ══ */}
+          <Disclosure
+            title="More details"
+            summary="Description · category · tags · favorite"
+            icon={LucideSlidersHorizontal}
+            defaultOpen={detailsOpen}
+          >
             {/* Description */}
             <Textarea
               label="Description"
@@ -609,12 +573,7 @@ export default function SnippetForm({
               error={errors.description?.message}
               {...register("description")}
             />
-          </div>
-        )}
 
-        {/* ══ Tab: Details ══ */}
-        {activeTab === "meta" && (
-          <div className="sform-panel">
             {/* Category */}
             <FormSelect
               label="Category"
@@ -657,38 +616,18 @@ export default function SnippetForm({
               name="isFavorite"
               control={control}
               render={({ field }) => (
-                <label className="sform-checkbox">
-                  <div
-                    className={[
-                      "sform-check",
-                      field.value ? "sform-check--on" : "",
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                  >
-                    {field.value && <LucideCheck width={11} />}
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={field.value}
-                    onChange={(e) => field.onChange(e.target.checked)}
-                    style={{
-                      position: "absolute",
-                      opacity: 0,
-                      pointerEvents: "none",
-                    }}
-                  />
-                  <span className="sform-check-label">
-                    <LucideStar width={13} style={{ color: "#fbbf24" }} />
-                    Mark as favorite
-                  </span>
-                </label>
+                <Switch
+                  checked={field.value}
+                  onChange={field.onChange}
+                  label="Mark as favorite"
+                  description="Pin this snippet to the top of your list"
+                  icon={LucideStar}
+                  iconColor="#fbbf24"
+                />
               )}
             />
-          </div>
-        )}
-
-          </div>
+          </Disclosure>
+        </div>
 
       </FormLayout>
     </>
@@ -822,51 +761,40 @@ function TypeMetadataFields({
 }
 
 const CSS = `
-.sform-top { flex-shrink: 0; }
-.sform-content { flex: 1; overflow-y: auto; }
-
-/* Tabs */
-.sform-tabs {
-  display:       flex;
-  gap:           4px;
-  padding:       0 0 16px;
-  border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 0;
-}
-.sform-tab {
-  display:       flex;
-  align-items:   center;
-  gap:           6px;
-  height:        34px;
-  padding:       0 14px;
-  background:    transparent;
-  border:        1px solid transparent;
-  border-radius: var(--radius-md);
-  color:         var(--text-tertiary);
-  font-size:     var(--text-sm);
-  font-family:   var(--font-sans);
-  font-weight:   500;
-  cursor:        pointer;
-  transition:    background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
-}
-.sform-tab:hover    { background: var(--bg-overlay); color: var(--text-primary); }
-.sform-tab--active  { background: var(--accent-muted); border-color: var(--accent-border); color: var(--cyan-300); }
-.sform-tab-error-dot {
-  width:         6px;
-  height:        6px;
-  border-radius: 50%;
-  background:    var(--danger);
-  flex-shrink:   0;
-  margin-left:   2px;
-}
-
-/* Panel */
-.sform-panel { display: flex; flex-direction: column; gap: 16px; padding: 16px 0; }
+/* Layout: essentials always visible, optional fields in a Disclosure */
+.sform-body       { display: flex; flex-direction: column; gap: 16px; padding: 16px 0; }
+.sform-essentials { display: flex; flex-direction: column; gap: 16px; }
 
 /* Field */
 .sform-field { display: flex; flex-direction: column; gap: 6px; }
 .sform-label { font-size: var(--text-sm); font-weight: 500; color: var(--text-primary); display: flex; align-items: center; gap: 6px; }
 .sform-optional { font-size: var(--text-xs); font-weight: 400; color: var(--text-tertiary); }
+
+/* Compact language picker in the code editor header */
+.sform-lang-select-wrap { position: relative; display: flex; align-items: center; }
+.sform-lang-select-icon {
+  position: absolute; left: 8px;
+  color: var(--text-tertiary); pointer-events: none;
+}
+.sform-lang-select {
+  height:             28px;
+  padding:            0 10px 0 26px;
+  background:         var(--bg-overlay);
+  border:             1px solid var(--border-default);
+  border-radius:      var(--radius-sm);
+  color:              var(--text-secondary);
+  font-family:        var(--font-sans);
+  font-size:          var(--text-xs);
+  font-weight:        500;
+  outline:            none;
+  cursor:             pointer;
+  appearance:         none;
+  -webkit-appearance: none;
+  transition:         border-color var(--transition-fast), color var(--transition-fast);
+}
+.sform-lang-select:hover  { border-color: var(--border-strong); color: var(--text-primary); }
+.sform-lang-select:focus  { border-color: var(--border-focus); box-shadow: 0 0 0 3px var(--accent-muted); }
+.sform-lang-select option { background: var(--bg-elevated); }
 
 /* Language detect hint */
 .sform-paste-toast {
@@ -1011,23 +939,6 @@ const CSS = `
 }
 .sform-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 479px) { .sform-grid-2 { grid-template-columns: 1fr; } }
-
-/* Checkbox */
-.sform-checkbox {
-  display: flex; align-items: center; gap: 10px;
-  cursor: pointer; position: relative; width: fit-content;
-}
-.sform-check {
-  display: flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px;
-  background: var(--bg-subtle); border: 1px solid var(--border-default);
-  border-radius: var(--radius-sm); flex-shrink: 0;
-  transition: background var(--transition-fast), border-color var(--transition-fast);
-}
-.sform-check--on { background: var(--accent); border-color: var(--accent); color: white; }
-.sform-check-label { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-secondary); }
-
-.sform-footer-right { display: flex; align-items: center; gap: 8px; }
 
 /* ── Regex tester ────────────────────────────────────────────────── */
 .sform-regex {

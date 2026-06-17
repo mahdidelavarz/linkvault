@@ -6,7 +6,7 @@ import { getLanguageName }             from '@/features/snippets/utils/languageD
 import { testRegex, getMatchParts }    from '@/features/snippets/utils/snippetUtils'
 import { useToggleSnippetFavorite }    from '@/features/snippets/hooks/useSnippet'
 import Badge  from '@/features/shared/ui/Badge'
-import CodeBlock from '@/features/shared/ui/CodeBlock'
+import CodeWindow from '@/features/shared/ui/CodeWindow'
 import FavoriteButton from '@/features/shared/components/FavoriteButton'
 import CopyButton from '@/features/shared/components/CopyButton'
 import TagSection from '@/features/shared/components/TagSection'
@@ -87,34 +87,13 @@ export default function SnippetCard({ snippet, onDuplicate }: SnippetCardProps) 
         )}
 
         {/* ── Code block — clicking here navigates to detail ── */}
-        <div
-          className="sc-code-wrap"
-          role="button"
-          tabIndex={0}
-          onClick={goToDetail}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goToDetail() }
-          }}
-        >
-          <div className="sc-code-header">
-            <div className="sc-code-dots">
-              <span className="sc-code-dot sc-code-dot--r" />
-              <span className="sc-code-dot sc-code-dot--y" />
-              <span className="sc-code-dot sc-code-dot--g" />
-            </div>
-            <span className="sc-code-filename">
-              {snippet.title.toLowerCase().replace(/\s+/g, '-')}.{snippet.language}
-            </span>
-            <span className="sc-code-lang-pill">{snippet.language}</span>
-          </div>
-          <div className="sc-code-body">
-            <CodeBlock
-              code={snippet.content}
-              language={snippet.language}
-              className="sc-code"
-            />
-          </div>
-        </div>
+        <CodeWindow
+          code={snippet.content}
+          language={snippet.language}
+          filename={`${snippet.title.toLowerCase().replace(/\s+/g, '-')}.${snippet.language}`}
+          interactive
+          onActivate={goToDetail}
+        />
 
         {/* ── Regex metadata: flags + test string with highlighted matches ── */}
         {snippet.snippetType === 'regex' && (snippet.metadata?.flags || snippet.metadata?.testString) && (() => {
@@ -247,91 +226,6 @@ const CSS = `
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow:           hidden;
-}
-
-/* ── Code editor chrome ─────────────────────────────────────── */
-.sc-code-wrap {
-  position:      relative;
-  background:    #0d1117;
-  border:        1px solid rgba(255,255,255,0.08);
-  border-radius: var(--radius-md);
-  overflow:      hidden;
-  min-width:     0;
-  width:         100%;
-  box-sizing:    border-box;
-  cursor:        pointer;
-  transition:    border-color var(--transition-fast);
-}
-.sc-code-wrap:hover { border-color: rgba(255,255,255,0.18); }
-
-.sc-code-header {
-  display:         flex;
-  align-items:     center;
-  gap:             8px;
-  padding:         7px 10px;
-  background:      rgba(255,255,255,0.03);
-  border-bottom:   1px solid rgba(255,255,255,0.07);
-  min-width:       0;
-}
-
-.sc-code-dots {
-  display:     flex;
-  align-items: center;
-  gap:         5px;
-  flex-shrink: 0;
-}
-.sc-code-dot {
-  width:         10px;
-  height:        10px;
-  border-radius: 50%;
-  flex-shrink:   0;
-}
-.sc-code-dot--r { background: #ff5f57; }
-.sc-code-dot--y { background: #febc2e; }
-.sc-code-dot--g { background: #28c840; }
-
-.sc-code-filename {
-  flex:          1;
-  font-size:     11px;
-  font-family:   var(--font-mono);
-  color:         rgba(148,163,184,0.6);
-  overflow:      hidden;
-  text-overflow: ellipsis;
-  white-space:   nowrap;
-  min-width:     0;
-}
-
-.sc-code-lang-pill {
-  flex-shrink:   0;
-  font-size:     10px;
-  font-family:   var(--font-mono);
-  font-weight:   600;
-  color:         var(--accent, #67e8f9);
-  background:    rgba(103,232,249,0.08);
-  padding:       1px 7px;
-  border-radius: var(--radius-sm);
-  border:        1px solid rgba(103,232,249,0.18);
-  letter-spacing: 0.03em;
-  text-transform: lowercase;
-}
-
-.sc-code-body {
-  overflow-x: auto;
-  overflow-y: auto;
-  max-height: 180px;
-}
-.sc-code-body::-webkit-scrollbar         { height: 4px; width: 4px; }
-.sc-code-body::-webkit-scrollbar-thumb   { background: rgba(255,255,255,0.12); border-radius: 99px; }
-.sc-code-body::-webkit-scrollbar-track   { background: transparent; }
-
-.sc-code {
-  display:     block;
-  margin:      0;
-  font-family: var(--font-mono);
-  font-size:   var(--text-xs);
-  line-height: var(--leading-relaxed);
-  white-space: pre;
-  background:  transparent !important;
 }
 
 /* Regex display */

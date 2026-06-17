@@ -12,23 +12,23 @@ import { VaultSecretHint } from "@/features/settings/security/components/VaultSe
 import { detectSecret } from "@/features/settings/security/utils/detectSecret";
 import { useCategories } from "@/features/categories/hooks/useCategories";
 
-import FormSection from "@/features/shared/ui/FormSection";
 import Input from "@/features/shared/ui/Input";
 import Textarea from "@/features/shared/ui/TextArea";
 import Button from "@/features/shared/ui/Button";
 import Alert from "@/features/shared/ui/Alert";
+import Disclosure from "@/features/shared/ui/Disclosure";
+import Switch from "@/features/shared/ui/Switch";
 import TagSelector from "@/features/tags/components/TagSelector";
 import {
-  LucideCheck,
   LucideChevronDown,
   LucideEye,
   LucideEyeOff,
   LucideFolder,
   LucideGlobe,
-  LucideLink2,
   LucideLock,
   LucideMail,
   LucidePhone,
+  LucideSlidersHorizontal,
   LucideSparkles,
   LucideStar,
   LucideType,
@@ -197,148 +197,162 @@ export default function LinkForm({ link, initialUrl, onClose }: LinkFormProps) {
       <FormLayout
         onSubmit={handleSubmit(onSubmit)}
         noValidate
+        footerJustify="between"
         footer={
           <>
             <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-            <Button type="submit" isLoading={isLoading} fullWidth>
+            <Button type="submit" isLoading={isLoading}>
               {isEditing ? "Save changes" : "Add link"}
             </Button>
           </>
         }
       >
-        {(vaultError || mutationError) && (
-          <Alert
-            type="error"
-            message={vaultError ?? (mutationError instanceof Error ? mutationError.message : "Something went wrong")}
-          />
-        )}
-
-        {/* Basic info */}
-        <FormSection icon={LucideLink2} title="Basic info">
-          <Input
-            label="URL" type="url" placeholder="https://example.com"
-            leftIcon={LucideGlobe} error={errors.url?.message} autoFocus
-            rightNode={fetchingNode ?? undefined}
-            onPaste={handleUrlPaste}
-            {...register("url")}
-          />
-          {duplicate && (
-            <div className="lf-duplicate-warn">
-              Already saved as &ldquo;<strong>{duplicate.title}</strong>&rdquo; — you can still save a second copy.
-            </div>
+        <div className="lf-body">
+          {(vaultError || mutationError) && (
+            <Alert
+              type="error"
+              message={vaultError ?? (mutationError instanceof Error ? mutationError.message : "Something went wrong")}
+            />
           )}
-          <div className="lf-title-wrap">
-            <Input
-              label="Title" type="text" placeholder="My awesome link"
-              leftIcon={LucideType} error={errors.title?.message}
-              {...register("title")}
-            />
-            {autoFilled && (
-              <span className="lf-autofill">
-                <LucideSparkles width={10} /> Auto-filled
-              </span>
-            )}
-          </div>
-          <Textarea
-            label="Description" placeholder="Optional description…" optional
-            error={errors.description?.message} {...register("description")}
-          />
-        </FormSection>
 
-        {/* Organize */}
-        <FormSection icon={LucideFolder} title="Organize">
-          <div className="lf-field">
-            <label className="lf-label">Category <span className="lf-optional">optional</span></label>
-            <div className="lf-select-wrap">
-              <LucideFolder className="lf-select-icon" />
-              <Controller
-                name="categoryId" control={control}
-                render={({ field }) => (
-                  <select
-                    className="lf-select"
-                    value={field.value ?? ""}
-                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                  >
-                    <option value="">No category</option>
-                    {categories?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                )}
+          {/* ══ Essentials ══ */}
+          <div className="lf-essentials">
+            <Input
+              label="URL" type="url" placeholder="https://example.com"
+              leftIcon={LucideGlobe} error={errors.url?.message} autoFocus
+              rightNode={fetchingNode ?? undefined}
+              onPaste={handleUrlPaste}
+              {...register("url")}
+            />
+            {duplicate && (
+              <div className="lf-duplicate-warn">
+                Already saved as &ldquo;<strong>{duplicate.title}</strong>&rdquo; — you can still save a second copy.
+              </div>
+            )}
+            <div className="lf-title-wrap">
+              <Input
+                label="Title" type="text" placeholder="My awesome link"
+                leftIcon={LucideType} error={errors.title?.message}
+                {...register("title")}
               />
-              <LucideChevronDown className="lf-select-chevron" />
+              {autoFilled && (
+                <span className="lf-autofill">
+                  <LucideSparkles width={10} /> Auto-filled
+                </span>
+              )}
             </div>
           </div>
 
-          <div className="lf-field">
-            <label className="lf-label">Tags <span className="lf-optional">optional</span></label>
-            <Controller
-              name="tagIds" control={control}
-              render={({ field }) => <TagSelector selectedTagIds={field.value} onChange={field.onChange} />}
+          {/* ══ More details (collapsed by default) ══ */}
+          <Disclosure
+            title="More details"
+            summary="Description · category · tags · favorite"
+            icon={LucideSlidersHorizontal}
+            defaultOpen={isEditing}
+          >
+            <Textarea
+              label="Description" placeholder="Optional description…" optional
+              error={errors.description?.message} {...register("description")}
             />
-          </div>
 
-          <Controller
-            name="isFavorite" control={control}
-            render={({ field }) => (
-              <label className="lf-checkbox">
-                <div className={["lf-check-box", field.value ? "lf-check-box--checked" : ""].filter(Boolean).join(" ")}>
-                  {field.value && <LucideCheck width={11} />}
-                </div>
-                <input type="checkbox" checked={field.value} onChange={(e) => field.onChange(e.target.checked)}
-                  style={{ position: "absolute", opacity: 0, pointerEvents: "none" }} />
-                <span className="lf-check-label">
-                  <LucideStar width={13} style={{ color: "#fbbf24" }} />
-                  Mark as favorite
-                </span>
-              </label>
-            )}
-          />
-        </FormSection>
-
-        {/* Credentials */}
-        <FormSection icon={LucideLock} title="Credentials" hint="optional">
-          {/* Only gate behind vault-unlock when there's an existing encrypted secret to
-              protect — a brand-new link has nothing to unlock for yet. */}
-          <VaultGuard enabled={isEditing && !!link?.passwordEncrypted}>
-            <div className="lf-grid-2">
-              <Input label="Username" type="text" placeholder="username" leftIcon={LucideUser} optional error={errors.username?.message} {...register("username")} />
-              <div>
-                <Input
-                  label="Password" type={showPassword ? "text" : "password"}
-                  placeholder={isEditing ? "Leave blank to keep" : "password"}
-                  leftIcon={LucideLock} optional error={errors.password?.message}
-                  rightNode={
-                    <button type="button" className="lf-eye" onClick={() => setShowPassword((p) => !p)} tabIndex={-1}>
-                      {showPassword ? <LucideEyeOff width={13} /> : <LucideEye width={13} />}
-                    </button>
-                  }
-                  {...register("password", {
-                    onChange: (e) => setPasswordValue(e.target.value),
-                  })}
+            <div className="lf-field">
+              <label className="lf-label">Category <span className="lf-optional">optional</span></label>
+              <div className="lf-select-wrap">
+                <LucideFolder className="lf-select-icon" />
+                <Controller
+                  name="categoryId" control={control}
+                  render={({ field }) => (
+                    <select
+                      className="lf-select"
+                      value={field.value ?? ""}
+                      onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                    >
+                      <option value="">No category</option>
+                      {categories?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  )}
                 />
-                <VaultSecretHint
-                  secretType={detectSecret(passwordValue, 'PASSWORD')}
-                  onEncrypt={
-                    isEnabled && isUnlocked && link
-                      ? () => encrypt('link', String(link.id), 'password', passwordValue)
-                      : undefined
-                  }
-                />
+                <LucideChevronDown className="lf-select-chevron" />
               </div>
             </div>
-            <div className="lf-grid-2">
-              <Input label="Email" type="email" placeholder="email@example.com" leftIcon={LucideMail} optional error={errors.email?.message} {...register("email")} />
-              <Input label="Phone" type="tel" placeholder="+1 234 567 890" leftIcon={LucidePhone} optional error={errors.phone?.message} {...register("phone")} />
+
+            <div className="lf-field">
+              <label className="lf-label">Tags <span className="lf-optional">optional</span></label>
+              <Controller
+                name="tagIds" control={control}
+                render={({ field }) => <TagSelector selectedTagIds={field.value} onChange={field.onChange} />}
+              />
             </div>
-          </VaultGuard>
-        </FormSection>
+
+            <Controller
+              name="isFavorite" control={control}
+              render={({ field }) => (
+                <Switch
+                  checked={field.value}
+                  onChange={field.onChange}
+                  label="Mark as favorite"
+                  description="Pin this link to the top of your list"
+                  icon={LucideStar}
+                  iconColor="#fbbf24"
+                />
+              )}
+            />
+          </Disclosure>
+
+          {/* ══ Credentials (collapsed by default) ══ */}
+          <Disclosure
+            title="Credentials"
+            summary="Username · password · email · phone"
+            icon={LucideLock}
+            defaultOpen={isEditing && !!(link?.username || link?.email || link?.phone || link?.passwordEncrypted)}
+          >
+            {/* Only gate behind vault-unlock when there's an existing encrypted secret to
+                protect — a brand-new link has nothing to unlock for yet. */}
+            <VaultGuard enabled={isEditing && !!link?.passwordEncrypted}>
+              <div className="lf-grid-2">
+                <Input label="Username" type="text" placeholder="username" leftIcon={LucideUser} optional error={errors.username?.message} {...register("username")} />
+                <div>
+                  <Input
+                    label="Password" type={showPassword ? "text" : "password"}
+                    placeholder={isEditing ? "Leave blank to keep" : "password"}
+                    leftIcon={LucideLock} optional error={errors.password?.message}
+                    rightNode={
+                      <button type="button" className="lf-eye" onClick={() => setShowPassword((p) => !p)} tabIndex={-1}>
+                        {showPassword ? <LucideEyeOff width={13} /> : <LucideEye width={13} />}
+                      </button>
+                    }
+                    {...register("password", {
+                      onChange: (e) => setPasswordValue(e.target.value),
+                    })}
+                  />
+                  <VaultSecretHint
+                    secretType={detectSecret(passwordValue, 'PASSWORD')}
+                    onEncrypt={
+                      isEnabled && isUnlocked && link
+                        ? () => encrypt('link', String(link.id), 'password', passwordValue)
+                        : undefined
+                    }
+                  />
+                </div>
+              </div>
+              <div className="lf-grid-2">
+                <Input label="Email" type="email" placeholder="email@example.com" leftIcon={LucideMail} optional error={errors.email?.message} {...register("email")} />
+                <Input label="Phone" type="tel" placeholder="+1 234 567 890" leftIcon={LucidePhone} optional error={errors.phone?.message} {...register("phone")} />
+              </div>
+            </VaultGuard>
+          </Disclosure>
+        </div>
       </FormLayout>
     </>
   );
 }
 
-// ─── Form-specific styles only (layout handled by FormLayout/FormSection) ──────
+// ─── Form-specific styles only (layout handled by FormLayout/Disclosure) ──────
 
 const CSS = `
+.lf-body       { display: flex; flex-direction: column; gap: 16px; padding: 16px 0; }
+.lf-essentials { display: flex; flex-direction: column; gap: 12px; }
+
 .lf-title-wrap  { position: relative; }
 .lf-autofill {
   display: inline-flex; align-items: center; gap: 4px;
@@ -371,16 +385,6 @@ const CSS = `
 }
 .lf-select:focus { border-color: var(--border-focus); background: var(--bg-elevated); box-shadow: 0 0 0 3px var(--accent-muted); }
 .lf-select option { background: var(--bg-elevated); }
-
-.lf-checkbox { display: flex; align-items: center; gap: 10px; cursor: pointer; width: fit-content; position: relative; }
-.lf-check-box {
-  display: flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px;
-  background: var(--bg-subtle); border: 1px solid var(--border-default); border-radius: var(--radius-sm);
-  flex-shrink: 0; transition: background var(--transition-fast), border-color var(--transition-fast);
-}
-.lf-check-box--checked { background: var(--accent); border-color: var(--accent); color: white; }
-.lf-check-label { display: flex; align-items: center; gap: 6px; font-size: var(--text-sm); color: var(--text-secondary); }
 
 .lf-duplicate-warn {
   margin-top: 4px; padding: 7px 10px; font-size: var(--text-xs); color: var(--warning);

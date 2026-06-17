@@ -167,6 +167,32 @@ body {
   --z-modal: 400;
   --z-toast: 500;
   --z-tooltip: 600;
+
+  /* ─── Code window chrome (terminal-style) ─── */
+  --code-bg:            #0d1117;
+  --code-border:        rgba(255, 255, 255, 0.08);
+  --code-border-hover:  rgba(255, 255, 255, 0.18);
+  --code-header-bg:     rgba(255, 255, 255, 0.03);
+  --code-header-border: rgba(255, 255, 255, 0.07);
+  --code-filename:      rgba(148, 163, 184, 0.6);
+  --code-scrollbar:     rgba(255, 255, 255, 0.12);
+
+  /* ─── Syntax tokens (dark defaults) ─── */
+  --ct-fg:          #e2e8f0;
+  --ct-comment:     #64748b;
+  --ct-punctuation: #94a3b8;
+  --ct-property:    #93c5fd;
+  --ct-tag:         #f87171;
+  --ct-number:      #fbbf24;
+  --ct-constant:    #fb923c;
+  --ct-symbol:      #f472b6;
+  --ct-selector:    #a3e635;
+  --ct-class:       #fcd34d;
+  --ct-string:      #86efac;
+  --ct-builtin:     #c084fc;
+  --ct-function:    #60a5fa;
+  --ct-keyword:     #67e8f9;
+  --ct-url:         #67e8f9;
 }
 
 /* Light mode — optional, users can toggle */
@@ -190,6 +216,32 @@ body {
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08);
+
+  /* Code window chrome — white in light mode */
+  --code-bg:            #ffffff;
+  --code-border:        #d8dee4;
+  --code-border-hover:  #b6c0cc;
+  --code-header-bg:     #f6f8fa;
+  --code-header-border: #d8dee4;
+  --code-filename:      #6e7781;
+  --code-scrollbar:     rgba(0, 0, 0, 0.15);
+
+  /* Syntax tokens — GitHub-light palette (readable on white) */
+  --ct-fg:          #24292f;
+  --ct-comment:     #6e7781;
+  --ct-punctuation: #24292f;
+  --ct-property:    #0550ae;
+  --ct-tag:         #116329;
+  --ct-number:      #0550ae;
+  --ct-constant:    #0550ae;
+  --ct-symbol:      #cf222e;
+  --ct-selector:    #0a3069;
+  --ct-class:       #953800;
+  --ct-string:      #0a3069;
+  --ct-builtin:     #953800;
+  --ct-function:    #8250df;
+  --ct-keyword:     #cf222e;
+  --ct-url:         #0a3069;
 }
 
 /* ─── Base Reset ─────────────────────────────────────────── */

@@ -17,6 +17,8 @@ import { useCategories } from "@/features/categories/hooks/useCategories";
 import { extractVariables } from "@/features/prompts/utils/promptUtils";
 import FormLayout from "@/features/shared/layout/FormLayout";
 import Button from "@/features/shared/ui/Button";
+import Disclosure from "@/features/shared/ui/Disclosure";
+import Switch from "@/features/shared/ui/Switch";
 import TagSelector from "@/features/tags/components/TagSelector";
 import {
   LucideFolder,
@@ -24,6 +26,8 @@ import {
   LucideBot,
   LucideVariable,
   LucideCircleAlert,
+  LucideSlidersHorizontal,
+  LucideStar,
 } from "@/Icons/Icons";
 
 interface PromptFormProps {
@@ -176,9 +180,10 @@ export default function PromptForm({ prompt, onClose, initialValues }: PromptFor
       <style>{CSS}</style>
       <FormLayout
         onSubmit={handleSubmit}
+        footerJustify="between"
         footer={
           <>
-            <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+            <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
             <Button type="submit" isLoading={isLoading}>
               {isEditing ? "Update Prompt" : "Create Prompt"}
             </Button>
@@ -212,118 +217,7 @@ export default function PromptForm({ prompt, onClose, initialValues }: PromptFor
           )}
         </div>
 
-        {/* Type & Target AI */}
-        <div className="form-row">
-          <div className="form-field">
-            <label className="form-label" htmlFor="prompt-type">
-              Type
-            </label>
-            <div className="form-select-wrap">
-              <LucideMessageSquare className="form-select-icon" />
-              <select
-                id="prompt-type"
-                className="form-select"
-                value={formData.promptType}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    promptType: e.target.value as PromptType,
-                  }))
-                }
-              >
-                {Object.entries(PROMPT_TYPES).map(([key, { label }]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="form-field">
-            <label className="form-label" htmlFor="prompt-target">
-              Target AI
-            </label>
-            <div className="form-select-wrap">
-              <LucideBot className="form-select-icon" />
-              <select
-                id="prompt-target"
-                className="form-select"
-                value={formData.targetAI || ""}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    targetAI: (e.target.value || undefined) as AIPlatform,
-                  }))
-                }
-              >
-                <option value="">None (Generic)</option>
-                {Object.entries(AI_PLATFORMS).map(([key, { name }]) => (
-                  <option key={key} value={key}>
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Category */}
-        <div className="form-field">
-          <label className="form-label" htmlFor="prompt-category">
-            Category
-          </label>
-          <div className="form-select-wrap">
-            <LucideFolder className="form-select-icon" />
-            <select
-              id="prompt-category"
-              className="form-select"
-              value={formData.categoryId || ""}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  categoryId: e.target.value
-                    ? parseInt(e.target.value)
-                    : undefined,
-                }))
-              }
-            >
-              <option value="">No Category</option>
-              {categories?.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Tags */}
-        <TagSelector
-          selectedTagIds={formData.tagIds || []}
-          onChange={(tagIds) =>
-            setFormData((prev) => ({ ...prev, tagIds }))
-          }
-        />
-
-        {/* Description */}
-        <div className="form-field">
-          <label className="form-label" htmlFor="prompt-desc">
-            Description
-          </label>
-          <textarea
-            id="prompt-desc"
-            className="form-textarea"
-            value={formData.description}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, description: e.target.value }))
-            }
-            rows={2}
-            placeholder="What does this prompt do?"
-          />
-        </div>
-
-        {/* Content */}
+        {/* Content (hero) */}
         <div className="form-field">
           <label className="form-label" htmlFor="prompt-content">
             Prompt Content <span className="required">*</span>
@@ -368,41 +262,156 @@ export default function PromptForm({ prompt, onClose, initialValues }: PromptFor
           )}
         </div>
 
-        {/* Expected Output */}
-        <div className="form-field">
-          <label className="form-label" htmlFor="prompt-output">
-            Expected Output
-          </label>
-          <textarea
-            id="prompt-output"
-            className="form-textarea"
-            value={formData.expectedOutput}
-            onChange={(e) =>
-              setFormData((prev) => ({
-                ...prev,
-                expectedOutput: e.target.value,
-              }))
-            }
-            rows={3}
-            placeholder="Describe what this prompt should generate..."
-          />
-        </div>
+        {/* ══ More details (collapsed by default) ══ */}
+        <Disclosure
+          title="More details"
+          summary="Type · AI · category · tags · description · output"
+          icon={LucideSlidersHorizontal}
+          defaultOpen={isEditing}
+        >
+          {/* Type & Target AI */}
+          <div className="form-row">
+            <div className="form-field">
+              <label className="form-label" htmlFor="prompt-type">
+                Type
+              </label>
+              <div className="form-select-wrap">
+                <LucideMessageSquare className="form-select-icon" />
+                <select
+                  id="prompt-type"
+                  className="form-select"
+                  value={formData.promptType}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      promptType: e.target.value as PromptType,
+                    }))
+                  }
+                >
+                  {Object.entries(PROMPT_TYPES).map(([key, { label }]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-        {/* Favorite */}
-        <label className="form-checkbox-label">
-          <input
-            type="checkbox"
-            checked={formData.isFavorite}
-            onChange={(e) =>
-              setFormData((prev) => ({
-                ...prev,
-                isFavorite: e.target.checked,
-              }))
+            <div className="form-field">
+              <label className="form-label" htmlFor="prompt-target">
+                Target AI
+              </label>
+              <div className="form-select-wrap">
+                <LucideBot className="form-select-icon" />
+                <select
+                  id="prompt-target"
+                  className="form-select"
+                  value={formData.targetAI || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      targetAI: (e.target.value || undefined) as AIPlatform,
+                    }))
+                  }
+                >
+                  <option value="">None (Generic)</option>
+                  {Object.entries(AI_PLATFORMS).map(([key, { name }]) => (
+                    <option key={key} value={key}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Category */}
+          <div className="form-field">
+            <label className="form-label" htmlFor="prompt-category">
+              Category
+            </label>
+            <div className="form-select-wrap">
+              <LucideFolder className="form-select-icon" />
+              <select
+                id="prompt-category"
+                className="form-select"
+                value={formData.categoryId || ""}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    categoryId: e.target.value
+                      ? parseInt(e.target.value)
+                      : undefined,
+                  }))
+                }
+              >
+                <option value="">No Category</option>
+                {categories?.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Tags */}
+          <TagSelector
+            selectedTagIds={formData.tagIds || []}
+            onChange={(tagIds) =>
+              setFormData((prev) => ({ ...prev, tagIds }))
             }
-            className="form-checkbox"
           />
-          <span>Mark as favorite</span>
-        </label>
+
+          {/* Description */}
+          <div className="form-field">
+            <label className="form-label" htmlFor="prompt-desc">
+              Description
+            </label>
+            <textarea
+              id="prompt-desc"
+              className="form-textarea"
+              value={formData.description}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, description: e.target.value }))
+              }
+              rows={2}
+              placeholder="What does this prompt do?"
+            />
+          </div>
+
+          {/* Expected Output */}
+          <div className="form-field">
+            <label className="form-label" htmlFor="prompt-output">
+              Expected Output
+            </label>
+            <textarea
+              id="prompt-output"
+              className="form-textarea"
+              value={formData.expectedOutput}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  expectedOutput: e.target.value,
+                }))
+              }
+              rows={3}
+              placeholder="Describe what this prompt should generate..."
+            />
+          </div>
+
+          {/* Favorite */}
+          <Switch
+            checked={!!formData.isFavorite}
+            onChange={(checked) =>
+              setFormData((prev) => ({ ...prev, isFavorite: checked }))
+            }
+            label="Mark as favorite"
+            description="Pin this prompt to the top of your list"
+            icon={LucideStar}
+            iconColor="#fbbf24"
+          />
+        </Disclosure>
 
         </div>
       </FormLayout>
@@ -540,21 +549,6 @@ const CSS = `
   border-radius: var(--radius-md);
   font-size:     var(--text-xs);
   color:         #d97706;
-}
-
-.form-checkbox-label {
-  display:     flex;
-  align-items: center;
-  gap:         8px;
-  font-size:   var(--text-sm);
-  color:       var(--text-secondary);
-  cursor:      pointer;
-}
-.form-checkbox {
-  width:  16px;
-  height: 16px;
-  accent-color: var(--primary);
-  cursor: pointer;
 }
 
 /* P3-8: Variable defaults panel */

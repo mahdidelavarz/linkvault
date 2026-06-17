@@ -104,6 +104,32 @@ export function LucideX(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+export function LucideMaximize2(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={24}
+      height={24}
+      viewBox="0 0 24 24"
+      {...props}
+    >
+      <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 3h6v6m-11 5L21 3M9 21H3v-6m0 6L14 10"/>
+    </svg>
+  );
+}
+export function LucideMinimize2(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={24}
+      height={24}
+      viewBox="0 0 24 24"
+      {...props}
+    >
+      <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 14h6v6m11-11h-6V3M14 10l7-7M3 21l7-7"/>
+    </svg>
+  );
+}
 export function LucideFolder(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
