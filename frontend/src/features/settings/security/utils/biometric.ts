@@ -34,7 +34,7 @@ export async function registerBiometric(): Promise<void> {
     const credential = await navigator.credentials.create({
         publicKey: {
             challenge,
-            rp: { name: 'LinkVault', id: RP_ID },
+            rp: { name: 'NeoVault', id: RP_ID },
             user: { id: userId, name: 'vault-user', displayName: 'Vault User' },
             pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
             authenticatorSelection: {

@@ -222,7 +222,7 @@ export class LinkService {
     }> {
         const response = await axios.get(url, {
             timeout: 8000,
-            headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LinkVault-Bot/1.0)' },
+            headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NeoVault-Bot/1.0)' },
             responseType: 'text',
             maxRedirects: 5,
         });

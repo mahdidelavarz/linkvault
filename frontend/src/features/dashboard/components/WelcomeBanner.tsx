@@ -43,7 +43,7 @@ export default function WelcomeBanner({
             <div className="dp-hero-vault">
               <LucideVault width={14} />
             </div>
-            <span>LinkVault</span>
+            <span>NeoVault</span>
           </div>
           <h1 className="dp-hero-greeting">
             {greeting && `${greeting}, `}

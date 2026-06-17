@@ -16,16 +16,16 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
     const transport = createTransport();
 
     await transport.sendMail({
-        from: process.env.SMTP_FROM || 'LinkVault <noreply@linkvault.app>',
+        from: process.env.SMTP_FROM || 'NeoVault <noreply@linkvault.app>',
         to,
-        subject: 'Reset your LinkVault password',
+        subject: 'Reset your NeoVault password',
         html: `
 <!DOCTYPE html>
 <html>
 <body style="font-family:sans-serif;background:#0f1117;color:#e2e8f0;margin:0;padding:32px 16px;">
   <div style="max-width:480px;margin:0 auto;background:#1a1d27;border:1px solid #2a2d3a;border-radius:12px;padding:36px 32px;">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
-      <span style="font-size:20px;font-weight:700;color:#e2e8f0;letter-spacing:-0.02em;">LinkVault</span>
+      <span style="font-size:20px;font-weight:700;color:#e2e8f0;letter-spacing:-0.02em;">NeoVault</span>
     </div>
     <h2 style="font-size:22px;font-weight:700;color:#e2e8f0;margin:0 0 8px;">Reset your password</h2>
     <p style="color:#94a3b8;font-size:14px;margin:0 0 24px;">

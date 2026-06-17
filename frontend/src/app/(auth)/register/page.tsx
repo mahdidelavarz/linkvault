@@ -114,7 +114,7 @@ export default function RegisterPage() {
             <div className="auth-logo-icon">
               <LucideVault width={22} />
             </div>
-            <span className="auth-logo-text">LinkVault</span>
+            <span className="auth-logo-text">NeoVault</span>
           </div>
 
           {/* Heading */}

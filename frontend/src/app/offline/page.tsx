@@ -9,7 +9,7 @@ export default function OfflinePage() {
       <div className="offline-text">
         <h1>You're offline</h1>
         <p>
-          LinkVault can't reach the server. Your cached data is still available
+          NeoVault can't reach the server. Your cached data is still available
           if you were recently connected.
         </p>
       </div>

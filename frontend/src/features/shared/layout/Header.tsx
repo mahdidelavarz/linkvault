@@ -6,16 +6,21 @@ import { useAuthStore } from "@/features/auth/store/authStore";
 import { useTheme } from "@/app/providers";
 import {
   LucideChevronDown,
+  LucideChevronRight,
   LucideLogOut,
   LucideMoon,
   LucideSearch,
+  LucideSettings,
   LucideSunDim,
   LucideUser,
+  LucideVault,
+  SolarHamburgerMenuLinear,
+  SolarPaletteRoundBoldDuotone,
 } from "@/Icons/Icons";
 import ThemeSwitcher from "../ui/ThemeSwitcher";
+import { useSidebar } from "./SidebarContext";
 import { useVault } from "@/features/settings/security/hooks/useVault";
 import { PinModal } from "@/features/settings/security/components/PinModal";
-// import ThemeSwitcher from "../ui/ThemeSwitcher";
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -24,9 +29,11 @@ export default function Header() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const { theme, toggleTheme } = useTheme();
+  const { setMobileOpen } = useSidebar();
   const { isEnabled, isUnlocked, needsRecovery, unlock, requestUnlock, lock } = useVault();
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [pinOpen, setPinOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -73,12 +80,33 @@ export default function Header() {
     router.push("/login");
   };
 
+  const isDark = theme === "dark";
+
   return (
     <>
       <style>{CSS}</style>
       <header className="header">
-        {/* Left — search */}
+        {/* Left — burger (mobile) + brand (mobile) + search */}
         <div className="header-left">
+          <button
+            className="header-burger"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Open menu"
+          >
+            <SolarHamburgerMenuLinear width={20} />
+          </button>
+
+          <button
+            className="header-brand"
+            onClick={() => router.push("/dashboard")}
+            aria-label="NeoVault home"
+          >
+            <span className="header-brand-icon">
+              <LucideVault width={15} />
+            </span>
+            <span className="header-brand-text">NeoVault</span>
+          </button>
+
           <button
             className="header-search"
             onClick={() => router.push("/search")}
@@ -92,7 +120,6 @@ export default function Header() {
 
         {/* Right — actions */}
         <div className="header-right">
-
           {/* Vault lock indicator — only shown when vault is enabled */}
           {isEnabled && (
             <button
@@ -105,24 +132,7 @@ export default function Header() {
             </button>
           )}
 
-          <ThemeSwitcher />
-          {/* Theme toggle */}
-          <button
-            className="header-icon-btn"
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-          >
-            {theme === "dark" ? (
-              <LucideSunDim width={16} />
-            ) : (
-              <LucideMoon width={16} />
-            )}
-          </button>
-
-          {/* Divider */}
-          <div className="header-divider" />
-
-          {/* User menu */}
+          {/* Account / settings menu */}
           <div className="header-user-wrap" ref={menuRef}>
             <button
               className="header-user-btn"
@@ -153,27 +163,77 @@ export default function Header() {
                   <div className="header-dropdown-avatar">
                     <LucideUser width={16} />
                   </div>
-                  <div>
-                    <p className="header-dropdown-name">{user?.username}</p>
+                  <div className="header-dropdown-user-meta">
+                    <p className="header-dropdown-name">{user?.username ?? "User"}</p>
                     <p className="header-dropdown-role">Personal Vault</p>
                   </div>
                 </div>
 
                 <div className="header-dropdown-divider" />
 
+                <p className="header-dropdown-label">Appearance</p>
+
+                {/* Theme toggle */}
+                <button
+                  className="header-dropdown-item"
+                  role="menuitem"
+                  onClick={toggleTheme}
+                >
+                  {isDark ? <LucideSunDim width={15} /> : <LucideMoon width={15} />}
+                  <span className="header-dropdown-item-text">
+                    {isDark ? "Light mode" : "Dark mode"}
+                  </span>
+                  <span className="header-dropdown-tag">{isDark ? "Dark" : "Light"}</span>
+                </button>
+
+                {/* Color palette → opens the palette picker */}
+                <button
+                  className="header-dropdown-item"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setPaletteOpen(true);
+                  }}
+                >
+                  <SolarPaletteRoundBoldDuotone width={15} />
+                  <span className="header-dropdown-item-text">Color palette</span>
+                  <LucideChevronRight width={14} className="header-dropdown-chevron" />
+                </button>
+
+                <div className="header-dropdown-divider" />
+
+                <button
+                  className="header-dropdown-item"
+                  role="menuitem"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    router.push("/settings/vault");
+                  }}
+                >
+                  <LucideSettings width={15} />
+                  <span className="header-dropdown-item-text">Settings</span>
+                </button>
+
                 <button
                   className="header-dropdown-item header-dropdown-item--danger"
                   role="menuitem"
                   onClick={handleLogout}
                 >
-                  <LucideLogOut width={14} />
-                  Sign out
+                  <LucideLogOut width={15} />
+                  <span className="header-dropdown-item-text">Sign out</span>
                 </button>
               </div>
             )}
           </div>
         </div>
       </header>
+
+      {/* Palette picker — trigger lives in the settings menu above */}
+      <ThemeSwitcher
+        showTrigger={false}
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+      />
 
       <PinModal
         isOpen={pinOpen}
@@ -191,9 +251,9 @@ const CSS = `
   display:         flex;
   align-items:     center;
   justify-content: space-between;
-  gap:             16px;
+  gap:             12px;
   height:          56px;
-  padding:         0 20px;
+  padding:         0 16px;
   background:      var(--bg-surface);
   border-bottom:   1px solid var(--border-default);
   position:        sticky;
@@ -203,14 +263,60 @@ const CSS = `
 }
 
 /* Left */
-.header-left { display: flex; align-items: center; flex: 1; }
+.header-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+
+/* Burger — mobile only (sidebar is always visible on desktop) */
+.header-burger {
+  display:         none;
+  align-items:     center;
+  justify-content: center;
+  width:           38px;
+  height:          38px;
+  background:      transparent;
+  border:          1px solid transparent;
+  border-radius:   var(--radius-md);
+  color:           var(--text-secondary);
+  cursor:          pointer;
+  flex-shrink:     0;
+  transition:      background var(--transition-fast), color var(--transition-fast);
+}
+.header-burger:active { background: var(--bg-overlay); color: var(--text-primary); }
+
+/* Brand — mobile only (desktop has the sidebar logo) */
+.header-brand {
+  display:     none;
+  align-items: center;
+  gap:         8px;
+  background:  transparent;
+  border:      none;
+  padding:     0;
+  cursor:      pointer;
+  flex-shrink: 0;
+}
+.header-brand-icon {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           28px;
+  height:          28px;
+  background:      var(--accent-muted);
+  border:          1px solid var(--accent-border);
+  border-radius:   var(--radius-md);
+  color:           var(--cyan-400);
+}
+.header-brand-text {
+  font-size:      var(--text-md);
+  font-weight:    700;
+  color:          var(--text-primary);
+  letter-spacing: -0.02em;
+}
 
 .header-search {
   display:       flex;
   align-items:   center;
   gap:           8px;
-  height:        34px;
-  padding:       0 12px;
+  height:        32px;
+  padding:       0 10px;
   background:    var(--bg-subtle);
   border:        1px solid var(--border-default);
   border-radius: var(--radius-md);
@@ -219,7 +325,7 @@ const CSS = `
   font-family:   var(--font-sans);
   cursor:        pointer;
   max-width:     360px;
-  width:         140px;
+  width:         220px;
   text-align:    left;
   transition:    border-color var(--transition-fast),
                  background   var(--transition-fast);
@@ -229,8 +335,8 @@ const CSS = `
   background:   var(--bg-elevated);
 }
 .header-search-icon {
-  width:      14px;
-  height:     14px;
+  width:      18px;
+  height:     18px;
   flex-shrink: 0;
 }
 .header-search-text {
@@ -263,8 +369,8 @@ const CSS = `
   display:         flex;
   align-items:     center;
   justify-content: center;
-  width:           32px;
-  height:          32px;
+  width:           38px;
+  height:          38px;
   background:      transparent;
   border:          1px solid transparent;
   border-radius:   var(--radius-md);
@@ -284,13 +390,6 @@ const CSS = `
 .header-vault-btn--unlocked { border-color: rgba(34,197,94,0.35); }
 .header-vault-icon { line-height: 1; }
 
-.header-divider {
-  width:      1px;
-  height:     20px;
-  background: var(--border-default);
-  margin:     0 2px;
-}
-
 /* User button */
 .header-user-wrap { position: relative; }
 
@@ -298,7 +397,7 @@ const CSS = `
   display:       flex;
   align-items:   center;
   gap:           7px;
-  height:        32px;
+  height:        38px;
   padding:       0 10px 0 6px;
   background:    transparent;
   border:        1px solid transparent;
@@ -321,8 +420,8 @@ const CSS = `
   display:         flex;
   align-items:     center;
   justify-content: center;
-  width:           24px;
-  height:          24px;
+  width:           26px;
+  height:          26px;
   background:      var(--accent-muted);
   border:          1px solid var(--accent-border);
   border-radius:   var(--radius-full);
@@ -345,14 +444,14 @@ const CSS = `
 /* Dropdown */
 .header-dropdown {
   position:      absolute;
-  top:           calc(100% + 6px);
-  right:0;
-  min-width:     200px;
+  top:           calc(100% + 8px);
+  right:         0;
+  min-width:     230px;
+  padding:       6px;
   background:    var(--bg-elevated);
   border:        1px solid var(--border-default);
   border-radius: var(--radius-lg);
   box-shadow:    var(--shadow-lg);
-  overflow:      hidden;
   z-index:       var(--z-dropdown);
   animation:     fadeInDown var(--transition-fast) ease both;
 }
@@ -360,14 +459,15 @@ const CSS = `
   display:     flex;
   align-items: center;
   gap:         10px;
-  padding:     12px 14px;
+  padding:     8px 10px 10px;
 }
+.header-dropdown-user-meta { min-width: 0; }
 .header-dropdown-avatar {
   display:         flex;
   align-items:     center;
   justify-content: center;
-  width:           34px;
-  height:          34px;
+  width:           36px;
+  height:          36px;
   background:      var(--accent-muted);
   border:          1px solid var(--accent-border);
   border-radius:   var(--radius-full);
@@ -379,25 +479,37 @@ const CSS = `
   font-weight: 600;
   color:       var(--text-primary);
   line-height: 1.2;
+  overflow:    hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .header-dropdown-role {
   font-size: var(--text-xs);
   color:     var(--text-tertiary);
-  margin-top: 1px;
+  margin-top: 2px;
 }
 .header-dropdown-divider {
   height:     1px;
   background: var(--border-subtle);
-  margin:     0;
+  margin:     6px 4px;
+}
+.header-dropdown-label {
+  font-size:      var(--text-xs);
+  font-weight:    600;
+  color:          var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding:        2px 10px 6px;
 }
 .header-dropdown-item {
   display:       flex;
   align-items:   center;
-  gap:           8px;
+  gap:           10px;
   width:         100%;
-  padding:       9px 14px;
+  padding:       10px;
   background:    transparent;
   border:        none;
+  border-radius: var(--radius-md);
   font-size:     var(--text-sm);
   font-family:   var(--font-sans);
   font-weight:   500;
@@ -407,7 +519,47 @@ const CSS = `
   transition:    background var(--transition-fast),
                  color      var(--transition-fast);
 }
-.header-dropdown-item:hover { background: var(--bg-overlay); }
+.header-dropdown-item:hover { background: var(--bg-overlay); color: var(--text-primary); }
+.header-dropdown-item-text { flex: 1; }
+.header-dropdown-tag {
+  font-size:     var(--text-xs);
+  font-weight:   600;
+  color:         var(--text-tertiary);
+  padding:       2px 7px;
+  background:    var(--bg-subtle);
+  border:        1px solid var(--border-default);
+  border-radius: var(--radius-full);
+}
+.header-dropdown-chevron { color: var(--text-tertiary); flex-shrink: 0; }
 .header-dropdown-item--danger       { color: var(--danger); }
-.header-dropdown-item--danger:hover { background: var(--danger-muted); }
+.header-dropdown-item--danger:hover { background: var(--danger-muted); color: var(--danger); }
+
+/* ── Mobile ── */
+@media (max-width: 767px) {
+  .header { padding: 0 12px; gap: 8px; }
+  .header-burger { display: flex; }
+  .header-brand  { display: flex; }
+
+  /* Collapse search to an icon-only button on phones to keep the bar clean */
+  .header-search {
+    width:   38px;
+    max-width: 38px;
+    padding: 0;
+    justify-content: center;
+    margin-left: auto;
+  }
+  .header-search-text,
+  .header-kbd { display: none; }
+
+  /* Username takes too much room on phones — show avatar only */
+  .header-username,
+  .header-chevron { display: none; }
+  .header-user-btn { padding: 0; width: 38px; justify-content: center; }
+
+  .header-dropdown { min-width: 240px; }
+}
+
+@media (max-width: 359px) {
+  .header-brand-text { display: none; }
+}
 `;

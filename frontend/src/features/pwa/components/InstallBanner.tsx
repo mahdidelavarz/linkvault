@@ -83,7 +83,7 @@ export default function InstallBanner() {
       {canInstall && (
         <div className="pwa-banner" role="banner">
           <div className="pwa-banner-text">
-            <span className="pwa-banner-title">Install LinkVault</span>
+            <span className="pwa-banner-title">Install NeoVault</span>
             <span className="pwa-banner-sub">
               Add to home screen for faster access
             </span>

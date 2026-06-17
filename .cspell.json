@@ -4,6 +4,7 @@
     "ciphertext",
     "decryptable",
     "linkvault",
+    "neovault",
     "GHASH",
     "PBKDF2",
     "AES-GCM",

@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "LinkVault",
-    short_name: "LinkVault",
+    name: "NeoVault",
+    short_name: "NeoVault",
     description: "Developer knowledge vault — links, snippets, prompts & configs",
 
     start_url: "/",

@@ -197,7 +197,7 @@ export default function ProfileMenuModal({ onClose }: ProfileMenuModalProps) {
           </button>
 
           {/* Version Info */}
-          <p className="profile-version">LinkVault v1.0.0</p>
+          <p className="profile-version">NeoVault v1.0.0</p>
         </div>
       </div>
     </>

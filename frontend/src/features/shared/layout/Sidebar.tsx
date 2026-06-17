@@ -99,7 +99,7 @@ export default function Sidebar() {
         <div className="sidebar-logo-icon" onClick={() => setCollapsed(!collapsed)}>
           <LucideVault width={18} />
         </div>
-        {!collapsed && <span className="sidebar-logo-text">LinkVault</span>}
+        {!collapsed && <span className="sidebar-logo-text">NeoVault</span>}
 
         {/* Collapse toggle btn — desktop only */}
         <button
@@ -209,7 +209,7 @@ export default function Sidebar() {
             <div className="sidebar-logo-icon">
               <LucideVault width={18} />
             </div>
-            <span className="sidebar-logo-text">LinkVault</span>
+            <span className="sidebar-logo-text">NeoVault</span>
             <button
               className="sidebar-close-btn sidebar-close-btn--visible"
               onClick={() => setMobileOpen(false)}

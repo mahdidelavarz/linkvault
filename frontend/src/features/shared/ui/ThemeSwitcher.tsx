@@ -12,11 +12,28 @@ import { ThemeName, themes } from "@/features/shared/theme/theme";
 
 interface ThemeSwitcherProps {
   onClose?: () => void;
+  /** Render the palette trigger button. Set false to control the modal externally. */
+  showTrigger?: boolean;
+  /** Controlled open state (when omitted the component manages its own). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export default function ThemeSwitcher({ onClose }: ThemeSwitcherProps) {
+export default function ThemeSwitcher({
+  onClose,
+  showTrigger = true,
+  open,
+  onOpenChange,
+}: ThemeSwitcherProps) {
   const [currentTheme, setCurrentTheme] = useState<ThemeName>("default");
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+
+  const isControlled = open !== undefined;
+  const isOpen = isControlled ? open : internalOpen;
+  const setIsOpen = (next: boolean) => {
+    if (!isControlled) setInternalOpen(next);
+    onOpenChange?.(next);
+  };
 
   // Load theme from localStorage on mount
   useEffect(() => {
@@ -80,13 +97,15 @@ export default function ThemeSwitcher({ onClose }: ThemeSwitcherProps) {
       <style>{CSS}</style>
 
       {/* Theme Button */}
-      <button
-        className="theme-switcher-btn"
-        onClick={() => setIsOpen(!isOpen)}
-        aria-label="Change theme"
-      >
-        <SolarPaletteRoundBoldDuotone width={18} />
-      </button>
+      {showTrigger && (
+        <button
+          className="theme-switcher-btn"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-label="Change theme"
+        >
+          <SolarPaletteRoundBoldDuotone width={18} />
+        </button>
+      )}
 
       {/* Theme Dropdown/Modal */}
       {isOpen && (

@@ -4,41 +4,28 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  SolarAddCircleBold,
+  LucideLayoutDashboard,
   LucideLink2,
   LucideMessageSquare,
   LucideCodeXml,
-  LucideServer,
   LucideFileText,
 } from '@/Icons/Icons';
-import { useSidebar } from './SidebarContext';
 
 const NAV_ITEMS = [
   { href: '/links',          label: 'Links',     icon: LucideLink2 },
   { href: '/snippets',       label: 'Snippets',  icon: LucideCodeXml },
+  { href: '/dashboard',      label: 'Dashboard', icon: LucideLayoutDashboard },
   { href: '/prompts',        label: 'Prompts',   icon: LucideMessageSquare },
-  { href: '/infrastructure', label: 'Infra',     icon: LucideServer },
   { href: '/notes',          label: 'Notes',     icon: LucideFileText },
 ];
 
 export default function BottomNavBar() {
-  const { setMobileOpen } = useSidebar();
   const pathname = usePathname();
 
   return (
     <>
       <style>{CSS}</style>
       <nav className="bottom-nav">
-        {/* Menu */}
-        <button
-          className="bottom-nav-btn"
-          onClick={() => setMobileOpen(true)}
-          aria-label="Menu"
-        >
-          <SolarAddCircleBold width={20} />
-          <span className="bottom-nav-label">Menu</span>
-        </button>
-
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = pathname?.startsWith(item.href) ?? false;

@@ -5,7 +5,7 @@ import type { OpenAPIV3 } from 'openapi-types';
 const spec: OpenAPIV3.Document = {
     openapi: '3.0.0',
     info: {
-        title: 'LinkVault API',
+        title: 'NeoVault API',
         version: '1.0.0',
         description:
             'Use **POST /auth/login** to get a Bearer token, then click **Authorize** above and paste it.',
@@ -494,7 +494,7 @@ const docsRouter = Router();
 docsRouter.use((_req, res, next) => { res.removeHeader('Content-Security-Policy'); next(); });
 docsRouter.use('/', swaggerUi.serve);
 docsRouter.get('/', swaggerUi.setup(spec, {
-    customSiteTitle: 'LinkVault API Docs',
+    customSiteTitle: 'NeoVault API Docs',
     swaggerOptions: { persistAuthorization: true },
 }));
 

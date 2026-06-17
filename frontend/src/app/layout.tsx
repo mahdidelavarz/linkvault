@@ -3,7 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "LinkVault",
+  title: "NeoVault",
   description: "Developer knowledge vault",
   manifest: "/manifest.webmanifest",
 
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   // iOS ignores the web manifest for icons/splash; these explicit entries are mandatory.
   appleWebApp: {
     capable: true,
-    title: "LinkVault",
+    title: "NeoVault",
     statusBarStyle: "black-translucent",
     startupImage: [
       // iPhone 14 Pro Max  (430×932  @3×)
