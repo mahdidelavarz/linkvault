@@ -182,7 +182,9 @@ function SearchPageContent() {
           <input
             id="search-input"
             className="search-input"
-            type="text"
+            type="search"
+            name="app-search"
+            autoComplete="off"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search links, notes, snippets, prompts & infrastructure…"

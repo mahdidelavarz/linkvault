@@ -120,7 +120,9 @@ function PromptsPageContent() {
               <LucideSearch className="filter-search-icon" />
               <input
                 className="filter-search"
-                type="text"
+                type="search"
+                name="app-search"
+                autoComplete="off"
                 placeholder="Search prompts…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

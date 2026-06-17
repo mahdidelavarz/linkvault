@@ -67,7 +67,9 @@ export default function ProjectsPage() {
                         <LucideSearch className="pp-search-icon" />
                         <input
                             className="pp-search"
-                            type="text"
+                            type="search"
+                            name="app-search"
+                            autoComplete="off"
                             placeholder="Search projects…"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}

@@ -138,7 +138,8 @@ function LinksPageContent() {
                   <div className="filter-search-wrap">
                     <LucideSearch className="filter-search-icon" />
                     <input
-                      className="filter-search" type="text" placeholder="Search links…"
+                      className="filter-search" type="search" name="app-search" autoComplete="off"
+                      placeholder="Search links…"
                       value={search} onChange={(e) => setSearch(e.target.value)}
                     />
                     {search && (

@@ -19,14 +19,20 @@ function VaultPasswordRow({ link }: { link: LinkType }) {
   const { isEnabled, isUnlocked, decrypt, requestUnlock, isLoading: vaultLoading } = useVault();
 
   const [vaultValue, setVaultValue] = useState<string | null>(null);
+  const [vaultLoadFailed, setVaultLoadFailed] = useState(false);
   const [show, setShow] = useState(false);
 
   const isVaultProtected =
     isEnabled && (!link.passwordEncrypted || link.passwordEncrypted === 'vault:encrypted');
 
   useEffect(() => {
-    if (!isVaultProtected || !isUnlocked) { setVaultValue(null); return; }
-    decrypt('link', String(link.id), 'password').then(v => setVaultValue(v));
+    if (!isVaultProtected || !isUnlocked) { setVaultValue(null); setVaultLoadFailed(false); return; }
+    decrypt('link', String(link.id), 'password').then(v => {
+      setVaultValue(v);
+      // The field is marked vault-protected (sentinel) but no decryptable value came back —
+      // surface it instead of silently rendering it as empty/"(not set)".
+      setVaultLoadFailed(v === null);
+    });
   }, [isUnlocked, isVaultProtected, link.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sentinel left after vault was disabled — data is gone
@@ -67,6 +73,17 @@ function VaultPasswordRow({ link }: { link: LinkType }) {
         <button className="lcred-eye lcred-eye--lock" onClick={(e) => { e.stopPropagation(); requestUnlock(); }} disabled={vaultLoading}>
           🔒
         </button>
+      </div>
+    );
+  }
+
+  // Vault unlocked but the protected value could not be decrypted — flag it clearly
+  // rather than letting it look like an empty/unset password.
+  if (vaultLoadFailed) {
+    return (
+      <div className="lcred-row lcred-row--vault">
+        <LucideLock width={12} />
+        <span className="lcred-password lcred-error">Couldn’t decrypt — re-enter password</span>
       </div>
     );
   }
@@ -152,6 +169,7 @@ const CSS = `
 
 .lcred-row--vault .lcred-password { color: var(--text-muted); }
 .lcred-masked { font-style: italic; font-size: 11px; }
+.lcred-error { color: var(--danger, #ef4444); font-size: 11px; font-style: italic; }
 .lcred-vault-hint {
   font-size: 10px; font-weight: 600;
   color: var(--accent); text-decoration: none; flex-shrink: 0;

@@ -64,6 +64,17 @@ export function useVaultMigration() {
       try {
         const fieldName = item.module === 'infrastructure' ? 'content' : 'password';
         await VaultService.encryptAndSave(item.module, String(item.id), fieldName, item.content);
+
+        // Verify the value round-trips with the current session key BEFORE replacing the
+        // plaintext with the sentinel — otherwise a failed/mismatched write would leave the
+        // field permanently undecryptable ("(not set)") with no plaintext to fall back on.
+        const verified = await VaultService.loadAndDecrypt(item.module, String(item.id), fieldName);
+        if (verified !== item.content) {
+          // Leave the plaintext untouched; this item stays pending for a later attempt.
+          setProgress({ done: i + 1, total: items.length });
+          continue;
+        }
+
         const route = item.module === 'infrastructure'
           ? `/infrastructure/${item.id}`
           : `/links/${item.id}`;

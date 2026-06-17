@@ -2,6 +2,15 @@ import { AppDataSource } from '../config/database';
 import { UserVault } from '../entities/UserVault';
 import { SecureField } from '../entities/SecureField';
 
+// Thrown when setup() is called for a vault that is already enabled with a key.
+// Mapped to HTTP 409 by the controller.
+export class VaultAlreadyEnabledError extends Error {
+    constructor() {
+        super('Vault is already enabled. Disable it before setting up again, or use recovery.');
+        this.name = 'VaultAlreadyEnabledError';
+    }
+}
+
 export class VaultService {
     private vaultRepository = AppDataSource.getRepository(UserVault);
     private fieldRepository = AppDataSource.getRepository(SecureField);
@@ -15,6 +24,13 @@ export class VaultService {
 
     async setup(userId: number, encryptedVaultKey: string): Promise<UserVault> {
         let vault = await this.vaultRepository.findOne({ where: { userId } });
+        // Refuse to overwrite an already-enabled vault key. Rotating the wrapped key here
+        // would orphan every existing SecureField (encrypted under the old vaultKey),
+        // which surfaces to the user as undecryptable "(not set)" data. A new device must
+        // use the recovery flow (read-only); re-setup requires an explicit disable first.
+        if (vault && vault.isEnabled && vault.encryptedVaultKey) {
+            throw new VaultAlreadyEnabledError();
+        }
         if (!vault) {
             vault = this.vaultRepository.create({ userId });
         }

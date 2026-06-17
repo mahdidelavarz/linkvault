@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import { VaultService } from '../services/Vault.service';
+import { VaultService, VaultAlreadyEnabledError } from '../services/Vault.service';
 import { AuthRequest } from '../middleware/auth.middleware';
 
 const vaultService = new VaultService();
@@ -32,7 +32,12 @@ export class VaultController {
             }
             const vault = await vaultService.setup(req.userId!, encryptedVaultKey);
             res.status(201).json({ isEnabled: vault.isEnabled, enabledAt: vault.enabledAt });
-        } catch (error) { next(error); }
+        } catch (error) {
+            if (error instanceof VaultAlreadyEnabledError) {
+                return res.status(409).json({ message: error.message });
+            }
+            next(error);
+        }
     }
 
     async getEncryptedKey(req: AuthRequest, res: Response, next: NextFunction) {

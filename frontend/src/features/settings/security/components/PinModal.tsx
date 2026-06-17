@@ -26,14 +26,18 @@ function PinInput({
         <div className="pin-wrap" onClick={() => inputRef.current?.focus()}>
             <input
                 ref={inputRef}
-                type="password"
+                // type="text" (not "password") so the browser does not treat this as a
+                // login credential and offer saved-username autofill. The value is never
+                // visible anyway — masking is done by the .pin-dots row below.
+                type="text"
+                name="vault-pin"
                 inputMode="numeric"
                 pattern="[0-9]*"
                 maxLength={4}
                 value={value}
                 onChange={e => onChange(e.target.value.replace(/\D/g, '').slice(0, 4))}
                 disabled={disabled}
-                autoComplete="off"
+                autoComplete="one-time-code"
                 className="pin-hidden"
                 aria-label="4-digit PIN"
             />

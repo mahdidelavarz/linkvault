@@ -134,7 +134,9 @@ function NotesPageContent() {
                 <LucideSearch className="nf-search-icon" />
                 <input
                   className="nf-search"
-                  type="text"
+                  type="search"
+                  name="app-search"
+                  autoComplete="off"
                   placeholder="Search notes…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}

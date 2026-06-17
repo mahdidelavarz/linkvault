@@ -173,7 +173,9 @@ function SnippetsPageContent() {
               <LucideSearch className="sp-search-icon" />
               <input
                 className="sp-search"
-                type="text"
+                type="search"
+                name="app-search"
+                autoComplete="off"
                 placeholder="Search snippets…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

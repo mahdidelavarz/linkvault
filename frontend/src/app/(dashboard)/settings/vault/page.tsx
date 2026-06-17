@@ -184,16 +184,18 @@ function RecoverView({
                     <div className="vs-verify-row">
                         <label className="vs-verify-label">New PIN</label>
                         <input className="vs-input" type="password" inputMode="numeric"
+                            name="vault-new-pin"
                             maxLength={4} value={pin}
                             onChange={e => { setPin(e.target.value.replace(/\D/g, '').slice(0, 4)); setError(''); }}
-                            placeholder="••••" autoComplete="new-password" />
+                            placeholder="••••" autoComplete="one-time-code" />
                     </div>
                     <div className="vs-verify-row">
                         <label className="vs-verify-label">Confirm PIN</label>
                         <input className="vs-input" type="password" inputMode="numeric"
+                            name="vault-confirm-pin"
                             maxLength={4} value={confirm}
                             onChange={e => { setConfirm(e.target.value.replace(/\D/g, '').slice(0, 4)); setError(''); }}
-                            placeholder="••••" autoComplete="new-password" />
+                            placeholder="••••" autoComplete="one-time-code" />
                     </div>
                     {error && <div className="vs-error">{error}</div>}
                     <button

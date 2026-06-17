@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { type Link, type CreateLinkDto } from "@/features/links/types/link";
+import { type Link } from "@/features/links/types/link";
 import { useCreateLink, useUpdateLink, useFetchLinkMeta, useCheckDuplicateUrl, type DuplicateResult } from "@/features/links/hooks/useLinks";
 import { useVault } from "@/features/settings/security/hooks/useVault";
 import { VaultGuard } from "@/features/settings/security/components/VaultGuard";
@@ -66,6 +66,7 @@ export default function LinkForm({ link, initialUrl, onClose }: LinkFormProps) {
   const [metaLoading, setMetaLoading] = useState(false);
   const [autoFilled, setAutoFilled] = useState(false);
   const [passwordValue, setPasswordValue] = useState('');
+  const [vaultError, setVaultError] = useState<string | null>(null);
   const [duplicate, setDuplicate] = useState<DuplicateResult>(null);
   const isEditing = !!link;
   const fetchMeta = useFetchLinkMeta();
@@ -78,7 +79,7 @@ export default function LinkForm({ link, initialUrl, onClose }: LinkFormProps) {
   const updateLink = useUpdateLink();
 
   const isLoading = createLink.isPending || updateLink.isPending;
-  const error = createLink.error || updateLink.error;
+  const mutationError = createLink.error || updateLink.error;
 
   const { register, handleSubmit, control, reset, setValue, getValues, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -135,31 +136,57 @@ export default function LinkForm({ link, initialUrl, onClose }: LinkFormProps) {
   };
 
   const onSubmit = async (data: FormData) => {
+    setVaultError(null);
     const password = data.password || undefined;
-    const payload: CreateLinkDto = {
+    // When the vault is active and a password is present, store it ONLY in the vault
+    // (zero-knowledge) and persist a 'vault:encrypted' sentinel server-side — the
+    // plaintext never leaves the device. Matches the Infrastructure flow.
+    const useVaultStorage = isEnabled && isUnlocked && !!password;
+
+    const basePayload = {
       ...data,
       description: data.description || undefined,
       username: data.username || undefined,
-      // Always send the password to backend (server-side encrypted). Vault encrypts it additionally.
-      password,
       email: data.email || undefined,
       phone: data.phone || undefined,
     };
+
+    // A vault save upserts the field to the server and needs a real record id, so it
+    // cannot be queued offline — refuse rather than lose the plaintext to a temp id.
+    if (useVaultStorage && typeof navigator !== 'undefined' && !navigator.onLine) {
+      setVaultError('Saving a vault-protected password requires an internet connection.');
+      return;
+    }
+
     try {
       if (isEditing && link) {
-        await updateLink.mutateAsync({ id: link.id, ...payload });
-        // Also encrypt to vault if enabled and unlocked
-        if (isEnabled && isUnlocked && password) {
+        if (useVaultStorage) {
+          // Vault write first; only persist the sentinel once it has succeeded.
           await encrypt('link', String(link.id), 'password', password);
+          await updateLink.mutateAsync({ id: link.id, ...basePayload, password: 'vault:encrypted' });
+        } else {
+          await updateLink.mutateAsync({ id: link.id, ...basePayload, password });
         }
       } else {
-        const created = await createLink.mutateAsync(payload);
-        if (isEnabled && isUnlocked && password) {
+        if (useVaultStorage) {
+          // Create without the password to obtain a real id, then write the vault field
+          // and persist the sentinel. The plaintext is never sent to the server.
+          const created = await createLink.mutateAsync({ ...basePayload, password: undefined });
+          if (!created || created.id <= 0) {
+            setVaultError('Could not reach the server to store the vault-protected password. Please try again.');
+            return;
+          }
           await encrypt('link', String(created.id), 'password', password);
+          await updateLink.mutateAsync({ id: created.id, password: 'vault:encrypted' });
+        } else {
+          await createLink.mutateAsync({ ...basePayload, password });
         }
       }
       onClose();
-    } catch { /* shown via Alert */ }
+    } catch (e) {
+      // Vault-encrypt failures surface here; mutation errors render via Alert separately.
+      setVaultError(e instanceof Error ? e.message : 'Failed to save the vault-protected password.');
+    }
   };
 
   const fetchingNode = metaLoading ? <span className="lf-spinner" aria-label="Fetching…" /> : null;
@@ -179,8 +206,11 @@ export default function LinkForm({ link, initialUrl, onClose }: LinkFormProps) {
           </>
         }
       >
-        {error && (
-          <Alert type="error" message={error instanceof Error ? error.message : "Something went wrong"} />
+        {(vaultError || mutationError) && (
+          <Alert
+            type="error"
+            message={vaultError ?? (mutationError instanceof Error ? mutationError.message : "Something went wrong")}
+          />
         )}
 
         {/* Basic info */}

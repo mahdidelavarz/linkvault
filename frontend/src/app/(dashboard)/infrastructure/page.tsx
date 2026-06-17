@@ -109,7 +109,9 @@ function InfrastructurePageContent() {
               <LucideSearch className="ip-search-icon" />
               <input
                 className="ip-search"
-                type="text"
+                type="search"
+                name="app-search"
+                autoComplete="off"
                 placeholder="Search configs…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
