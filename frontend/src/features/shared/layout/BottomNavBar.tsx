@@ -9,35 +9,46 @@ import {
   LucideMessageSquare,
   LucideCodeXml,
   LucideFileText,
+  LucideSearch,
 } from '@/Icons/Icons';
 
 const NAV_ITEMS = [
-  { href: '/links',          label: 'Links',     icon: LucideLink2 },
-  { href: '/snippets',       label: 'Snippets',  icon: LucideCodeXml },
-  { href: '/dashboard',      label: 'Dashboard', icon: LucideLayoutDashboard },
-  { href: '/prompts',        label: 'Prompts',   icon: LucideMessageSquare },
-  { href: '/notes',          label: 'Notes',     icon: LucideFileText },
+  { href: '/links',     label: 'Links',     icon: LucideLink2 },
+  { href: '/snippets',  label: 'Snippets',  icon: LucideCodeXml },
+  { href: '/dashboard', label: 'Dashboard', icon: LucideLayoutDashboard },
+  { href: '/prompts',   label: 'Prompts',   icon: LucideMessageSquare },
+  { href: '/notes',     label: 'Notes',     icon: LucideFileText },
+   { href: '/search',     label: 'Search',     icon: LucideSearch },
 ];
 
 export default function BottomNavBar() {
   const pathname = usePathname();
 
+  const activeIndex = NAV_ITEMS.findIndex(
+    (item) => pathname?.startsWith(item.href) ?? false
+  );
+
   return (
     <>
       <style>{CSS}</style>
-      <nav className="bottom-nav">
-        {NAV_ITEMS.map((item) => {
+      <nav className="bn" aria-label="Primary">
+        {NAV_ITEMS.map((item, i) => {
           const Icon = item.icon;
-          const active = pathname?.startsWith(item.href) ?? false;
+          const active = i === activeIndex;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={['bottom-nav-btn', active ? 'bottom-nav-btn--active' : ''].filter(Boolean).join(' ')}
+              className={['bn-item', active ? 'bn-item--active' : '']
+                .filter(Boolean)
+                .join(' ')}
               aria-label={item.label}
+              aria-current={active ? 'page' : undefined}
             >
-              <Icon width={20} />
-              <span className="bottom-nav-label">{item.label}</span>
+              <span className="bn-icon">
+                <Icon width={20} />
+              </span>
+              <span className="bn-label">{item.label}</span>
             </Link>
           );
         })}
@@ -47,92 +58,147 @@ export default function BottomNavBar() {
 }
 
 const CSS = `
-.bottom-nav {
+.bn {
   display: none;
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 70px;
-  background: var(--bg-surface);
-  border-top: 1px solid var(--border-default);
-  padding: 8px 8px;
-  justify-content: space-around;
+  left: 14px;
+  right: 14px;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 7px;
+  border-radius: 999px;
+  background: rgba(var(--bg-surface-rgb), 0.72);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+    0 12px 32px -10px rgba(0, 0, 0, 0.55),
+    0 4px 12px -6px rgba(0, 0, 0, 0.4);
   z-index: var(--z-sticky);
-  backdrop-filter: blur(10px);
-  background: rgba(var(--bg-surface-rgb), 0.95);
 }
 
-.bottom-nav-btn {
+/* --- Tab: icon-only by default --- */
+.bn-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  flex: 1;
-  background: transparent;
-  border: none;
+  gap: 0;
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 11px;
+  border-radius: 999px;
   color: var(--text-tertiary);
   text-decoration: none;
-  cursor: pointer;
-  padding: 6px 2px;
-  border-radius: var(--radius-md);
-  transition: all var(--transition-fast);
-  font-size: 10px;
-  font-weight: 500;
-  min-width: 0;
-}
-
-.bottom-nav-btn:active {
-  transform: scale(0.95);
-  background: var(--bg-overlay);
-  color: var(--text-primary);
-}
-
-.bottom-nav-btn--active {
-  color: var(--text-accent);
-}
-
-.bottom-nav-label {
-  font-size: 10px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background 0.4s ease,
+    color 0.3s ease,
+    padding 0.45s cubic-bezier(0.34, 1.4, 0.64, 1),
+    gap 0.45s cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
+.bn-item:active {
+  transform: scale(0.94);
+}
+
+.bn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Label is collapsed until the tab is active, then it slides open */
+.bn-label {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition:
+    max-width 0.45s cubic-bezier(0.34, 1.4, 0.64, 1),
+    opacity 0.3s ease;
+}
+
+/* --- Active tab: expanding accent capsule --- */
+.bn-item--active {
+  gap: 8px;
+  padding: 11px 18px;
+  color: var(--text-accent);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--text-accent) 22%, transparent),
+      color-mix(in srgb, var(--text-accent) 12%, transparent)
+    );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--text-accent) 10%, transparent) inset,
+    0 5px 10px -6px color-mix(in srgb, var(--text-accent) 55%, transparent);
+}
+
+.bn-item--active .bn-icon {
+  transform: scale(1.06);
+}
+
+.bn-item--active .bn-label {
+  max-width: 120px;
+  opacity: 1;
+}
+
+/* --- Show on mobile + offset page content for the floating bar --- */
 @media (max-width: 767px) {
-  .bottom-nav {
+  .bn {
     display: flex;
   }
-
-  /* Add padding to main content to account for bottom nav */
   .dashboard-page,
   main {
-    padding-bottom: 80px !important;
+    // padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
 
 @media (max-width: 479px) {
-  .bottom-nav {
-    padding: 8px 4px;
+  .bn {
+    left: 10px;
+    right: 10px;
+    gap: 2px;
   }
-
-  .bottom-nav-btn svg {
-    width: 18px;
-    height: 18px;
+  .bn-item {
+    padding: 10px;
   }
-
-  .bottom-nav-label {
-    font-size: 9px;
+  .bn-item--active {
+    padding: 10px 14px;
+  }
+  .bn-item svg {
+    width: 19px;
+    height: 19px;
+  }
+  .bn-item {
+    font-size: 12px;
   }
 }
 
 @media (max-width: 359px) {
-  .bottom-nav-label {
-    font-size: 8px;
+  .bn-item--active .bn-label {
+    max-width: 0;
+    opacity: 0;
+  }
+  .bn-item--active {
+    padding: 10px;
+    gap: 0;
+  }
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .bn-item,
+  .bn-icon,
+  .bn-label {
+    transition: none;
   }
 }
 `;
