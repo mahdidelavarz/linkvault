@@ -35,8 +35,8 @@ function VaultPasswordRow({ link }: { link: LinkType }) {
     });
   }, [isUnlocked, isVaultProtected, link.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sentinel left after vault was disabled — data is gone
-  if (link.passwordEncrypted === 'vault:encrypted') return null;
+  // Sentinel left after vault was disabled — the secure_fields were wiped, data is gone
+  if (!isEnabled && link.passwordEncrypted === 'vault:encrypted') return null;
 
   // Pre-vault plaintext password (backward compat)
   if (!isVaultProtected && link.passwordEncrypted) {
