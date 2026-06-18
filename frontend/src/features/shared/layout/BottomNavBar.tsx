@@ -31,7 +31,7 @@ export default function BottomNavBar() {
   return (
     <>
       <style>{CSS}</style>
-      <nav className="bn" aria-label="Primary">
+      <nav className="bn " aria-label="Primary">
         {NAV_ITEMS.map((item, i) => {
           const Icon = item.icon;
           const active = i === activeIndex;
