@@ -98,7 +98,7 @@ export default function LinkForm({ link, initialUrl, onClose }: LinkFormProps) {
         url: link.url, title: link.title, description: link.description ?? "",
         username: link.username ?? "", password: "", email: link.email ?? "",
         phone: link.phone ?? "", isFavorite: link.isFavorite,
-        categoryId: link.categoryId, tagIds: link.tags?.map((t: any) => t.id) ?? [],
+        categoryId: link.categoryId ?? undefined, tagIds: link.tags?.map((t: any) => t.id) ?? [],
       });
     }
   }, [link, reset]);
@@ -310,12 +310,13 @@ export default function LinkForm({ link, initialUrl, onClose }: LinkFormProps) {
                 protect — a brand-new link has nothing to unlock for yet. */}
             <VaultGuard enabled={isEditing && !!link?.passwordEncrypted}>
               <div className="lf-grid-2">
-                <Input label="Username" type="text" placeholder="username" leftIcon={LucideUser} optional error={errors.username?.message} {...register("username")} />
+                <Input label="Username" type="text" placeholder="username" leftIcon={LucideUser} optional error={errors.username?.message} autoComplete="off" {...register("username")} />
                 <div>
                   <Input
                     label="Password" type={showPassword ? "text" : "password"}
                     placeholder={isEditing ? "Leave blank to keep" : "password"}
                     leftIcon={LucideLock} optional error={errors.password?.message}
+                    autoComplete="new-password"
                     rightNode={
                       <button type="button" className="lf-eye" onClick={() => setShowPassword((p) => !p)} tabIndex={-1}>
                         {showPassword ? <LucideEyeOff width={13} /> : <LucideEye width={13} />}
@@ -336,8 +337,8 @@ export default function LinkForm({ link, initialUrl, onClose }: LinkFormProps) {
                 </div>
               </div>
               <div className="lf-grid-2">
-                <Input label="Email" type="email" placeholder="email@example.com" leftIcon={LucideMail} optional error={errors.email?.message} {...register("email")} />
-                <Input label="Phone" type="tel" placeholder="+1 234 567 890" leftIcon={LucidePhone} optional error={errors.phone?.message} {...register("phone")} />
+                <Input label="Email" type="email" placeholder="email@example.com" leftIcon={LucideMail} optional error={errors.email?.message} autoComplete="off" {...register("email")} />
+                <Input label="Phone" type="tel" placeholder="+1 234 567 890" leftIcon={LucidePhone} optional error={errors.phone?.message} autoComplete="off" {...register("phone")} />
               </div>
             </VaultGuard>
           </Disclosure>
