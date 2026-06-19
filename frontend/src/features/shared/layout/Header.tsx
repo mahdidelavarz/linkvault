@@ -9,7 +9,6 @@ import {
   LucideChevronRight,
   LucideLogOut,
   LucideMoon,
-  LucideSearch,
   LucideSettings,
   LucideSunDim,
   LucideUser,
@@ -103,7 +102,7 @@ export default function Header() {
             aria-label="NeoVault home"
           >
             <span className="header-brand-icon">
-              <LucideVault width={15} />
+              <LucideVault width={22} />
             </span>
             <span className="header-brand-text">NeoVault</span>
           </button>
@@ -298,14 +297,15 @@ const CSS = `
   display:         flex;
   align-items:     center;
   justify-content: center;
-  width:           28px;
-  height:          28px;
+  width:           33px;
+  height:          33px;
   background:      var(--accent-muted);
   border:          1px solid var(--accent-border);
   border-radius:   var(--radius-md);
   color:           var(--cyan-400);
 }
 .header-brand-text {
+  margin-top:     3px;
   font-size:      var(--text-md);
   font-weight:    700;
   color:          var(--text-primary);

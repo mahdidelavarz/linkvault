@@ -10,13 +10,15 @@ import {
   HugeiconsCommandLine,
   SolarNotesLineDuotone,
   SolarRoundedMagniferLineDuotone,
+  SolarLinkMinimalisticBold,
+  FluentPrompt16Regular,
 } from "@/Icons/Icons";
 
 const NAV_ITEMS = [
-  { href: "/links", label: "Links", icon: SolarLinkMinimalisticBoldDuotone },
+  { href: "/links", label: "Links", icon: SolarLinkMinimalisticBold },
   { href: "/snippets", label: "Snippets", icon: SolarCodeSquareLineDuotone },
   { href: "/dashboard", label: "Dashboard", icon: SolarWidgetLineDuotone },
-  { href: "/prompts", label: "Prompts", icon: HugeiconsCommandLine },
+  { href: "/prompts", label: "Prompts", icon: FluentPrompt16Regular },
   { href: "/notes", label: "Notes", icon: SolarNotesLineDuotone },
   { href: "/search", label: "Search", icon: SolarRoundedMagniferLineDuotone },
 ];
@@ -116,6 +118,7 @@ const CSS = `
 
 /* Label is collapsed until the tab is active, then it slides open */
 .bn-label {
+  margin-top : 2px;
   max-width: 0;
   opacity: 0;
   overflow: hidden;

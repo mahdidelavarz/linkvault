@@ -6,23 +6,23 @@ import { ComponentType, SVGProps, useEffect } from "react";
 import { useAuthStore } from "@/features/auth/store/authStore";
 import { useSidebar } from "./SidebarContext";
 import {
+  FluentPrompt16Regular,
   LucideChevronLeft,
   LucideChevronRight,
-  LucideFileCode2,
-  LucideFileText,
-  LucideFolder,
-  LucideFolderOpen,
-  LucideGlobe,
-  LucideLayoutDashboard,
-  LucideLink2,
-  LucideMessageSquare,
-  LucideServer,
   LucideSettings,
-  LucideShield,
-  LucideTag,
   LucideUser,
   LucideVault,
   LucideX,
+  SolarCodeSquareLineDuotone,
+  SolarFolderFavouriteBookmarkLinear,
+  SolarFolderWithFilesOutline,
+  SolarGlobalLinear,
+  SolarLinkMinimalisticBold,
+  SolarNotesLineDuotone,
+  SolarServerSquareCloudLinear,
+  SolarShieldBoldDuotone,
+  SolarTagLineDuotone,
+  SolarWidgetLineDuotone,
 } from "@/Icons/Icons";
 
 const ADMIN_EMAIL = "mdelever77@gmail.com";
@@ -30,19 +30,19 @@ const ADMIN_EMAIL = "mdelever77@gmail.com";
 // ─── Nav items ────────────────────────────────────────────────────────────────
 
 const NAV_MAIN = [
-  { name: "Dashboard", href: "/dashboard", icon: LucideLayoutDashboard },
-  { name: "Projects", href: "/projects", icon: LucideFolderOpen },
-  { name: "Links", href: "/links", icon: LucideLink2 },
-  { name: "Notes", href: "/notes", icon: LucideFileText },
-  { name: "Snippets", href: "/snippets", icon: LucideFileCode2 },
-  { name: "Prompts", href: "/prompts", icon: LucideMessageSquare },
-  { name: "API Client", href: "/api-client", icon: LucideGlobe },
-  { name: "Infrastructure", href: "/infrastructure", icon: LucideServer },
+  { name: "Dashboard", href: "/dashboard", icon: SolarWidgetLineDuotone },
+  { name: "Projects", href: "/projects", icon: SolarFolderWithFilesOutline },
+  { name: "Links", href: "/links", icon: SolarLinkMinimalisticBold },
+  { name: "Notes", href: "/notes", icon: SolarNotesLineDuotone },
+  { name: "Snippets", href: "/snippets", icon: SolarCodeSquareLineDuotone },
+  { name: "Prompts", href: "/prompts", icon: FluentPrompt16Regular },
+  { name: "API Client", href: "/api-client", icon: SolarGlobalLinear },
+  { name: "Infrastructure", href: "/infrastructure", icon: SolarServerSquareCloudLinear },
 ];
 
 const NAV_MANAGE = [
-  { name: "Categories", href: "/categories", icon: LucideFolder },
-  { name: "Tags", href: "/tags", icon: LucideTag },
+  { name: "Categories", href: "/categories", icon: SolarFolderFavouriteBookmarkLinear },
+  { name: "Tags", href: "/tags", icon: SolarTagLineDuotone },
 ];
 
 const NAV_SETTINGS = [
@@ -50,7 +50,7 @@ const NAV_SETTINGS = [
 ];
 
 const NAV_ADMIN = [
-  { name: "Admin", href: "/admin", icon: LucideShield },
+  { name: "Admin", href: "/admin", icon: SolarShieldBoldDuotone },
 ];
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
@@ -480,7 +480,7 @@ const CSS = `
 .nav-item:hover          { background: var(--bg-overlay); color: var(--text-primary); }
 .nav-item--active        { background: var(--accent-muted); color: var(--cyan-300); }
 .nav-item--active:hover  { background: var(--accent-muted); color: var(--cyan-300); }
-.nav-item-icon           { width: 17px; height: 17px; }
+.nav-item-icon           { width: 20px; height: 20px; }
 .nav-item-label          { flex: 1; height:13px}
 .nav-item-dot            { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
 
