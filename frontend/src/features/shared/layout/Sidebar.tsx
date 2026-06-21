@@ -14,6 +14,7 @@ import {
   LucideVault,
   LucideX,
   SolarCodeSquareLineDuotone,
+  SolarFileLinear,
   SolarFolderFavouriteBookmarkLinear,
   SolarFolderWithFilesOutline,
   SolarGlobalLinear,
@@ -38,6 +39,7 @@ const NAV_MAIN = [
   { name: "Prompts", href: "/prompts", icon: FluentPrompt16Regular },
   { name: "API Client", href: "/api-client", icon: SolarGlobalLinear },
   { name: "Infrastructure", href: "/infrastructure", icon: SolarServerSquareCloudLinear },
+  { name: "Files", href: "/files", icon: SolarFileLinear },
 ];
 
 const NAV_MANAGE = [

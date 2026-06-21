@@ -2429,6 +2429,13 @@ export function SolarShieldBoldDuotone(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+export function SolarFileLinear(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" {...props}>
+      <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"><path d="M4 4a2 2 0 0 1 2-2h8.172a2 2 0 0 1 1.414.586l3.828 3.828A2 2 0 0 1 20 7.828V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></g>
+    </svg>
+  );
+}
 export function LucideFile(props: SVGProps<SVGSVGElement>) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" {...props}>
