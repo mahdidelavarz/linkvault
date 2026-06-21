@@ -154,3 +154,9 @@ export const updatePromptCollectionSchema = createPromptCollectionSchema.partial
 export const addPromptCollectionItemSchema = z.object({
     promptId: z.number().int().positive(),
 });
+
+// ─── File ──────────────────────────────────────────────────────────────────────
+
+export const updateFileSchema = z.object({
+    description: z.string().max(500).optional(),
+});

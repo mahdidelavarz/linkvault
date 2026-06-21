@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import path from 'path';
 import { AppDataSource } from './config/database';
 import { initSearchIndexes } from './config/searchIndexes';
 import authRoutes from './routes/auth.route';
@@ -20,6 +21,7 @@ import vaultRoutes from './routes/vault.route';
 import projectRoutes from './routes/project.route';
 import promptCollectionRoutes from './routes/promptCollection.route';
 import adminRoutes from './routes/admin.route';
+import fileRoutes from './routes/files.route';
 import swaggerRouter from './config/swagger';
 
 const app = express();
@@ -37,6 +39,9 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Static uploads
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Swagger UI
 app.use('/api/docs', swaggerRouter);
@@ -63,6 +68,7 @@ app.use('/api/vault', vaultRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/prompt-collections', promptCollectionRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/files', fileRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

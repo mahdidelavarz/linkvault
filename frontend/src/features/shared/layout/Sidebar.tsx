@@ -8,6 +8,7 @@ import { useSidebar } from "./SidebarContext";
 import {
   LucideChevronLeft,
   LucideChevronRight,
+  LucideFile,
   LucideFileCode2,
   LucideFileText,
   LucideFolder,
@@ -38,6 +39,7 @@ const NAV_MAIN = [
   { name: "Prompts", href: "/prompts", icon: LucideMessageSquare },
   { name: "API Client", href: "/api-client", icon: LucideGlobe },
   { name: "Infrastructure", href: "/infrastructure", icon: LucideServer },
+  { name: "Files", href: "/files", icon: LucideFile },
 ];
 
 const NAV_MANAGE = [
