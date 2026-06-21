@@ -9,13 +9,13 @@ import {
   LucideChevronRight,
   LucideLogOut,
   LucideMoon,
-  LucideSearch,
   LucideSettings,
   LucideSunDim,
   LucideUser,
   LucideVault,
   SolarHamburgerMenuLinear,
   SolarPaletteRoundBoldDuotone,
+  SolarRoundedMagniferOutline,
 } from "@/Icons/Icons";
 import ThemeSwitcher from "../ui/ThemeSwitcher";
 import { useSidebar } from "./SidebarContext";
@@ -102,7 +102,7 @@ export default function Header() {
             aria-label="NeoVault home"
           >
             <span className="header-brand-icon">
-              <LucideVault width={15} />
+              <LucideVault width={22} />
             </span>
             <span className="header-brand-text">NeoVault</span>
           </button>
@@ -112,7 +112,7 @@ export default function Header() {
             onClick={() => router.push("/search")}
             aria-label="Open search"
           >
-            <LucideSearch className="header-search-icon" />
+            <SolarRoundedMagniferOutline className="header-search-icon" />
             <span className="header-search-text">Search anything…</span>
             <kbd className="header-kbd">⌘K</kbd>
           </button>
@@ -141,13 +141,13 @@ export default function Header() {
               aria-haspopup="true"
             >
               <div className="header-avatar">
-                <LucideUser width={13} />
+                <LucideUser width={16} />
               </div>
               <span className="header-username">
                 {user?.username ?? "User"}
               </span>
               <LucideChevronDown
-                width={13}
+                width={16}
                 className={[
                   "header-chevron",
                   menuOpen ? "header-chevron--open" : "",
@@ -297,14 +297,15 @@ const CSS = `
   display:         flex;
   align-items:     center;
   justify-content: center;
-  width:           28px;
-  height:          28px;
+  width:           33px;
+  height:          33px;
   background:      var(--accent-muted);
   border:          1px solid var(--accent-border);
   border-radius:   var(--radius-md);
   color:           var(--cyan-400);
 }
 .header-brand-text {
+  margin-top:     3px;
   font-size:      var(--text-md);
   font-weight:    700;
   color:          var(--text-primary);
@@ -335,8 +336,8 @@ const CSS = `
   background:   var(--bg-elevated);
 }
 .header-search-icon {
-  width:      18px;
-  height:     18px;
+  width:      20px;
+  height:     20px;
   flex-shrink: 0;
 }
 .header-search-text {
@@ -420,8 +421,8 @@ const CSS = `
   display:         flex;
   align-items:     center;
   justify-content: center;
-  width:           26px;
-  height:          26px;
+  width:           32px;
+  height:          32px;
   background:      var(--accent-muted);
   border:          1px solid var(--accent-border);
   border-radius:   var(--radius-full);
@@ -429,7 +430,8 @@ const CSS = `
   flex-shrink:     0;
 }
 .header-username {
-  max-width:     120px;
+  font-size:     15px;
+  max-width:     140px;
   overflow:      hidden;
   text-overflow: ellipsis;
   white-space:   nowrap;
@@ -542,6 +544,7 @@ const CSS = `
 
   /* Collapse search to an icon-only button on phones to keep the bar clean */
   .header-search {
+     display: none;
     width:   38px;
     max-width: 38px;
     padding: 0;
@@ -554,7 +557,7 @@ const CSS = `
   /* Username takes too much room on phones — show avatar only */
   .header-username,
   .header-chevron { display: none; }
-  .header-user-btn { padding: 0; width: 38px; justify-content: center; }
+  .header-user-btn { padding: 0; width: 48px; justify-content: center; }
 
   .header-dropdown { min-width: 240px; }
 }

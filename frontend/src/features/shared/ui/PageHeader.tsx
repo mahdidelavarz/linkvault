@@ -17,7 +17,7 @@ export default function PageHeader({ title, subtitle, action }: PageHeaderProps)
       <div className="ph-header">
         <div className="ph-left">
           <h1 className="ph-title">{title}</h1>
-          {subtitle && <p className="ph-subtitle">{subtitle}</p>}
+          {subtitle && <p className="ph-subtitle" suppressHydrationWarning>{subtitle}</p>}
         </div>
         {action && <div className="ph-action">{action}</div>}
       </div>

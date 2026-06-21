@@ -48,6 +48,8 @@ function LinksPageContent() {
   const [isBulkProcessing,  setIsBulkProcessing]  = useState(false);
   const [selectedTagIds,    setSelectedTagIds]    = useState<number[]>([]);
   const [filtersExpanded,   setFiltersExpanded]   = useState(false);
+  const [isMounted,         setIsMounted]         = useState(false);
+  useEffect(() => { setIsMounted(true); }, []);
   const [sortBy, setSortBy] = useState<'updatedAt' | 'createdAt' | 'title'>('updatedAt');
   const [sortDir, setSortDir] = useState<'ASC' | 'DESC'>('DESC');
 
@@ -156,7 +158,7 @@ function LinksPageContent() {
                     Filters
                     {activeFilterCount > 0 && <span className="filter-count">{activeFilterCount}</span>}
                   </button>
-                  {links.length > 0 && (
+                  {isMounted && links.length > 0 && (
                     <button className="filter-select-mode" onClick={bulk.enter}>
                       <span className="scheck scheck--sm" /> Select
                     </button>
