@@ -160,3 +160,10 @@ export const addPromptCollectionItemSchema = z.object({
 export const updateFileSchema = z.object({
     description: z.string().max(500).optional(),
 });
+
+// ─── Feedback ──────────────────────────────────────────────────────────────────
+
+export const createFeedbackSchema = z.object({
+    type: z.enum(['bug', 'feature', 'comment']),
+    message: z.string().min(1, 'Message is required').max(5000),
+});
