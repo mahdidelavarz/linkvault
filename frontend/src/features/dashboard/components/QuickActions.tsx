@@ -24,53 +24,41 @@ const actions = [
     type: "link" as const,
     icon: SolarLinkMinimalisticBold,
     label: "New Link",
-    variant: "blue" as const,
+    variant: "link" as const,
   },
   {
     type: "snippet" as const,
     icon: SolarCodeSquareLineDuotone,
     label: "New Snippet",
-    variant: "purple" as const,
+    variant: "snippet" as const,
   },
   {
     type: "prompt" as const,
     icon: FluentPrompt16Regular,
     label: "New Prompt",
-    variant: "teal" as const,
+    variant: "prompt" as const,
   },
   {
     type: "infra" as const,
     icon: SolarServerSquareCloudLinear,
     label: "New Infra",
-    variant: "green" as const,
+    variant: "infra" as const,
   },
 ];
 
+// Colors map to the shared item-type tokens (defined in globals.css) so they
+// stay consistent with the dashboard and adapt to light/dark mode.
+const typeStyle = (token: string) => ({
+  bg: token,
+  muted: `color-mix(in srgb, ${token} 12%, transparent)`,
+  text: token,
+});
+
 const variantStyles = {
-  blue: {
-    bg: "var(--primary, #3b82f6)",
-    hover: "var(--primary-hover, #2563eb)",
-    muted: "var(--primary-muted, rgba(59,130,246,0.1))",
-    text: "var(--primary, #3b82f6)",
-  },
-  green: {
-    bg: "#10b981",
-    hover: "#059669",
-    muted: "rgba(16,185,129,0.1)",
-    text: "#10b981",
-  },
-  purple: {
-    bg: "#8b5cf6",
-    hover: "#7c3aed",
-    muted: "rgba(139,92,246,0.1)",
-    text: "#8b5cf6",
-  },
-  teal: {
-    bg: "#14b8a6",
-    hover: "#0d9488",
-    muted: "rgba(20,184,166,0.1)",
-    text: "#14b8a6",
-  },
+  link: typeStyle("var(--type-link)"),
+  snippet: typeStyle("var(--type-snippet)"),
+  prompt: typeStyle("var(--type-prompt)"),
+  infra: typeStyle("var(--type-infra)"),
 };
 
 export default function QuickActions() {

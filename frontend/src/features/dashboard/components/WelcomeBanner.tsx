@@ -125,7 +125,7 @@ const CSS = `
   background:      var(--accent-muted);
   border:          1px solid var(--accent-border);
   border-radius:   var(--radius-sm);
-  color:           var(--cyan-400);
+  color:           var(--text-accent);
 }
 .dp-hero-greeting {
   font-size:      var(--text-2xl);
@@ -135,7 +135,7 @@ const CSS = `
   line-height:    1.2;
   margin:         0;
 }
-.dp-hero-name  { color: var(--cyan-400); }
+.dp-hero-name  { color: var(--text-accent); }
 .dp-hero-date  { font-size: var(--text-sm); color: var(--text-tertiary); margin-top: 4px; }
 
 .dp-hero-summary {

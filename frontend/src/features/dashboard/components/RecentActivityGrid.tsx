@@ -20,11 +20,11 @@ import {
 } from "@/Icons/Icons";
 
 const TYPE_META: Record<RecentItem["type"], { icon: typeof SolarLinkMinimalisticBold; color: string; href: string }> = {
-  link:           { icon: SolarLinkMinimalisticBold,   color: "var(--cyan-400)", href: "/links"          },
-  note:           { icon: SolarNotesLineDuotone,       color: "#10b981",         href: "/notes"          },
-  snippet:        { icon: SolarCodeSquareLineDuotone,  color: "#8b5cf6",         href: "/snippets"        },
-  prompt:         { icon: FluentPrompt16Regular,        color: "#f59e0b",         href: "/prompts"         },
-  infrastructure: { icon: SolarServerSquareCloudLinear, color: "#3b82f6",        href: "/infrastructure"  },
+  link:           { icon: SolarLinkMinimalisticBold,   color: "var(--type-link)",    href: "/links"          },
+  note:           { icon: SolarNotesLineDuotone,       color: "var(--type-note)",    href: "/notes"          },
+  snippet:        { icon: SolarCodeSquareLineDuotone,  color: "var(--type-snippet)", href: "/snippets"        },
+  prompt:         { icon: FluentPrompt16Regular,        color: "var(--type-prompt)",  href: "/prompts"         },
+  infrastructure: { icon: SolarServerSquareCloudLinear, color: "var(--type-infra)",  href: "/infrastructure"  },
 };
 
 function timeAgo(dateStr: string): string {
@@ -76,9 +76,7 @@ function RecentCard({ item }: { item: RecentItem }) {
   return (
     <Link href={meta.href} className="rag-card">
       <div className="rag-card-top">
-        <div className="rag-card-icon" style={{ color: meta.color, background: `${meta.color}14`, border: `1px solid ${meta.color}28` }}>
-          <Icon width={14} />
-        </div>
+        <Icon width={22} height={22} className="rag-card-icon" style={{ color: meta.color }} />
         <div className="rag-card-info">
           <p className="rag-card-title">{item.title}</p>
           {detail && <p className="rag-card-detail">{detail}</p>}
@@ -202,12 +200,8 @@ const CSS = `
 
 .rag-card-top { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }
 .rag-card-icon {
-  display:         flex;
-  align-items:     center;
-  justify-content: center;
-  width:           28px; height: 28px;
-  border-radius:   var(--radius-md);
-  flex-shrink:     0;
+  flex-shrink: 0;
+  margin-top:  1px;
 }
 .rag-card-info  { flex: 1; min-width: 0; }
 .rag-card-title {
