@@ -8,11 +8,11 @@ import LinkForm from "@/features/links/components/LinkForm";
 import PromptForm from "@/features/prompts/components/PromptForm";
 
 import {
-  LucideLink2,
-  LucideServer,
-  LucideCodeXml,
-  LucideMessageSquare,
-  LucideSearch,
+  SolarLinkMinimalisticBold,
+  SolarServerSquareCloudLinear,
+  SolarCodeSquareLineDuotone,
+  FluentPrompt16Regular,
+  SolarRoundedMagniferLineDuotone,
 } from "@/Icons/Icons";
 import SnippetForm from "@/features/snippets/components/SnippetForm";
 import InfraForm from "@/features/infrastructure/components/InfraForm";
@@ -22,25 +22,25 @@ type QuickActionType = "link" | "snippet" | "prompt" | "infra" | null;
 const actions = [
   {
     type: "link" as const,
-    icon: LucideLink2,
+    icon: SolarLinkMinimalisticBold,
     label: "New Link",
     variant: "blue" as const,
   },
   {
     type: "snippet" as const,
-    icon: LucideCodeXml,
+    icon: SolarCodeSquareLineDuotone,
     label: "New Snippet",
     variant: "purple" as const,
   },
   {
     type: "prompt" as const,
-    icon: LucideMessageSquare,
+    icon: FluentPrompt16Regular,
     label: "New Prompt",
     variant: "teal" as const,
   },
   {
     type: "infra" as const,
-    icon: LucideServer,
+    icon: SolarServerSquareCloudLinear,
     label: "New Infra",
     variant: "green" as const,
   },
@@ -149,7 +149,7 @@ export default function QuickActions() {
             size="lg"
             variant="secondary"
             fullWidth
-            leftIcon={LucideSearch}
+            leftIcon={SolarRoundedMagniferLineDuotone}
             onClick={() => router.push("/search")}
           >
             Search Everything

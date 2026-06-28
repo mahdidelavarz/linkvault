@@ -2,7 +2,7 @@
 
 import { useRef, useState, DragEvent, ChangeEvent } from "react";
 import { useUploadFile } from "@/features/files/hooks/useFiles";
-import { LucideUpload, LucideFile, LucideX, LucideCheck } from "@/Icons/Icons";
+import { LucideUpload, LucideX, LucideCheck, SolarFileBold } from "@/Icons/Icons";
 
 const MAX_SIZE = 3 * 1024 * 1024;
 
@@ -86,7 +86,7 @@ export default function FileUploadZone() {
 
           {staged ? (
             <div className="fuz-staged">
-              <LucideFile className="fuz-staged-icon" />
+              <SolarFileBold className="fuz-staged-icon" />
               <div className="fuz-staged-info">
                 <span className="fuz-staged-name">{staged.name}</span>
                 <span className="fuz-staged-size">{formatBytes(staged.size)}</span>

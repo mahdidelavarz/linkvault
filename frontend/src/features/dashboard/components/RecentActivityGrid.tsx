@@ -4,27 +4,27 @@ import { useState } from "react";
 import Link from "next/link";
 import { type RecentItem } from "@/features/dashboard/hooks/useDashboard";
 import {
-  LucideLink2,
-  LucideFileText,
-  LucideFileCode2,
-  LucideMessageSquare,
-  LucideServer,
+  SolarLinkMinimalisticBold,
+  SolarNotesLineDuotone,
+  SolarCodeSquareLineDuotone,
+  FluentPrompt16Regular,
+  SolarServerSquareCloudLinear,
   LucideStar,
   LucidePin,
   LucideCopy,
   LucideCheck,
-  LucideClock,
-  LucideZap,
+  SolarClockCircleLineDuotone,
+  SolarBoltLineDuotone,
   LucideChevronDown,
   LucideChevronUp,
 } from "@/Icons/Icons";
 
-const TYPE_META: Record<RecentItem["type"], { icon: typeof LucideLink2; color: string; href: string }> = {
-  link:           { icon: LucideLink2,         color: "var(--cyan-400)", href: "/links"          },
-  note:           { icon: LucideFileText,      color: "#10b981",         href: "/notes"          },
-  snippet:        { icon: LucideFileCode2,     color: "#8b5cf6",         href: "/snippets"        },
-  prompt:         { icon: LucideMessageSquare, color: "#f59e0b",         href: "/prompts"         },
-  infrastructure: { icon: LucideServer,        color: "#3b82f6",         href: "/infrastructure"  },
+const TYPE_META: Record<RecentItem["type"], { icon: typeof SolarLinkMinimalisticBold; color: string; href: string }> = {
+  link:           { icon: SolarLinkMinimalisticBold,   color: "var(--cyan-400)", href: "/links"          },
+  note:           { icon: SolarNotesLineDuotone,       color: "#10b981",         href: "/notes"          },
+  snippet:        { icon: SolarCodeSquareLineDuotone,  color: "#8b5cf6",         href: "/snippets"        },
+  prompt:         { icon: FluentPrompt16Regular,        color: "#f59e0b",         href: "/prompts"         },
+  infrastructure: { icon: SolarServerSquareCloudLinear, color: "#3b82f6",        href: "/infrastructure"  },
 };
 
 function timeAgo(dateStr: string): string {
@@ -118,7 +118,7 @@ export default function RecentActivityGrid({ items, isLoading }: RecentActivityG
       <style>{CSS}</style>
       <div className="rag-section dp-card">
         <div className="dp-card-header">
-          <LucideZap width={14} className="dp-card-header-icon" />
+          <SolarBoltLineDuotone width={14} className="dp-card-header-icon" />
           <h2 className="dp-card-title">Recent activity</h2>
         </div>
 
@@ -136,7 +136,7 @@ export default function RecentActivityGrid({ items, isLoading }: RecentActivityG
           </div>
         ) : visibleItems.length === 0 ? (
           <div className="rag-empty">
-            <LucideClock width={28} />
+            <SolarClockCircleLineDuotone width={28} />
             <p>No recent activity yet.</p>
             <span>Start by adding a link, snippet, or prompt.</span>
           </div>

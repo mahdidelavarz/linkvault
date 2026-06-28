@@ -13,12 +13,12 @@ import {
   LucideEye,
   LucideDownload,
   LucideTrash2,
-  LucideFile,
   LucideFileText,
   LucideFileCode2,
   LucideImage,
   LucideMusic,
   LucideFilm,
+  SolarFileBold,
 } from "@/Icons/Icons";
 
 interface Props {
@@ -33,7 +33,7 @@ function getFileIcon(mimetype: string) {
   if (mimetype === "application/pdf")      return LucideFileText;
   if (mimetype.includes("javascript") || mimetype.includes("json") || mimetype.includes("xml"))
                                            return LucideFileCode2;
-  return LucideFile;
+  return SolarFileBold;
 }
 
 function formatBytes(bytes: number) {

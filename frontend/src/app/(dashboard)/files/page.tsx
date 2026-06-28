@@ -10,7 +10,7 @@ import PageLayout from "@/features/shared/layout/PageLayout";
 import PageHeader from "@/features/shared/ui/PageHeader";
 import EmptyState from "@/features/shared/ui/EmptyState";
 import CardGrid from "@/features/shared/components/CardGrid";
-import { LucideFile, LucideSearch, LucideX } from "@/Icons/Icons";
+import { LucideSearch, LucideX, SolarFileBold } from "@/Icons/Icons";
 
 export default function FilesPage() {
   return (
@@ -102,7 +102,7 @@ function FilesPageContent() {
               </>
             ) : (
               <EmptyState
-                icon={LucideFile}
+                icon={SolarFileBold}
                 title="No files yet"
                 subtitle="Upload your first file using the panel on the left"
                 hasFilters={hasFilters}

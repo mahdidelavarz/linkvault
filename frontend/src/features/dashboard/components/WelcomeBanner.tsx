@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuthStore } from "@/features/auth/store/authStore";
-import { LucideBarChart3, LucideVault } from "@/Icons/Icons";
+import { SolarBarChartLineDuotone, LucideVault } from "@/Icons/Icons";
 
 const QUOTES = [
   "Knowledge is power. Keep it organized! 🚀",
@@ -55,7 +55,7 @@ export default function WelcomeBanner({
         {/* Summary pill */}
         <div className="dp-hero-summary">
           <div className="dp-hero-summary-row">
-            <LucideBarChart3 width={16} className="dp-hero-summary-icon" />
+            <SolarBarChartLineDuotone width={16} className="dp-hero-summary-icon" />
             <div>
               {isLoading ? (
                 <div
