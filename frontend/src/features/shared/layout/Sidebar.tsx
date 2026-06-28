@@ -9,6 +9,7 @@ import {
   FluentPrompt16Regular,
   LucideChevronLeft,
   LucideChevronRight,
+  LucideInfo,
   LucideSettings,
   LucideUser,
   LucideVault,
@@ -42,6 +43,7 @@ const NAV_MAIN = [
   { name: "Infrastructure", href: "/infrastructure", icon: SolarServerSquareCloudLinear },
   { name: "Files", href: "/files", icon: SolarFileLinear },
   { name: "Feedback", href: "/feedback", icon: SolarChatLineDuotone },
+  { name: "About", href: "/about", icon: LucideInfo },
 ];
 
 const NAV_MANAGE = [
