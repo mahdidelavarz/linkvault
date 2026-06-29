@@ -41,7 +41,7 @@ export default function WelcomeBanner({
         <div className="dp-hero-left">
           <div className="dp-hero-brand">
             <div className="dp-hero-vault">
-              <LucideVault width={14} />
+              <LucideVault width={22} />
             </div>
             <span>NeoVault</span>
           </div>
@@ -121,11 +121,7 @@ const CSS = `
   display:         flex;
   align-items:     center;
   justify-content: center;
-  width:           20px; height: 20px;
-  background:      var(--accent-muted);
-  border:          1px solid var(--accent-border);
-  border-radius:   var(--radius-sm);
-  color:           var(--text-accent);
+  width:           24px; height: 24px;
 }
 .dp-hero-greeting {
   font-size:      var(--text-2xl);

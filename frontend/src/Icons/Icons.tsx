@@ -1,32 +1,74 @@
 import { SVGProps } from "react";
 
+// NeoVault brand mark: a yellow vault/safe with the letter "V" on the door.
+// Multicolor by design (does not follow currentColor). Flat fills are used
+// instead of a gradient so the icon stays crisp at small sizes and avoids
+// duplicate gradient-id collisions when rendered multiple times per page.
 export function LucideVault(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width={24}
       height={24}
-      viewBox="0 0 24 24"
+      viewBox="76 84 360 344"
+      fill="none"
       {...props}
     >
-      <g
+      {/* Safe feet */}
+      <g fill="#0f172a">
+        <rect x="150" y="402" width="34" height="20" rx="5" />
+        <rect x="328" y="402" width="34" height="20" rx="5" />
+      </g>
+
+      {/* Hinges on the left edge */}
+      <g fill="#0f172a">
+        <rect x="86" y="172" width="20" height="44" rx="5" />
+        <rect x="86" y="300" width="20" height="44" rx="5" />
+      </g>
+
+      {/* Vault body */}
+      <rect x="96" y="104" width="320" height="304" rx="46" fill="#FBBF24" />
+
+      {/* Door handle on the right edge */}
+      <rect x="398" y="214" width="22" height="84" rx="11" fill="#0f172a" />
+
+      {/* Door panel outline */}
+      <rect
+        x="132"
+        y="140"
+        width="248"
+        height="232"
+        rx="30"
         fill="none"
-        stroke="currentColor"
+        stroke="#0f172a"
+        strokeWidth="9"
+        strokeOpacity="0.85"
+      />
+
+      {/* Combination dial */}
+      <circle cx="256" cy="190" r="27" fill="#0f172a" />
+      <line
+        x1="256"
+        y1="172"
+        x2="256"
+        y2="182"
+        stroke="#FBBF24"
+        strokeWidth="6"
+        strokeLinecap="round"
+      />
+
+      {/* The "V" on the door */}
+      <path
+        d="M196 226 L256 334 L316 226"
+        fill="none"
+        stroke="#0f172a"
+        strokeWidth="36"
         strokeLinecap="round"
         strokeLinejoin="round"
-        strokeWidth="2"
-      >
-        <rect width="18" height="18" x="3" y="3" rx="2" />
-        <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
-        <path d="m7.9 7.9l2.7 2.7" />
-        <circle cx="16.5" cy="7.5" r=".5" fill="currentColor" />
-        <path d="m13.4 10.6l2.7-2.7" />
-        <circle cx="7.5" cy="16.5" r=".5" fill="currentColor" />
-        <path d="m7.9 16.1l2.7-2.7" />
-        <circle cx="16.5" cy="16.5" r=".5" fill="currentColor" />
-        <path d="m13.4 13.4l2.7 2.7" />
-        <circle cx="12" cy="12" r="2" />
-      </g>
+      />
+
+      {/* Bolt at the V vertex */}
+      <circle cx="256" cy="334" r="13" fill="#FBBF24" />
     </svg>
   );
 }

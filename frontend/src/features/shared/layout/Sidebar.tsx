@@ -104,7 +104,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="sidebar-logo ">
         <div className="sidebar-logo-icon" onClick={() => setCollapsed(!collapsed)}>
-          <LucideVault width={18} />
+          <LucideVault width={28} />
         </div>
         {!collapsed && <span className="sidebar-logo-text">NeoVault</span>}
 
@@ -214,7 +214,7 @@ export default function Sidebar() {
         <div className="sidebar-inner">
           <div className="sidebar-logo">
             <div className="sidebar-logo-icon">
-              <LucideVault width={18} />
+              <LucideVault width={28} />
             </div>
             <span className="sidebar-logo-text">NeoVault</span>
             <button
@@ -392,12 +392,8 @@ const CSS = `
   display:         flex;
   align-items:     center;
   justify-content: center;
-  width:           32px;
-  height:          32px;
-  background:      var(--accent-muted);
-  border:          1px solid var(--accent-border);
-  border-radius:   var(--radius-md);
-  color:           var(--cyan-400);
+  width:           34px;
+  height:          34px;
   flex-shrink:     0;
 }
 .sidebar-logo-text {

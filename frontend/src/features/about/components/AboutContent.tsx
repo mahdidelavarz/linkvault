@@ -259,7 +259,7 @@ export default function AboutContent() {
       {/* Intro */}
       <section className="about-hero">
         <div className="about-hero-icon">
-          <LucideVault width={26} height={26} />
+          <LucideVault width={48} height={48} />
         </div>
         <h2 className="about-hero-title">NeoVault چیست؟</h2>
         <p className="about-hero-text">
@@ -384,6 +384,7 @@ export default function AboutContent() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const CSS = `
+.about, .about * { box-sizing: border-box; min-width: 0; }
 .about {
   display:        flex;
   flex-direction: column;
@@ -393,6 +394,8 @@ const CSS = `
   margin:         0 auto;
   text-align:     right;
   line-height:    1.9;
+  overflow-wrap:  anywhere;
+  word-break:     break-word;
 }
 
 /* Hero */
@@ -407,12 +410,8 @@ const CSS = `
   display:         inline-flex;
   align-items:     center;
   justify-content: center;
-  width:           52px;
-  height:          52px;
-  background:      var(--accent-muted);
-  border:          1px solid var(--accent-border);
-  border-radius:   var(--radius-md);
-  color:           var(--cyan-400);
+  width:           56px;
+  height:          56px;
   margin-bottom:   12px;
 }
 .about-hero-title {
@@ -633,7 +632,39 @@ const CSS = `
 .about-table tr:last-child td { border-bottom: none; }
 
 @media (max-width: 639px) {
+  .about { gap: 14px; }
+
   .about-modules { grid-template-columns: 1fr; }
   .about-grid    { grid-template-columns: 1fr; }
+
+  .about-hero    { padding: 18px 14px; }
+  .about-section { padding: 16px 14px; }
+
+  /* Allow long mono type-names to wrap instead of pushing the row wide */
+  .about-type {
+    flex-direction: column;
+    gap:            2px;
+  }
+  .about-type-name { min-width: 0; }
+
+  /* Stack the guarantee table into card rows so it never overflows */
+  .about-table-wrap { overflow-x: visible; }
+  .about-table,
+  .about-table tbody,
+  .about-table tr,
+  .about-table td { display: block; width: 100%; }
+  .about-table thead { display: none; }
+  .about-table tr {
+    margin-bottom:  8px;
+    border:         1px solid var(--border-subtle);
+    border-radius:  var(--radius-md);
+    overflow:       hidden;
+  }
+  .about-table td { border-bottom: none; }
+  .about-table td:first-child {
+    font-weight: 600;
+    color:       var(--text-primary);
+    background:  var(--bg-base);
+  }
 }
 `;
