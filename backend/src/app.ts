@@ -44,17 +44,22 @@ const allowedOrigins = [
     .map((o) => o.trim())
     .filter(Boolean);
 
+// A literal "*" anywhere in the config means "allow any origin".
+const allowAllOrigins = allowedOrigins.includes('*');
+
 app.use(cors({
     origin: isDev
         ? (origin, cb) => cb(null, origin || '*')   // allow any origin in dev
         : (origin, cb) => {
-            // Allow non-browser clients (no Origin) and, when nothing is configured,
-            // reflect the caller's origin. Reflecting a specific origin (rather than
-            // literal "*") is what keeps credentialed requests valid.
-            if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+            // Allow non-browser clients (no Origin), an explicit "*", or when nothing
+            // is configured, by reflecting the caller's origin. Reflecting a specific
+            // origin (rather than literal "*") is what keeps credentialed requests valid.
+            if (!origin || allowAllOrigins || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
                 return cb(null, true);
             }
-            return cb(new Error(`Origin ${origin} is not allowed by CORS`));
+            // Disallowed origin: omit CORS headers (browser will block) but do NOT
+            // throw — throwing here turns every cross-origin request into a 500.
+            return cb(null, false);
         },
     credentials: true,
 }));
