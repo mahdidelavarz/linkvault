@@ -15,6 +15,7 @@ import {
   LucideVault,
   LucideX,
   SolarChatLineDuotone,
+  SolarChatLineOutline,
   SolarCodeSquareLineDuotone,
   SolarFileLinear,
   SolarFolderFavouriteBookmarkLinear,
@@ -42,7 +43,7 @@ const NAV_MAIN = [
   { name: "API Client", href: "/api-client", icon: SolarGlobalLinear },
   { name: "Infrastructure", href: "/infrastructure", icon: SolarServerSquareCloudLinear },
   { name: "Files", href: "/files", icon: SolarFileLinear },
-  { name: "Feedback", href: "/feedback", icon: SolarChatLineDuotone },
+  { name: "Feedback", href: "/feedback", icon: SolarChatLineOutline },
   { name: "About", href: "/about", icon: LucideInfo },
 ];
 
@@ -57,7 +58,7 @@ const NAV_SETTINGS = [
 
 const NAV_ADMIN = [
   { name: "Admin", href: "/admin", icon: SolarShieldBoldDuotone },
-  { name: "Feedback", href: "/admin/feedback", icon: SolarChatLineDuotone },
+  { name: "Feedback", href: "/admin/feedback", icon: SolarChatLineOutline },
 ];
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
