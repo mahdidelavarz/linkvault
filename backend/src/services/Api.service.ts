@@ -232,8 +232,16 @@ export class ApiService {
             const config: any = {
                 method: method.toLowerCase(),
                 url: data.url,
-                // Auth headers are applied first; explicit headers can override them
-                headers: { ...authHeaders, ...(data.headers ?? {}) },
+                // Send browser-like defaults first. Many WAF-protected hosts silently
+                // stall (→ timeout) on the default "axios/x.y" User-Agent even though
+                // the same request succeeds from Postman/a browser. Auth headers, then
+                // the caller's explicit headers, override these defaults.
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                    'Accept': '*/*',
+                    ...authHeaders,
+                    ...(data.headers ?? {}),
+                },
                 validateStatus: () => true,
                 timeout: REQUEST_TIMEOUT_MS,
                 maxContentLength: MAX_RESPONSE_BYTES,
